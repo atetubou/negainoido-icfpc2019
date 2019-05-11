@@ -1,13 +1,5 @@
 steps:
 - name: 'gcr.io/cloud-builders/bazel'
-  args: [
-  'build',
-  '--remote_cache=https://storage.googleapis.com/negainoido-icfpc2019-bazel-cache',
-  '//...',
-  ]
+  args: ['build', '//...']
 - name: 'gcr.io/cloud-builders/bazel'
-  args: [
-  'test',
-  '--remote_cache=https://storage.googleapis.com/negainoido-icfpc2019-bazel-cache',
-  '//...',
-  ]
+  args: ['test', '//...']
