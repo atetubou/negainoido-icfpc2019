@@ -55,3 +55,10 @@ http_archive(
         "https://github.com/abseil/abseil-cpp/archive/0cbdc774b97f7e80ab60dbe2ed4eaca3b2e33fc8.tar.gz",
     ],
 )
+
+http_archive(
+    name = "com_google_googletest",
+    sha256 = "927827c183d01734cc5cfef85e0ff3f5a92ffe6188e0d18e909c5efebf28a0c7",
+    strip_prefix = "googletest-release-1.8.1",
+    urls = ["https://github.com/google/googletest/archive/release-1.8.1.zip"],
+)
