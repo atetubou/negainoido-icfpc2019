@@ -1,0 +1,2 @@
+# https://docs.bazel.build/versions/master/best-practices.html#bazelrc
+common --google_default_credentials
