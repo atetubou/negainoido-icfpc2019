@@ -58,6 +58,7 @@ http_archive(
 
 http_archive(
     name = "com_google_googletest",
-    strip_prefix = "googletest-master",
-    urls = ["https://github.com/google/googletest/archive/v1.8.1.zip"],
+    sha256 = "927827c183d01734cc5cfef85e0ff3f5a92ffe6188e0d18e909c5efebf28a0c7",
+    strip_prefix = "googletest-release-1.8.1",
+    urls = ["https://github.com/google/googletest/archive/release-1.8.1.zip"],
 )
