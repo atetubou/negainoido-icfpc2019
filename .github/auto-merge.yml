@@ -1,3 +1,4 @@
+# https://github.com/bobvanderlinden/probot-auto-merge
 minApprovals:
   COLLABORATOR: 0
 reportStatus: true
