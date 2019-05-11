@@ -1,5 +1,8 @@
 steps:
 - name: 'gcr.io/cloud-builders/bazel'
-  entrypoint: 'bash'
-  args: ['-c', 'echo']
-#  args: ['build', '//...']
+  args: [
+  'build',
+  '--remote_cache=https://storage.googleapis.com/negainoido-icfpc2019-bazel-cache',
+  '--google_default_credentials',
+  '//...'
+  ]
