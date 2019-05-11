@@ -4,5 +4,5 @@ steps:
   'build',
   '--remote_cache=https://storage.googleapis.com/negainoido-icfpc2019-bazel-cache',
   '--google_default_credentials',
-  '//...'
+  '//...',
   ]
