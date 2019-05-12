@@ -20,4 +20,5 @@ cc_test(
         ":fib",
         "@com_google_googletest//:gtest_main",
     ],
+    size = "small",
 )
