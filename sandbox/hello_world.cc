@@ -8,6 +8,6 @@ int main(int argc, char *argv[]) {
   google::InitGoogleLogging(argv[0]);
   google::InstallFailureSignalHandler();
 
-  LOG(INFO) << "log2";
+  LOG(INFO) << "log";
   std::cout << "Hello World!" << std::endl;
 }
