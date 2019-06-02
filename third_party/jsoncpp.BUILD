@@ -33,7 +33,7 @@ cc_library(
 cc_library(
     name = "private",
     textual_hdrs = [
-      "src/lib_json/json_valueiterator.inl",
-      "src/lib_json/version.h.in",
+        "src/lib_json/json_valueiterator.inl",
+        "src/lib_json/version.h.in",
     ],
 )
