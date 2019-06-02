@@ -24,7 +24,7 @@ EOM
   args: ['-c', 'docker pull gcr.io/\$PROJECT_ID/$name || true']
 - name: 'gcr.io/cloud-builders/docker'
   args: [
-  'build', '-t', 'gcr.io/\$PROJECT_ID/$name
+  'build', '-t', 'gcr.io/\$PROJECT_ID/$name',
   '--cache-from', 'gcr.io/\$PROJECT_ID/cympfh:latest',
   '$dir'
   ]
