@@ -17,6 +17,13 @@ run specified target.
 bazel run //sandbox:hello_world
 ```
 
+run target with flags.
+
+```
+bazel run //sandbox:hello_world -- --alsologtostderr
+```
+
+
 ### build
 
 build all buildable targets.
