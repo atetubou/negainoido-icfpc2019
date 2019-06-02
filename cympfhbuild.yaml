@@ -11,3 +11,5 @@ steps:
 - name: 'gcr.io/cloud-builders/docker'
   args: ['run', 'gcr.io/$PROJECT_ID/cympfh:latest']
 images: ['gcr.io/$PROJECT_ID/cympfh:latest']
+tags:
+- "cympfh"
