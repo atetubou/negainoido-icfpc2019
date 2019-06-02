@@ -62,3 +62,13 @@ http_archive(
     strip_prefix = "googletest-release-1.8.1",
     urls = ["https://github.com/google/googletest/archive/release-1.8.1.zip"],
 )
+
+http_archive(
+    name = "jsoncpp_git",
+    build_file = "@//:third_party/jsoncpp.BUILD",
+    sha256 = "c49deac9e0933bcb7044f08516861a2d560988540b23de2ac1ad443b219afdb6",
+    strip_prefix = "jsoncpp-1.8.4",
+    urls = [
+        "https://github.com/open-source-parsers/jsoncpp/archive/1.8.4.tar.gz",
+    ],
+)
