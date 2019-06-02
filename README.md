@@ -3,8 +3,6 @@
 masterブランチにマージするときは、pull requestを使ってください。
 チェックが通れば勝手にマージされます。
 
-[TOC]
-
 ## bazel
 
 example commands.
