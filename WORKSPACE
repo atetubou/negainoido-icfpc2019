@@ -2,31 +2,31 @@ workspace(name = "negainoid_icfpc2019")
 
 load("@bazel_tools//tools/build_defs/repo:http.bzl", "http_archive")
 
-### For buildfier
-# buildifier is written in Go and hence needs rules_go to be built.
-# See https://github.com/bazelbuild/rules_go for the up to date setup instructions.
-http_archive(
-    name = "io_bazel_rules_go",
-    sha256 = "3743a20704efc319070957c45e24ae4626a05ba4b1d6a8961e87520296f1b676",
-    url = "https://github.com/bazelbuild/rules_go/releases/download/0.18.4/rules_go-0.18.4.tar.gz",
-)
+# ### For buildfier
+# # buildifier is written in Go and hence needs rules_go to be built.
+# # See https://github.com/bazelbuild/rules_go for the up to date setup instructions.
+# http_archive(
+#     name = "io_bazel_rules_go",
+#     sha256 = "3743a20704efc319070957c45e24ae4626a05ba4b1d6a8961e87520296f1b676",
+#     url = "https://github.com/bazelbuild/rules_go/releases/download/0.18.4/rules_go-0.18.4.tar.gz",
+# )
 
-load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
+# load("@io_bazel_rules_go//go:deps.bzl", "go_register_toolchains", "go_rules_dependencies")
 
-go_rules_dependencies()
+# go_rules_dependencies()
 
-go_register_toolchains()
+# go_register_toolchains()
 
-http_archive(
-    name = "com_github_bazelbuild_buildtools",
-    sha256 = "c3cd67954de9c1971e37d8e0abeccef4110bbf9fd3fa9886ffc2ef3b73d9ecbe",
-    strip_prefix = "buildtools-882724efbd6169961bac0932892bcc0281c6d6f5",
-    url = "https://github.com/bazelbuild/buildtools/archive/882724efbd6169961bac0932892bcc0281c6d6f5.tar.gz",
-)
+# http_archive(
+#     name = "com_github_bazelbuild_buildtools",
+#     sha256 = "c3cd67954de9c1971e37d8e0abeccef4110bbf9fd3fa9886ffc2ef3b73d9ecbe",
+#     strip_prefix = "buildtools-882724efbd6169961bac0932892bcc0281c6d6f5",
+#     url = "https://github.com/bazelbuild/buildtools/archive/882724efbd6169961bac0932892bcc0281c6d6f5.tar.gz",
+# )
 
-load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
+# load("@com_github_bazelbuild_buildtools//buildifier:deps.bzl", "buildifier_dependencies")
 
-buildifier_dependencies()
+# buildifier_dependencies()
 
 ### For main programs
 http_archive(
