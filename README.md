@@ -3,6 +3,8 @@
 masterブランチにマージするときは、pull requestを使ってください。
 チェックが通れば勝手にマージされます。
 
+[cympfh builds](https://console.cloud.google.com/cloud-build/builds?project=negainoido-icfpc2019&query=tags%3D%20%22cympfh%22)
+
 ## bazel
 
 example commands.
