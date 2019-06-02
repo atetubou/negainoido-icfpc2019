@@ -3,3 +3,6 @@ steps:
   args: ['build', '--remote_cache=https://storage.googleapis.com/negainoido-icfpc2019-bazel-cache', '//...']
 - name: 'gcr.io/cloud-builders/bazel'
   args: ['test', '--remote_cache=https://storage.googleapis.com/negainoido-icfpc2019-bazel-cache', '//...']
+- name: 'gcr.io/cloud-builders/bazel'
+  args: ['help', 'build']
+  waitFor: ['-']

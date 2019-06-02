@@ -1,8 +1,10 @@
 # https://docs.bazel.build/versions/master/best-practices.html#bazelrc
 # https://docs.bazel.build/versions/master/guide.html#bazelrc
 
-common --google_default_credentials --test_output=errors
+common --google_default_credentials
 
+test --action_env="GTEST_COLOR=1"
+test --test_output=errors
 test --test_verbose_timeout_warnings
 
 try-import user.bazelrc
