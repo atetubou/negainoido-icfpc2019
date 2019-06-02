@@ -2,6 +2,7 @@
 # https://docs.bazel.build/versions/master/guide.html#bazelrc
 
 common --google_default_credentials
-common --remote_cache=https://storage.googleapis.com/negainoido-icfpc2019-bazel-cache
 
 test --test_verbose_timeout_warnings
+
+try-import user.bazelrc
