@@ -8,7 +8,7 @@ steps:
   '--cache=true',
   '--dockerfile=cympfh_sample/Dockerfile',
   '--context=dir:///workspace/cympfh_sample',
-  '--cache-ttl=6h',
+  '--cache-ttl=6h', '--reproducible',
   ]
 - name: 'gcr.io/cloud-builders/docker'
   args: ['run', 'gcr.io/$PROJECT_ID/cympfh:sample']
