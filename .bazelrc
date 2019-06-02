@@ -3,8 +3,11 @@
 
 common --google_default_credentials
 
+build -c opt
+
 test --action_env="GTEST_COLOR=1"
 test --test_output=errors
 test --test_verbose_timeout_warnings
+test -c opt
 
 try-import user.bazelrc
