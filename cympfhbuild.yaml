@@ -1,15 +1,16 @@
 steps:
 - name: 'gcr.io/cloud-builders/docker'
   entrypoint: 'bash'
-  args: ['-c', 'docker pull gcr.io/$PROJECT_ID/cympfh:latest || true']
+  args: ['-c', 'docker pull gcr.io/$PROJECT_ID/cympfh:sample || true']
 - name: 'gcr.io/cloud-builders/docker'
   args: [
-  'build', '-t', 'gcr.io/$PROJECT_ID/cympfh',
+  'build', '-t', 'gcr.io/$PROJECT_ID/cympfh:sample
   '--cache-from', 'gcr.io/$PROJECT_ID/cympfh:latest',
   'cympfh_sample'
   ]
 - name: 'gcr.io/cloud-builders/docker'
-  args: ['run', 'gcr.io/$PROJECT_ID/cympfh:latest']
-images: ['gcr.io/$PROJECT_ID/cympfh:latest']
+  args: ['run', 'gcr.io/$PROJECT_ID/cympfh:sample']
+images:
+- 'gcr.io/$PROJECT_ID/cympfh:sample'
 tags:
 - "cympfh"
