@@ -4,7 +4,7 @@ steps:
   args: ['-c', 'docker pull gcr.io/$PROJECT_ID/cympfh:sample || true']
 - name: 'gcr.io/cloud-builders/docker'
   args: [
-  'build', '-t', 'gcr.io/$PROJECT_ID/cympfh:sample
+  'build', '-t', 'gcr.io/$PROJECT_ID/cympfh:sample',
   '--cache-from', 'gcr.io/$PROJECT_ID/cympfh:latest',
   'cympfh_sample'
   ]
