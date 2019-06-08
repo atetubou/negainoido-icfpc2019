@@ -9,5 +9,5 @@ npm install
 ## run the app
 
 ```
-DEBUG=tikuta-express-practice:* npm start
+make run
 ```
