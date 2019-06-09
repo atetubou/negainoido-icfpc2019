@@ -1,4 +1,5 @@
-FROM base
+FROM rust:1.31-slim AS build-env
+
 WORKDIR /app
 COPY . .
 
