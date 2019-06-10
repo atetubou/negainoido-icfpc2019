@@ -1,4 +1,4 @@
-FROM l.gcr.io/google/bazel:0.17.1 AS build-env
+FROM l.gcr.io/google/bazel:0.26.1 AS build-env
 
 WORKDIR /app
 COPY . .
