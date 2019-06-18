@@ -10,8 +10,7 @@
         "emitDecoratorMetadata": true,
     },
     "include": [
-        "./src/**/*",
-        "node_modules/@types"
+        "./src/**/*"
     ],
-    "exclude": [ "node_modules "],
+    "exclude": [ "node_modules"],
 }
