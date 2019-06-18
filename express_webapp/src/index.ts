@@ -35,8 +35,8 @@ class Solution extends Model<Solution> {
 }
 
 const sequelize = new Sequelize({
-    database: 'garasubodb',
-    username: 'negainoido',
+    database: process.env.DB_DB || 'garasubodb',
+    username: process.env.DB_USER || 'negainoido',
     password: process.env.DB_PASSWORD,
     host: process.env.DB_HOST || 'localhost',
     port: normalizePort(process.env.DB_PORT) || 3306,
@@ -69,10 +69,13 @@ import fileUpload = require('express-fileupload');
 import AWS = require('aws-sdk');
 AWS.config.loadFromPath(process.env.KEY_JSON || './aws_key.json');
 AWS.config.update({ region: 'us-east-2' });
+const defaultBucket = process.env.S3_BUCKET || 'negainoido-icfpc-2019-dev';
 
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 
-app.post('/solution', async (req, res, next) => {
+app.use('/public', express.static('web/dist'));
+
+app.post('/solution', (req, res, next) => {
     const solver = req.body['solver'] ||  'unknown';
     const program_id = req.body['program'] || 0;
     const score = req.body['score'] || 0.0;
@@ -82,12 +85,12 @@ app.post('/solution', async (req, res, next) => {
     solution.save().then((model) => {
         console.log('created object ' + model);
         const params = {
-            Bucket: "negainoido-icfpc2019",
+            Bucket: defaultBucket,
             Key: `solution_${solver}_${program_id}_${model.id}`,
             Body: (req.files!.file as fileUpload.UploadedFile).data,
         }
         const s3 = new AWS.S3();
-        
+
         s3.putObject(params, (err, data) => {
             if (err) {
                 console.error('faield to upload: ' + err);
@@ -104,4 +107,9 @@ app.post('/solution', async (req, res, next) => {
 
         res.json({ error: e });
     });
+});
+
+app.use((err, req, res, next) =>  {
+    console.error(err.stack);
+    res.status(500).send('internal server error');
 });
