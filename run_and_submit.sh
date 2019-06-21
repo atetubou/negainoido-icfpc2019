@@ -30,8 +30,8 @@ for task in `seq -w 1 150`
 do
     $solver < part-1-initial/prob-$task.in > ans
     score=$(wc -c ans | cut -d ' ' -f 1)
-    solver=$1-@$(git rev-list -n1 HEAD)
-    curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@ans -F solver=$solver -F task=$task
+    solver_name=$1-@$(git rev-list -n1 HEAD)
+    curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@ans -F solver="${solver_name}" -F task=$task
 done
 
 rm ans
