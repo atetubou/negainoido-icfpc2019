@@ -5,8 +5,8 @@ function draw_data(data) {
     rows[i] = data.values[i].best;
   }
 
-  console.log(rows);
   var table = new Tabulator("#content", {
+    height: 100000,
     data: rows,           //load row data from array
     layout:"fitColumns",      //fit columns to width of table
     responsiveLayout:"hide",  //hide columns that dont fit on the table
