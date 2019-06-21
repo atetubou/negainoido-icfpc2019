@@ -84,7 +84,7 @@ app.get('/stat/api', async (req, res, next) => {
 });
 
 app.get('/stat', (req, res, next) => {
-    res.render('index', {title: 'Express'});
+    res.render('stat', {});
 });
 
 
