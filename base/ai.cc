@@ -147,7 +147,7 @@ std::vector<Position> AI::get_absolute_manipulator_positions() {
         mani = { self.first + p.second, self.second - p.first };
         break;
       default:
-        LOG(FATAL) << "UNKNOWN DIRECTION";
+        LOG(FATAL) << "UNKNOWN DIRECTION " << static_cast<int>(get_dir());
         break;
     }
     ret.push_back(mani);
