@@ -69,11 +69,13 @@ import fileUpload = require('express-fileupload');
 import AWS = require('aws-sdk');
 AWS.config.loadFromPath(process.env.KEY_JSON || './aws_key.json');
 AWS.config.update({ region: 'us-east-2' });
-const defaultBucket = process.env.S3_BUCKET || 'negainoido-icfpc-2019-dev';
+const defaultBucket = process.env.S3_BUCKET || 'negainoido-icfpc2019-dev';
 
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 
 app.use('/public', express.static('web/dist'));
+
+const generateKey = (model: Solution) => `solution_${model.solver}_${model.program_id}_${model.id}`;
 
 app.post('/solution', (req, res, next) => {
     const solver = req.body['solver'] ||  'unknown';
@@ -86,9 +88,9 @@ app.post('/solution', (req, res, next) => {
         console.log('created object ' + model);
         const params = {
             Bucket: defaultBucket,
-            Key: `solution_${solver}_${program_id}_${model.id}`,
+            Key: generateKey(model),
             Body: (req.files!.file as fileUpload.UploadedFile).data,
-        }
+        };
         const s3 = new AWS.S3();
 
         s3.putObject(params, (err, data) => {
@@ -106,6 +108,36 @@ app.post('/solution', (req, res, next) => {
         res.status(500);
 
         res.json({ error: e });
+    });
+});
+
+app.get('/solution/:id', async (req, res, next) => {
+    const id = req.params['id'];
+
+    const best = await Solution.findOne({
+        attributes: ['id', 'solver', 'program_id'],
+        where: { program_id: id },
+        order: [['score', 'DESC']]
+    });
+
+    const s3 = new AWS.S3();
+    const key = generateKey(best); 
+    
+    const params = {
+        Bucket: defaultBucket,
+        Key: key,
+    };
+    s3.getObject(params, (err, data) => {
+        if (err) {
+            console.error('failed to download: ' + err);
+            res.status(500);
+            res.json({ error: err });
+        } else {
+            res.set('Content-Type', data.ContentType)
+            res.set('Content-Disposition', 'attachment; filename='+key);
+            res.set('Content-Length', data.ContentLength.toString());
+            res.end(data.Body, 'binary');
+        }
     });
 });
 
