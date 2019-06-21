@@ -39,7 +39,6 @@ const int MAX_V = MAX_H * MAX_W;
 
 typedef pair<int, int> Position;
 
-
 int toIndex(const Position &position) {
   return position.first * MAX_W + position.second;
 }
@@ -156,7 +155,10 @@ int main(int argc, char** argv) {
   int H, W;
   cin >> H >> W;
   vector<string> board(H);
+
+  
   REP(i, H) cin >> board[H - 1 - i];
+  cerr << board << endl;
   vector<Edge> edges;
   UnionFind uf(MAX_H * MAX_W);
 
@@ -169,20 +171,27 @@ int main(int argc, char** argv) {
   }
   LOG_IF(FATAL, startIndex < 0);
 
-
   // construct MST
+  vector<int> requiredVertices;
+  requiredVertices.push_back(toIndex(0, 0));
+  requiredVertices.push_back(toIndex(1, 0));
+  requiredVertices.push_back(toIndex(2, 0));
+  requiredVertices.push_back(toIndex(0, 3));
+  requiredVertices.push_back(toIndex(1, 3));
+  requiredVertices.push_back(toIndex(2, 3));
+  requiredVertices.push_back(toIndex(1, 6));
+
   REP(h, H) REP(w, W) {
     if (board[h][w] == '#') continue;
     REP(k, 4) {
       int nh = h + dh[k];
       int nw = w + dw[k];
-      if (board[nh][nw] == '#') continue;
-      if (0 <= nh && nh < H && 0 <= nw && nw < W) {
+      if (0 <= nh && nh < H && 0 <= nw && nw < W && board[nh][nw] != '#') {
         edges.push_back(Edge(toIndex(h, w), toIndex(nh, nw), 1));
       }
     }
   }
-  
+
   sort(ALL(edges), [](const Edge &e1, const Edge &e2) { return e1.weight < e2.weight; } );
   vector<Edge> mstEdges;
   for (const auto &e: edges) {
@@ -191,14 +200,14 @@ int main(int argc, char** argv) {
       uf.unite(e.srcIndex, e.dstIndex);
     }
   }
-
+  
   vector<vector<Edge>> G(MAX_V);
   for (const auto &e: mstEdges) {
     G[e.srcIndex].push_back(e);
     G[e.dstIndex].push_back(e.reverse());
   }
 
-  int targetCount = 0;
+  size_t targetCount = 0;
   REP(h, H) REP(w, W) if (board[h][w] != '#') targetCount++;
   set<int> visitedIndices;
   visitedIndices.insert(startIndex);
@@ -206,12 +215,10 @@ int main(int argc, char** argv) {
 
   string res = "";
   for (const auto &e: edgeOrder) {
-    cerr << e << " " << getMove(e) << endl;
     res += getMove(e);
     visitedIndices.insert(e.dstIndex);
     if (visitedIndices.size() == targetCount) break;
   }
   cout << res << endl;
-  
   return 0;
 }

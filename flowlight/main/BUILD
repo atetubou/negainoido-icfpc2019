@@ -1,5 +1,5 @@
 cc_binary(
-    name = "main",
+    name = "flowlight_solver",
     srcs = ["main.cc"],
     deps = [
         "@com_google_glog//:glog",
