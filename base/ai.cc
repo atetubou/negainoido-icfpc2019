@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cassert>
 #include "base/base.h"
 #include "base/ai.h"
 #include "base/geometry.h"
@@ -64,7 +65,43 @@ AI::AI() {
       }
     }
   }
+  filled.resize(h);
+  for (uint32_t i = 0; i < h; ++i) filled[i].resize(w);
+
   worker = Worker(worker_pos);
+
+  for (auto&p : worker.manipulator_range) {
+    auto x = worker.current_pos.first + p.first;
+    auto y = worker.current_pos.second + p.second;
+    fill_cell(std::make_pair(x, y));
+  }
+}
+
+bool AI::fill_cell(Position pos) {
+  uint32_t x = pos.first;
+  uint32_t y = pos.second;
+  if (filled[x][y]) {
+    return false;
+  }
+  if (!reachable(pos)) {
+    return false;
+  }
+  filled[x][y] = true;
+  switch(board[x][y]) {
+    case 'B':
+      worker.count_extension += 1;
+      break;
+    case 'F':
+      worker.count_fast += 1;
+      break;
+    case 'L':
+      worker.count_drill += 1;
+      break;
+    default:
+      assert(false);
+      break;
+  }
+  return true;
 }
 
 uint32_t AI::get_time() {
