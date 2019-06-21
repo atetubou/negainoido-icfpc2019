@@ -13,7 +13,7 @@ Worker::Worker(Position pos) {
 bool AI::valid_pos(Position target) {
   uint32_t x = target.first;
   uint32_t y = target.second;
-  return 0 <= x && x < h && 0 <= y && y < w;
+  return 0 <= x && x < height && 0 <= y && y < width;
 }
 
 bool AI::reachable(Position target) {
@@ -55,21 +55,21 @@ bool AI::reachable(Position target) {
 
 
 AI::AI() {
-  std::cin >> h >> w;
+  std::cin >> height >> width;
   std::string buf;
   while (std::cin >> buf) {
     board.push_back(buf);
   }
   Position worker_pos = std::make_pair(0, 0);
-  for (uint32_t i = 0; i < h; ++i) {
-    for (uint32_t j = 0; j < w; ++j) {
+  for (uint32_t i = 0; i < height; ++i) {
+    for (uint32_t j = 0; j < width; ++j) {
       if (board[i][j] == 'W') {
         worker_pos = std::make_pair(i, j);
       }
     }
   }
-  filled.resize(h);
-  for (uint32_t i = 0; i < h; ++i) filled[i].resize(w);
+  filled.resize(height);
+  for (uint32_t i = 0; i < height; ++i) filled[i].resize(width);
 
   worker = Worker(worker_pos);
 
@@ -105,9 +105,13 @@ bool AI::fill_cell(Position pos) {
   }
 
   filled[x][y] = true;
+  filled_count++;
 
   return true;
 }
+
+uint32_t AI::get_height() { return height; }
+uint32_t AI::get_width() { return width; }
 
 uint32_t AI::get_time() {
   return current_time;
@@ -119,6 +123,10 @@ Position AI::get_pos() {
 
 Direction AI::get_dir() {
   return worker.current_dir;
+}
+
+uint32_t AI::get_filled_count() {
+  return filled_count;
 }
 
 uint32_t AI::get_count_fast() { return worker.count_fast; }
@@ -191,13 +199,35 @@ bool AI::move(const Direction &dir) {
     fill_cell(p);
   }
 
+  // Push commandx
+  const std::string dir2cmd[4] = {
+    "W", "S", "A", "D"
+  };
+
+  executed_cmds.push_back(dir2cmd[static_cast<uint32_t>(dir)]);
+
+
   // Update time
   next_turn();
 
   return true;
 }
 
-//   bool move(const Direction &dir);
+bool AI::is_finished() {
+  return get_filled_count() == height * width;
+}
+
+void AI::write_commands() {
+  if(!is_finished())
+    return;
+
+  for(auto c: executed_cmds) {
+    std::cout << c;
+  }
+  std::cout << std::endl;
+}
+
+
 //   bool use_extension(const int dx, const int dy);
 //   bool use_fast_wheel();
 //   bool use_drill();
