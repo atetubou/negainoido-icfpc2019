@@ -1,4 +1,5 @@
 import * as express from 'express';
+import path;
 
 const normalizePort = (val: string) => {
     var port = parseInt(val, 10);
@@ -97,6 +98,7 @@ const defaultBucket = process.env.S3_BUCKET || 'negainoido-icfpc2019-dev';
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 
 app.use('/public', express.static('web/dist'));
+app.use('/public', express.static(path.join(__dirname, './web/dist')))
 
 const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
 
