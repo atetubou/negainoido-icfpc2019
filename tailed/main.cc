@@ -14,6 +14,11 @@ DEFINE_string(LKH3path, "","");
 
 using namespace std;
 
+int dx[] = {0, 0, -1, 1};
+int dy[] = {1, -1, 0, 0};
+char dir2chr[] = "WSAD";
+
+
 /*
 using board = std::vector<std::string>;
 
@@ -50,6 +55,46 @@ void dfs(int sx, int sy, board* b, int* cnt) {
 }
 */
 
+
+map<node_t, int> node2id;
+vector<node_t> nodes;
+
+string move_from_AtoB(const node_t &s, const node_t &t) {
+	queue<pair<int, int>> q;
+	map<node_t, int> lastd;
+	map<node_t, node_t> parent;
+	q.push(s);
+	lastd[s] = -1;
+	while(!q.empty()) {
+		node_t v = q.front();
+		q.pop();
+		if (v == t) break;
+		rep(d, 4) {
+			node_t w(v.first + dx[d], v.second + dy[d]);
+			if (node2id.count(w) && !lastd.count(w)) {
+				lastd[w] = d;
+				parent[w] = v;
+				q.push(w);
+			}
+		}
+	}
+	assert(lastd.count(t));
+
+	vector<int> directions;
+	node_t v = t;
+	while(lastd[v] != -1) {
+		directions.push_back(lastd[v]);
+		v = parent[v];
+	}
+	reverse(directions.begin(), directions.end());
+
+	string seq;
+	for(auto d : directions) {
+		seq += dir2chr[d];
+	}
+	return seq;
+}
+
 int main(int argc, char *argv[]) {
 	gflags::ParseCommandLineFlags(&argc, &argv, true);
 	google::InitGoogleLogging(argv[0]);
@@ -69,24 +114,19 @@ int main(int argc, char *argv[]) {
 
 	std::reverse(in.begin(), in.end());
 
-	int sx = 0, sy = 0;
+	node_t start;
 
-
-	map<node_t, int> node2id;
-	vector<node_t> nodes;
-
-	for (int i = 0; i < h; ++i) {
-		for (int j = 0; j < w; ++j) {
-			if (in[i][j] != '#') {
-				node_t v(i, j);
+	for (int y = 0; y < h; ++y) {
+		for (int x = 0; x < w; ++x) {
+			if (in[y][x] != '#') {
+				node_t v(x, y);
 				nodes.push_back(v);
 				node2id[v] = (int)nodes.size() - 1;
 			}
-			if (in[i][j] != 'W') {
+			if (in[y][x] != 'W') {
 				continue;
 			}
-			sx = j;
-			sy = i;
+			start = node_t(x, y);
 		}
 	}
 
@@ -113,8 +153,24 @@ int main(int argc, char *argv[]) {
 
 	vector<int> tour = SolveTSPByLKH3(dist, FLAGS_LKH3path.c_str());
 
-	for(auto i : tour) {
-		cout << nodes[i].first << " " << nodes[i].second << endl;
+	rep(i, tour.size()) {
+		if (tour[i] == node2id[start]) {
+			vector<int> tmp;
+			tmp.insert(tmp.end(), tour.begin() + i, tour.end());
+			tmp.insert(tmp.end(), tour.begin(), tour.begin() + i);
+			tour = tmp;
+			break;
+		}
 	}
+
+	string code;
+	for(int i = 0; i < (int)tour.size() - 1; i++) {
+		code += move_from_AtoB(nodes[i], nodes[i+1]);
+
+		cerr << nodes[i].first << " " << nodes[i].second << endl;
+		cerr << move_from_AtoB(nodes[i], nodes[i+1]) << endl;
+	}
+
+	cout << code << endl;
 
 }
