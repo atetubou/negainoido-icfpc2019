@@ -4,6 +4,7 @@
 #include "base/ai.h"
 #include "base/geometry.h"
 #include "absl/strings/str_split.h"
+#include <glog/logging.h>
 
 Worker::Worker(Position pos) {
   current_pos = pos;
@@ -95,7 +96,6 @@ bool AI::fill_cell(Position pos) {
       worker.count_drill += 1;
       break;
     default:
-      assert(false);
       break;
   }
   return true;
@@ -147,7 +147,7 @@ std::vector<Position> AI::get_absolute_manipulator_positions() {
         mani = { self.first + p.second, self.second - p.first };
         break;
       default:
-        assert(false);
+        LOG(FATAL) << "UNKNOWN DIRECTION";
         break;
     }
     ret.push_back(mani);
