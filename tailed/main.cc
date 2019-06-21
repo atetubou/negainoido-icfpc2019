@@ -1,13 +1,5 @@
-// vim-compile: bazel build --verbose_failures //tailed/...
-/*
+// vim-compile: bazel build --verbose_failures //tailed/... && ../bazel-bin/tailed/tailed < ../part-1-initial/prob-001.in --LKH3path ./LKH
 
-example usage:
-$ bazel build //tikuta_solver/...
-$ ./bazel-bin/tikuta_solver/tikuta_solver --problem part-1-initial/prob-001.in
-WWASSAWWASSAWWASSWAADDWDSSDWWDSSDWWDSS
-*/
-
-#include "LKH3_wrapper.h"
 
 #include <bits/stdc++.h>
 #include <glog/logging.h>
@@ -18,12 +10,17 @@ WWASSAWWASSAWWASSWAADDWDSSDWWDSSDWWDSS
 
 DEFINE_string(LKH3path, "","");
 
+#include "LKH3_wrapper.h"
+
 using namespace std;
+
+/*
 using board = std::vector<std::string>;
 
 int dx[] = {0, 0, -1, 1};
 int dy[] = {1, -1, 0, 0};
 char dir[] = "WSAD";
+*/
 
 typedef pair<int, int> node_t;
 
@@ -58,6 +55,9 @@ int main(int argc, char *argv[]) {
 	google::InitGoogleLogging(argv[0]);
 	google::InstallFailureSignalHandler();
 
+	if (FLAGS_LKH3path == "") {
+		LOG(FATAL) << "Please specify LKH path" << endl;
+	}
 
 
 	int h, w;
@@ -111,7 +111,7 @@ int main(int argc, char *argv[]) {
 			dist[i][j] = dist[i][k] + dist[k][j];
 
 
-	vector<int> tour = SolveTSPByLKH3(dist, FLAGS_LKH3path);
+	vector<int> tour = SolveTSPByLKH3(dist, FLAGS_LKH3path.c_str());
 
 	for(auto i : tour) {
 		cout << nodes[i].first << " " << nodes[i].second << endl;
