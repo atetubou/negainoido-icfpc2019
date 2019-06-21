@@ -6,7 +6,7 @@ function draw_data(data) {
   }
 
   var table = new Tabulator("#content", {
-    height: 100000,
+    paginationSize: 10000,
     data: rows,           //load row data from array
     layout:"fitColumns",      //fit columns to width of table
     responsiveLayout:"hide",  //hide columns that dont fit on the table
