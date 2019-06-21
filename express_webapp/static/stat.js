@@ -1,9 +1,10 @@
 function draw_data(data) {
 
   var rows = [];
-  for (var i = 0; i < data.length; ++i) {
-    rows[i] = data[i].best;
+  for (var i = 0; i < data.values.length; ++i) {
+    rows[i] = data.values[i].best;
   }
+
   console.log(rows);
   var table = new Tabulator("#content", {
     data: rows,           //load row data from array
@@ -36,7 +37,7 @@ function draw_data(data) {
 
 function load_data() {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/score/stat/api', false);
+  xhr.open('GET', '/score/stat/api', true);
   xhr.onreadystatechange = function() {
     switch ( xhr.readyState ) {
       case 0:
