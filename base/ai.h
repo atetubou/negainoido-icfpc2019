@@ -50,6 +50,8 @@ class AI {
 
 public:
 
+  bool reachable(Position);
+
   AI();
 
   uint32_t h, w;
