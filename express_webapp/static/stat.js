@@ -6,6 +6,7 @@ function draw_data(data) {
   }
 
   var table = new Tabulator("#content", {
+    height: 10000,
     paginationSize: 10000,
     data: rows,           //load row data from array
     layout:"fitColumns",      //fit columns to width of table
@@ -59,4 +60,4 @@ function load_data() {
   xhr.send();
 }
 
-setInterval(load_data, 1000);
+setInterval(load_data, 20000);
