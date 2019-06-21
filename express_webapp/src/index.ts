@@ -63,6 +63,9 @@ app.get('/solution', async (req, res, next) => {
     res.json({ solutions });
 });
 
+app.get('/stat', (req, res, next) => {
+    res.json({ 'hello': '!' });
+});
 
 
 import fileUpload = require('express-fileupload');
