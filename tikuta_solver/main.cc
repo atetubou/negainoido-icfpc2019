@@ -1,22 +1,18 @@
 /*
 
 example usage:
-$ bazel build //tikuta_solver/...
-$ ./bazel-bin/tikuta_solver/tikuta_solver --problem part-1-initial/prob-001.in
+$ bazel run //tikuta_solver:tikuta_solver < part-1-initial/prob-001.in
 WWASSAWWASSAWWASSWAADDWDSSDWWDSSDWWDSS
 */
 
 
 #include <algorithm>
-#include <fstream>
 #include <iostream>
 #include <string>
 #include <vector>
 
 #include <glog/logging.h>
 #include <gflags/gflags.h>
-
-DEFINE_string(problem, "","");
 
 using board = std::vector<std::string>;
 
@@ -54,13 +50,12 @@ int main(int argc, char *argv[]) {
   google::InstallFailureSignalHandler();
 
 
-  std::ifstream fin(FLAGS_problem);
 
   int h, w;
-  fin >> h >> w;
+  std::cin >> h >> w;
   std::vector<std::string> in(h);
   for (int i = 0; i < h; ++i) {
-    fin >> in[i];
+    std::cin >> in[i];
   }
 
   std::reverse(in.begin(), in.end());
