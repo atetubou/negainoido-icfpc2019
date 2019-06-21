@@ -1,6 +1,12 @@
 function draw_data(data) {
+
+  var rows = [];
+  for (var i = 0; i < data.length; ++i) {
+    rows[i] = data[i].best;
+  }
+
   var table = new Tabulator("#content", {
-    data: [],           //load row data from array
+    data: rows,           //load row data from array
     layout:"fitColumns",      //fit columns to width of table
     responsiveLayout:"hide",  //hide columns that dont fit on the table
     tooltips:true,            //show tool tips on cells
@@ -11,16 +17,15 @@ function draw_data(data) {
     movableColumns:true,      //allow column order to be changed
     resizableRows:true,       //allow row order to be changed
     initialSort:[             //set the initial sort order of the data
-      {column:"name", dir:"asc"},
+      {column:"task_id", dir:"asc"},
     ],
     columns:[                 //define the table columns
-      {title:"Name", field:"name", editor:"input"},
-      {title:"Task Progress", field:"progress", align:"left", formatter:"progress", editor:true},
-      {title:"Gender", field:"gender", width:95, editor:"select", editorParams:{values:["male", "female"]}},
-      {title:"Rating", field:"rating", formatter:"star", align:"center", width:100, editor:true},
-      {title:"Color", field:"col", width:130, editor:"input"},
-      {title:"Date Of Birth", field:"dob", width:130, sorter:"date", align:"center"},
-      {title:"Driver", field:"car", width:90,  align:"center", formatter:"tickCross", sorter:"boolean", editor:true},
+      {title:"id", field:"id"},
+      {title:"solver", field:"solver"},
+      {title:"task_id", field:"task_id"},
+      {title:"score", field:"score"},
+      {title:"created", field:"created"},
+      {title:"updatedAt", field:"updatedAt"},
     ],
   });
 }
