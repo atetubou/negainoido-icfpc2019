@@ -65,8 +65,7 @@ app.get('/solution', async (req, res, next) => {
 
 app.get('/stat/api', async (req, res, next) => {
     const solutions = await LSolution.findAll({raw: true});
-    var stat = [];
-    var best_by_id = {};
+    var stat = {}
     for (let sol of solutions) {
         let id = sol['id'];
         let solver = sol['solver'];
@@ -74,8 +73,8 @@ app.get('/stat/api', async (req, res, next) => {
         let score = sol['score'];
         let created = sol['created'];
         let updatedAt = sol['updatedAt'];
-        if (!best_by_id[task_id] || best_by_id[task_id].score > score) {
-            best_by_id[task_id] = sol;
+        if (!stat[task_id] || stat[task_id]['best'] || stat[task_id].best.score > score) {
+            stat[task_id].best = sol;
         }
     }
     res.json({ stat });
