@@ -1,6 +1,7 @@
 import * as express from 'express';
 import * as path from 'path';
 import * as morgan from 'morgan';
+import * as timeout from 'connect-timeout'
 
 const normalizePort = (val: string) => {
     var port = parseInt(val, 10);
@@ -15,6 +16,8 @@ const normalizePort = (val: string) => {
 
 const app = express();
 const port = normalizePort(process.env.PORT || '3000');
+
+app.use(timeout('30s'));
 
 var morgan = require('morgan');
 app.use(morgan('combined'));
@@ -131,8 +134,7 @@ app.post('/solution', (req, res, next) => {
             if (err) {
                 LSolution.destroy({ where: { id: model.id }}).catch(() => {});
                 console.error('faield to upload: ' + err);
-                res.status(500);
-                res.json({ error: err });
+                next(err);
             } else {
                 console.log(data);
                 res.json({ data });
@@ -140,9 +142,7 @@ app.post('/solution', (req, res, next) => {
         });
     }).catch((e) => {
         console.error('error: '+ e);
-        res.status(500);
-
-        res.json({ error: e });
+        next(e);
     });
 });
 
@@ -198,7 +198,7 @@ app.get('/solution/best/zip', async (req, res, next) => {
     for (let i = 1; i <= 150; i++) {
         promises.push(getBestSolution(i));
     }
-    Promise.all(promises).then((solutions) => {
+    await Promise.all(promises).then((solutions) => {
         solutions.forEach((solution, i) => {
             const name = `prob-${formatNumber(i+1)}.sol`;
             archive.append(solution.Body as Readable, { name });
@@ -209,8 +209,7 @@ app.get('/solution/best/zip', async (req, res, next) => {
         })
         .catch((e) => {
             console.error(e);
-            res.status(500);
-            res.json({ error: e });
+            next(e);
         });
 });
 
@@ -224,8 +223,7 @@ app.get('/solution/best', async (req, res, next) => {
     })
         .catch((e) => {
             console.error(e);
-            res.status(500);
-            res.json({ error: e });
+            next(e);
         });
 });
 
@@ -244,8 +242,8 @@ app.get('/solution/best/:id', async (req, res, next) => {
 
     if (!best) {
         console.error("error");
-        res.status(500);
-        res.json({});
+        res.status(404);
+        res.render('not found solution');
         return;
     }
     const s3 = new AWS.S3();
@@ -258,8 +256,7 @@ app.get('/solution/best/:id', async (req, res, next) => {
     s3.getObject(params, (err, data) => {
         if (err) {
             console.error('failed to download: ' + err);
-            res.status(500);
-            res.json({ error: err });
+            next(err);
         } else {
             res.set('Content-Type', data.ContentType);
             res.set('Content-Disposition', 'attachment; filename='+key);
@@ -269,7 +266,10 @@ app.get('/solution/best/:id', async (req, res, next) => {
     });
 });
 
-app.use((err, req, res, next) =>  {
-    console.error(err.stack);
-    res.status(500).send('internal server error');
-});
+const handleTimeout = (req, res, next) => {
+    if (!req.timeout) {
+        next();
+    }
+};
+
+app.use(handleTimeout);
