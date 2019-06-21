@@ -9,7 +9,7 @@ const normalizePort = (val: string) => {
     }
   
     return false;
-}
+};
 
 const app = express();
 const port = normalizePort(process.env.PORT || '3000');
@@ -21,13 +21,13 @@ import { Sequelize } from 'sequelize-typescript';
 import { Table, Column, Model, HasMany, DataType, CreatedAt, PrimaryKey } from 'sequelize-typescript';
 import mysql2 from 'mysql2';
 
-@Table({ timestamps: true, tableName: 'Solutions'})
-class Solution extends Model<Solution> {
+@Table({ timestamps: true, tableName: 'tbl_lsolutions'})
+class LSolution extends Model<LSolution> {
     @Column
     solver: string;
     @Column(DataType.INTEGER)
-    program_id: number
-    @Column(DataType.DOUBLE)
+    task_id: number;
+    @Column(DataType.BIGINT)
     score: number;
     @CreatedAt
     @Column
@@ -49,7 +49,7 @@ sequelize
     .then(() => console.log('DB connection has benn established successfully.'))
     .catch(err => console.error('Unable to connect DB!: ' + err));
 
-sequelize.addModels([Solution]);
+sequelize.addModels([LSolution]);
 
 sequelize.sync();
 
@@ -59,7 +59,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/solution', async (req, res, next) => {
-    const solutions = await Solution.findAll();
+    const solutions = await LSolution.findAll();
     res.json({ solutions });
 });
 
@@ -75,14 +75,14 @@ app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 
 app.use('/public', express.static('web/dist'));
 
-const generateKey = (model: Solution) => `solution_${model.solver}_${model.program_id}_${model.id}`;
+const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
 
 app.post('/solution', (req, res, next) => {
     const solver = req.body['solver'] ||  'unknown';
-    const program_id = req.body['program'] || 0;
+    const task_id = req.body['task'] || 0;
     const score = req.body['score'] || 0.0;
 
-    const solution = new Solution({ solver, program_id, score });
+    const solution = new LSolution({ solver, task_id, score });
 
     solution.save().then((model) => {
         console.log('created object ' + model);
@@ -114,11 +114,11 @@ app.post('/solution', (req, res, next) => {
 app.get('/solution/:id', async (req, res, next) => {
     const id = req.params['id'];
 
-    const best = await Solution.findOne({
-        attributes: ['id', 'solver', 'program_id'],
-        where: { program_id: id },
-        order: [['score', 'DESC']]
-    });
+    const best = await LSolution.findOne({
+        attributes: ['id', 'solver', 'task_id'],
+        where: { task_id: id },
+        order: [['score', 'ASC']]
+    }).catch((e) => { throw e });
 
     const s3 = new AWS.S3();
     const key = generateKey(best); 
