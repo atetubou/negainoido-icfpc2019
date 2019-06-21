@@ -5,6 +5,7 @@ cc_binary(
         "//base",
         "//base:ai",
         "//base:flags",
+        "//base:graph",
         "@com_google_glog//:glog",
     ],
 )
