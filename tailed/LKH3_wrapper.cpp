@@ -70,7 +70,12 @@ vector<int> SolveTSPByLKH3(const dist_matrix_t &d, const char *path_to_LKH3) {
 	string sh = path_to_LKH3;
 	sh += " ";
 	sh += file_par_name;
-	system(sh.c_str());
+	int res = system(sh.c_str());
+
+	if (res != 0) {
+		cerr << "Error while running LKH3" << endl;
+		exit(res);
+	}
 
 
 	/* Example output:
@@ -106,10 +111,10 @@ EOF
 
 }
 
-
+/*
 int main() {
 	dist_matrix_t v(3, vector<int>(3, 1));
 	for(int i=0; i<3; i++) v[i][i] = 0;
 	SolveTSPByLKH3(v, "./LKH");
 }
-
+*/
