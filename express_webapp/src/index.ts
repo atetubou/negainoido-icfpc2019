@@ -111,6 +111,69 @@ app.post('/solution', (req, res, next) => {
     });
 });
 
+const getBestSolution = (taskId: number) => {
+    return LSolution.findOne({
+        attributes: ['id', 'solver', 'task_id'],
+        where: { task_id: taskId },
+        order: [['score', 'ASC']]
+    }).then((model) => {
+        const s3 = new AWS.S3();
+        const key = generateKey(model); 
+        
+        const params = {
+            Bucket: defaultBucket,
+            Key: key,
+        };
+        return new Promise((resolve, reject) => {
+            s3.getObject(params, (err, data) => {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(data);
+                }
+            });
+        });
+    });
+};
+
+import * as archiver from 'archiver';
+import {GetObjectOutput} from "aws-sdk/clients/s3";
+import {Readable} from "stream";
+
+const formatNumber =(n: number) => {
+    let tmp = n;
+    let nnn = '';
+    nnn +=  tmp / 100;
+    tmp %= 100;
+    nnn += tmp / 10;
+    tmp %= 10;
+    nnn += tmp;
+    return tmp;
+};
+
+app.get('/solution/best/zip', async (req, res, next) => {
+    const archive = archiver('zip');
+    let promises: Promise<GetObjectOutput>[] = [];
+    res.attachment('solutions.zip');
+    archive.pipe(res);
+    for (let i = 1; i <= 2; i++) {
+        promises.push(getBestSolution(i));
+    }
+    Promise.all(promises).then((solutions) => {
+        solutions.forEach((solution, i) => {
+            const name = `prob-${formatNumber(i+1)}.sol`;
+            archive.append(solution.Body as Readable, { name });
+        });
+    })
+        .then(() => {
+            return archive.finalize();
+        })
+        .catch((e) => {
+            console.error(e);
+            res.status(500);
+            res.json({ error: e });
+        });
+});
 app.get('/solution/best/:id', async (req, res, next) => {
     const id = parseInt(req.params['id']);
 
