@@ -1,23 +1,26 @@
 #!/bin/bash
 
+set -e
+
 cd $(dirname $0)
 
 if [[ -z $1 ]]; then
     echo "
 Usage:
 
-\$ $0 <cc_binary name in BUILD>
+$ $0 <main source file>
 
 e.g.
 
-$ $0 tikuta_solver
+$ $0 tikuta_solver/main.cc
 
 " 1>&2
     exit 1
 fi
 
 
-target=$(bazel query "kind(\"cc_binary\", $1)")
+fullname=$(bazel query $1)
+target=$(bazel query "attr('srcs', $fullname, ${fullname//:*/}:*)")
 
 bazel build $target
 
