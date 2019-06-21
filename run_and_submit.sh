@@ -26,7 +26,7 @@ bazel build $target
 
 solver=./bazel-bin/$(echo $target | sed -e 's$:$/$g' -e 's$//$$g')
 
-for task in `seq -w 1 150`
+for task in `seq -w 1 220`
 do
     $solver < part-1-initial/prob-$task.in > ans
     score=$(grep -o '[A-Z]' ans | wc -l)
