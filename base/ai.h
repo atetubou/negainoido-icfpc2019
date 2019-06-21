@@ -27,8 +27,8 @@ public:
   std::vector<Position> manipulator_range = {
     {0, 0},
     {1, 1},
-    {1, 0},
-    {1, -1},
+    {0, 1},
+    {-1, 1},
   };
 
   uint32_t count_fast = 0;
@@ -63,7 +63,7 @@ public:
   uint32_t get_time();
   Position get_pos();
   Direction get_dir();
-  std::vector<Position> get_range();
+  std::vector<Position> get_absolute_manipulator_positions();
   uint32_t get_count_fast();
   uint32_t get_count_drill();
   uint32_t get_count_extension();

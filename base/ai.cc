@@ -38,9 +38,6 @@ bool AI::reachable(Position target) {
         const uint32_t dy[] = {cy, cy, cy+1, cy+1};
         Line edge({(double)dx[i], (double)dy[i]}, {(double)dx[(i+1)%4], (double)dy[(i+1)%4]});
 
-        if (x == 0 && y == 2 && cx == 0 && cy ==1)
-          std::cout<< l[0] << " " << l[1] << " " << edge[0]<< " " << edge[1] << std::endl;
-
         if (intersectSS(l, edge))
           return false;
       }
@@ -80,10 +77,10 @@ AI::AI() {
 bool AI::fill_cell(Position pos) {
   uint32_t x = pos.first;
   uint32_t y = pos.second;
-  if (filled[x][y]) {
+  if (!reachable(pos)) {
     return false;
   }
-  if (!reachable(pos)) {
+  if (filled[x][y]) {
     return false;
   }
   filled[x][y] = true;
@@ -128,9 +125,36 @@ void AI::turn_CCW() {
   worker.current_dir =
     static_cast<Direction>( ( static_cast<int>(worker.current_dir) - 1 ) % 4 );
 }
-//
-// public:
-//   std::vector<Position> get_range();
+
+std::vector<Position> AI::get_absolute_manipulator_positions() {
+
+  Position self = get_pos();
+  std::vector<Position> ret;
+
+  for (Position&p : worker.manipulator_range) {
+    Position mani;
+    switch (get_dir()) {
+      case Direction::Right:
+        mani = { self.first + p.first, self.second + p.second };
+        break;
+      case Direction::Up:
+        mani = { self.first - p.second, self.second + p.first };
+        break;
+      case Direction::Left:
+        mani = { self.first - p.first, self.second - p.second };
+        break;
+      case Direction::Down:
+        mani = { self.first + p.second, self.second - p.first };
+        break;
+      default:
+        assert(false);
+        break;
+    }
+    ret.push_back(mani);
+  }
+  return ret;
+}
+
 //   bool move(const Direction &dir);
 //   bool use_extension(const int dx, const int dy);
 //   bool use_fast_wheel();
