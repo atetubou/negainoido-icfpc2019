@@ -31,25 +31,25 @@ public:
     {-1, 1},
   };
 
-  uint32_t count_fast = 0;
-  uint32_t count_drill = 0;
-  uint32_t count_extension = 0;
+  int count_fast = 0;
+  int count_drill = 0;
+  int count_extension = 0;
 
   // Remaining duration for each drill's effect.
-  static const uint32_t DURATION_FAST_MAX = 50;
-  static const uint32_t DURATION_DRILL_MAX = 30;
-  uint32_t duration_drill = 0;
-  uint32_t duration_fast = 0;
+  static const int DURATION_FAST_MAX = 50;
+  static const int DURATION_DRILL_MAX = 30;
+  int duration_drill = 0;
+  int duration_fast = 0;
 };
 
 class AI {
   static const int32_t H_MAX = 1000;
-  uint32_t current_time = 0;
-  uint32_t height = 0;
-  uint32_t width = 0;
+  int current_time = 0;
+  int height = 0;
+  int width = 0;
 
-  uint32_t filled_count = 0;
-  uint32_t block_count = 0;
+  int filled_count = 0;
+  int block_count = 0;
 
   bool fill_cell(Position);
 
@@ -68,22 +68,22 @@ public:
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
 
-  uint32_t get_height();
-  uint32_t get_width();
+  int get_height();
+  int get_width();
 
   // Gets current time
-  uint32_t get_time();
+  int get_time();
   // Gets the current position
   Position get_pos();
   // Gets the current direction
   Direction get_dir();
   // Gets the current direction
-  uint32_t get_filled_count();
+  int get_filled_count();
 
   // Gets the number of available boosters
-  uint32_t get_count_fast();
-  uint32_t get_count_drill();
-  uint32_t get_count_extension();
+  int get_count_fast();
+  int get_count_drill();
+  int get_count_extension();
 
   // Returns the position that is next to the current position.
   Position get_neighbor(const Direction &dir);
