@@ -81,6 +81,7 @@ app.post('/solution', (req, res, next) => {
     const solver = req.body['solver'] ||  'unknown';
     const task_id = parseInt(req.body['task']) || 0;
     const score = req.body['score'] || Infinity;
+    const data = (req.files!.file as fileUpload.UploadedFile).data;
 
     const solution = new LSolution({ solver, task_id, score });
 
@@ -89,12 +90,13 @@ app.post('/solution', (req, res, next) => {
         const params = {
             Bucket: defaultBucket,
             Key: generateKey(model),
-            Body: (req.files!.file as fileUpload.UploadedFile).data,
+            Body: data,
         };
         const s3 = new AWS.S3();
 
         s3.putObject(params, (err, data) => {
             if (err) {
+                LSolution.destroy({ where: { id: model.id }}).catch(() => {});
                 console.error('faield to upload: ' + err);
                 res.status(500);
                 res.json({ error: err });
@@ -156,7 +158,7 @@ app.get('/solution/best/zip', async (req, res, next) => {
     let promises: Promise<GetObjectOutput>[] = [];
     res.attachment('solutions.zip');
     archive.pipe(res);
-    for (let i = 1; i <= 2; i++) {
+    for (let i = 1; i <= 150; i++) {
         promises.push(getBestSolution(i));
     }
     Promise.all(promises).then((solutions) => {
@@ -206,7 +208,7 @@ app.get('/solution/best/:id', async (req, res, next) => {
             res.status(500);
             res.json({ error: err });
         } else {
-            res.set('Content-Type', data.ContentType)
+            res.set('Content-Type', data.ContentType);
             res.set('Content-Disposition', 'attachment; filename='+key);
             res.set('Content-Length', data.ContentLength.toString());
             res.end(data.Body, 'binary');
