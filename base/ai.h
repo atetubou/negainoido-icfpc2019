@@ -5,7 +5,7 @@
 #include "absl/strings/string_view.h"
 
 enum class Direction {
-  Right,
+  Right = 0,
   Down,
   Left,
   Up,
@@ -43,9 +43,12 @@ public:
 };
 
 class AI {
-
   static const int32_t H_MAX = 1000;
   uint32_t current_time = 0;
+  uint32_t height = 0;
+  uint32_t width = 0;
+
+  uint32_t filled_count = 0;
 
   bool fill_cell(Position);
 
@@ -55,27 +58,39 @@ class AI {
 
   bool valid_pos(Position);
 
+  std::vector<std::string> executed_cmds;
+
 public:
 
   bool reachable(Position);
 
   AI();
 
-  uint32_t h, w;
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
+
+  uint32_t get_height();
+  uint32_t get_width();
   uint32_t get_time();
   Position get_pos();
   Direction get_dir();
-  std::vector<Position> get_absolute_manipulator_positions();
+  uint32_t get_filled_count();
   uint32_t get_count_fast();
   uint32_t get_count_drill();
   uint32_t get_count_extension();
 
+  std::vector<Position> get_absolute_manipulator_positions();
+
+  // Execute a command
   bool move(const Direction &dir);
   bool use_extension(const int dx, const int dy);
   bool use_fast_wheel();
   bool use_drill();
   void turn_CW();
   void turn_CCW();
+
+  // Checks if get_filled_count() == Height * Width
+  bool is_finished();
+  // Outputs commands to stdout
+  void write_commands();
 };
