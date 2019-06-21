@@ -1,4 +1,4 @@
-// vim-compile: bazel build --verbose_failures //tailed/... && ../bazel-bin/tailed/tailed < ../part-1-initial/prob-001.in --LKH3path ./LKH
+// vim-compile: bazel build --verbose_failures //tailed/... && ../bazel-bin/tailed/tailed < ../part-1-initial/prob-002.in --LKH3path ./LKH
 
 
 #include <bits/stdc++.h>
@@ -170,15 +170,17 @@ void fill_for(const node_t &target) {
 	lastop[start_st] = 0;
 	parent[start_st] = start_st;
 	state_t last = start_st;
+	bool done = false;
 	while(!q.empty()) {
 		state_t st = q.front();
 		q.pop();
 
-//		cout << st.pos.first << " " << st.pos.second << " " << st.dir << endl;
-		bool done = false;
+		cerr << st.pos.first << " " << st.pos.second << " " << st.dir << endl;
 		for(auto d : manipulator) {
 			node_t v = add(st.pos, rotate(d, st.dir));
 			if (v == target) {
+//				cerr << v.first << " " << v.second << " " << st.dir << endl;
+//				cerr << target.first << " " << target.second << endl;
 				last = st;
 				done = true;
 				break;
@@ -210,15 +212,15 @@ void fill_for(const node_t &target) {
 		}
 
 	}
-	int cnt = 0;
+	if (!done) {
+		LOG(FATAL) << "Cannot find a way" << endl;
+	}
 
 	vector<char> operations;
 	state_t v = last;
+//	cerr << v.pos.first << " " << v.pos.second << " " << v.dir << " " << lastop[v] << endl;
 	while(lastop[v] != 0) {
-//		cout << v.pos.first << " " << v.pos.second << " " << v.dir << " " << lastop[v] << endl;
-		if (cnt++ == 10) {
-			exit(0);
-		}
+//		cerr << v.pos.first << " " << v.pos.second << " " << v.dir << " " << lastop[v] << endl;
 		operations.push_back(lastop[v]);
 		v = parent[v];
 	}
@@ -273,6 +275,7 @@ int main(int argc, char *argv[]) {
 			start = node_t(x, y);
 		}
 	}
+	cur_pos = start;
 
 	initialize_manipulator();
 
