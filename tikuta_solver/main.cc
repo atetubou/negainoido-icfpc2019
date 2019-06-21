@@ -22,7 +22,7 @@ using board = std::vector<std::string>;
 
 int dx[] = {0, 0, -1, 1};
 int dy[] = {1, -1, 0, 0};
-char dir[] = "WSDA";
+char dir[] = "WSAD";
 
 void dfs(int sx, int sy, board* b, int* cnt) {
   (*b)[sy][sx] = '#';
