@@ -1,3 +1,12 @@
+/*
+
+example usage:
+$ bazel build //tikuta_solver/...
+$ ./bazel-bin/tikuta_solver/tikuta_solver --problem part-1-initial/prob-001.in
+WWASSAWWASSAWWASSWAADDWDSSDWWDSSDWWDSS
+*/
+
+
 #include <algorithm>
 #include <fstream>
 #include <iostream>
