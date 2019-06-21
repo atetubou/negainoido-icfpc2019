@@ -38,8 +38,8 @@ public:
   // Remaining duration for each drill's effect.
   static const uint32_t FAST_DURATION_MAX = 50;
   static const uint32_t DRILL_DURATION_MAX = 30;
-  uint32_t drill_duration = 0;
-  uint32_t fast_duration = 0;
+  uint32_t duration_drill = 0;
+  uint32_t duration_fast = 0;
 };
 
 class AI {
@@ -50,6 +50,10 @@ class AI {
   bool fill_cell(Position);
 
   Worker worker;
+
+  void next_turn();
+
+  bool valid_pos(Position);
 
 public:
 

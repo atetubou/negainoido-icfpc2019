@@ -10,11 +10,16 @@ Worker::Worker(Position pos) {
   current_pos = pos;
 }
 
+bool AI::valid_pos(Position target) {
+  uint32_t x = target.first;
+  uint32_t y = target.second;
+  return 0 <= x && x < h && 0 <= y && y < w;
+}
 
 bool AI::reachable(Position target) {
   uint32_t x = target.first;
   uint32_t y = target.second;
-  if (!(0 <= x && x < h && 0 <= y && y < w))
+  if (!valid_pos(target))
     return false;
 
   if (board[x][y] == '#')
@@ -98,6 +103,9 @@ bool AI::fill_cell(Position pos) {
     default:
       break;
   }
+
+  filled[x][y] = true;
+
   return true;
 }
 
@@ -153,6 +161,40 @@ std::vector<Position> AI::get_absolute_manipulator_positions() {
     ret.push_back(mani);
   }
   return ret;
+}
+
+void AI::next_turn() {
+  current_time++;
+  worker.duration_drill = std::max(0u, worker.duration_drill-1);
+  worker.duration_fast = std::max(0u, worker.duration_fast-1);
+}
+
+bool AI::move(const Direction &dir) {
+  const int dx[] = {0,1, 0,-1};
+  const int dy[] = {1,0,-1, 0};
+  int idx = static_cast<uint32_t>(dir);
+  Position next_pos(worker.current_pos.first + dx[idx],
+                    worker.current_pos.second + dy[idx]);
+
+  // Check validity
+  if (!valid_pos(next_pos))
+    return false;
+
+  if (board[next_pos.first][next_pos.second] == '#' && worker.duration_drill == 0)
+    return false;
+
+  // Move
+  worker.current_pos = next_pos;
+
+  // Pick up items
+  for(auto p: get_absolute_manipulator_positions()) {
+    fill_cell(p);
+  }
+
+  // Update time
+  next_turn();
+
+  return true;
 }
 
 //   bool move(const Direction &dir);
