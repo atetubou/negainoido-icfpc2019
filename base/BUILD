@@ -20,8 +20,19 @@ cc_library(
 )
 
 cc_library(
-    name = "world",
-    hdrs = ["world.h"],
-    srcs = ["world.cc"],
-    deps = []
+    name = "ai",
+    hdrs = ["ai.h"],
+    srcs = ["ai.cc"],
+    deps = [
+        "@com_google_absl//absl/strings",
+        ":base",
+    ]
+)
+
+cc_binary(
+    name = "main",
+    srcs = ["main.cc"],
+    deps = [
+        ":ai",
+    ]
 )
