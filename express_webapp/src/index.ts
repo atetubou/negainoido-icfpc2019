@@ -63,8 +63,12 @@ app.get('/solution', async (req, res, next) => {
     res.json({ solutions });
 });
 
+app.get('/stat/api', async (req, res, next) => {
+    res.json({ ['hello'] });
+});
+
 app.get('/stat', (req, res, next) => {
-    res.json({ 'hello': '!' });
+    res.render('index', {title: 'Express'});
 });
 
 
