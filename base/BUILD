@@ -20,12 +20,21 @@ cc_library(
 )
 
 cc_library(
+    name = "geometry",
+    hdrs = ["geometry.h"],
+    srcs = ["geometry.cc"],
+    deps = [
+    ]
+)
+
+cc_library(
     name = "ai",
     hdrs = ["ai.h"],
     srcs = ["ai.cc"],
     deps = [
         "@com_google_absl//absl/strings",
         ":base",
+        ":geometry",
     ]
 )
 
