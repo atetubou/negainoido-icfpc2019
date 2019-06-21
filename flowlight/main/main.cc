@@ -161,7 +161,47 @@ string get_move(GraphDistance &gd, const int src_index, int dst_index) {
     }
   }
   return res;
+}
 
+void cover(int index, const vector<string> &board, set<int> &covered_vertices) {
+  Position position = to_position(index);
+  const int H = board.size();
+  const int W = board[0].size();
+  const int h = position.first;
+  const int w = position.second;
+  if (w + 1 < W) {
+    if (h > 0 && board[h - 1][w + 1] != '#') {
+      covered_vertices.insert(to_index(h - 1, w + 1));
+    }
+    if (board[h][w + 1] != '#') {
+      covered_vertices.insert(to_index(h, w + 1));
+    }
+    if (h + 1 < H && board[h + 1][w + 1] != '#') {
+      covered_vertices.insert(to_index(h + 1, w + 1));
+    }
+  }
+}
+
+bool is_wrapped(int index, const vector<string> &board, const set<int> &wrapped_vertices) {
+  Position position = to_position(index);
+  const int H = board.size();
+  const int W = board[0].size();
+  const int h = position.first;
+  const int w = position.second;
+  if (wrapped_vertices.count(index) == 0) return false;
+
+  if (w + 1 < W) {
+    if (h > 0 && board[h - 1][w + 1] != '#') {
+      if (wrapped_vertices.count(to_index(h - 1, w + 1)) == 0) return false;
+    }
+    if (board[h][w + 1] != '#') {
+      if (wrapped_vertices.count(to_index(h, w + 1)) == 0) return false;
+    }
+    if (h + 1 < H && board[h + 1][w + 1] != '#') {
+      if (wrapped_vertices.count(to_index(h + 1, w + 1)) == 0) return false;
+    }
+  }
+  return true;
 }
 
 int dh[] = {-1, 0, 1, 0};
@@ -202,17 +242,7 @@ int main(int argc, char** argv) {
     if (h % 3 == 1 && board[h][w] != '#') {
       required_vertices.insert(to_index(h, w));
       covered_vertices.insert(to_index(h, w));
-      if (h > 0 && board[h - 1][w + 1] != '#') {
-        covered_vertices.insert(to_index(h - 1, w + 1));
-      }
-
-      if (board[h][w + 1] != '#') {
-        covered_vertices.insert(to_index(h, w + 1));
-      }
-
-      if (h + 1 < H && board[h + 1][w + 1] != '#') {
-        covered_vertices.insert(to_index(h + 1, w + 1));
-      }
+      cover(to_index(h, w), board, covered_vertices);
     }
   }
 
@@ -220,19 +250,7 @@ int main(int argc, char** argv) {
     int index = to_index(h, w);
     if (board[h][w] != '#' && covered_vertices.count(index) == 0) {
       required_vertices.insert(index);
-      if (w + 1 < W) {
-        if (h > 0 && board[h - 1][w + 1] != '#') {
-          covered_vertices.insert(to_index(h - 1, w + 1));
-        }
-
-        if (board[h][w + 1] != '#') {
-          covered_vertices.insert(to_index(h, w + 1));
-        }
-
-        if (h + 1 < H && board[h + 1][w + 1] != '#') {
-          covered_vertices.insert(to_index(h + 1, w + 1));
-        }
-      }
+      cover(index, board, covered_vertices);
     }
   }
 
@@ -270,21 +288,39 @@ int main(int argc, char** argv) {
   
   string res = "";
   vector<Edge> edge_order = compute_traversal(start_index, G);
-  set<int> visited_indices;
+
+  set<int> visited_indices, wrapped_indices;
   visited_indices.insert(start_index);
+  cover(start_index, board, wrapped_indices);
   int prev_index = start_index;
-  int count = 0;
+  
   for (const auto &e: edge_order) {
     int next_index = e.dst_index;
-    if (visited_indices.count(next_index) == 0) {
+    if (visited_indices.count(next_index) == 0 && !is_wrapped(next_index, board, wrapped_indices)) {
       const string command = get_move(original_gd, prev_index, next_index);
+      int curr_index = prev_index;
+      for (char c: command) {
+        int h = to_position(curr_index).first;
+        int w = to_position(curr_index).second;
+        switch(c) {
+        case 'W': h++; break;
+        case 'S': h--; break;
+        case 'A': w--; break;
+        case 'D': w++; break;
+        default:
+          LOG_IF(FATAL, true);
+        }
+        curr_index = to_index(h, w);
+        visited_indices.insert(curr_index);
+        cover(curr_index, board, wrapped_indices);
+      }
+      LOG_IF(FATAL, curr_index != next_index);
       res += command;
       visited_indices.insert(next_index);
       prev_index = next_index;
-      count++;
     }
 
-    if (visited_indices.size() == target_count) {
+    if (wrapped_indices.size() == target_count) {
       break;
     }
   }
