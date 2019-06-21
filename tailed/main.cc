@@ -1,11 +1,4 @@
-// vim-compile: bazel build --verbose_failures //tailed/...
-/*
-
-example usage:
-$ bazel build //tikuta_solver/...
-$ ./bazel-bin/tikuta_solver/tikuta_solver --problem part-1-initial/prob-001.in
-WWASSAWWASSAWWASSWAADDWDSSDWWDSSDWWDSS
-*/
+// vim-compile: bazel build --verbose_failures //tailed/... && ../bazel-bin/tailed/tailed < ../part-1-initial/prob-001.in --LKH3path ./LKH
 
 
 #include <bits/stdc++.h>
@@ -62,6 +55,9 @@ int main(int argc, char *argv[]) {
 	google::InitGoogleLogging(argv[0]);
 	google::InstallFailureSignalHandler();
 
+	if (FLAGS_LKH3path == "") {
+		LOG(FATAL) << "Please specify LKH path" << endl;
+	}
 
 
 	int h, w;
