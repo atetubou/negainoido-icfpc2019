@@ -79,8 +79,8 @@ const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task
 
 app.post('/solution', (req, res, next) => {
     const solver = req.body['solver'] ||  'unknown';
-    const task_id = req.body['task'] || 0;
-    const score = req.body['score'] || 0.0;
+    const task_id = parseInt(req.body['task']) || 0;
+    const score = req.body['score'] || Infinity;
 
     const solution = new LSolution({ solver, task_id, score });
 
@@ -111,15 +111,25 @@ app.post('/solution', (req, res, next) => {
     });
 });
 
-app.get('/solution/:id', async (req, res, next) => {
-    const id = req.params['id'];
+app.get('/solution/best/:id', async (req, res, next) => {
+    const id = parseInt(req.params['id']);
 
     const best = await LSolution.findOne({
         attributes: ['id', 'solver', 'task_id'],
         where: { task_id: id },
         order: [['score', 'ASC']]
-    }).catch((e) => { throw e });
+    }).catch((e) => {
+        console.error("DB error" + e);
+        res.status(500);
+        res.json({ error: e });
+    });
 
+    if (!best) {
+        console.error("error");
+        res.status(500);
+        res.json({});
+        return;
+    }
     const s3 = new AWS.S3();
     const key = generateKey(best); 
     

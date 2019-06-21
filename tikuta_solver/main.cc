@@ -22,12 +22,15 @@ using board = std::vector<std::string>;
 
 int dx[] = {0, 0, -1, 1};
 int dy[] = {1, -1, 0, 0};
-char dir[] = "WSDA";
+char dir[] = "WSAD";
 
 void dfs(int sx, int sy, board* b, int* cnt) {
   (*b)[sy][sx] = '#';
   --*cnt;
-  if (*cnt == 0) return;
+  if (*cnt == 0) {
+    std::cout << std::endl;
+    exit(0);
+  }
 
   int w = (*b)[0].size();
   int h = b->size();
@@ -80,5 +83,4 @@ int main(int argc, char *argv[]) {
   }
 
   dfs(sx, sy, &in, &cnt);
-  std::cout << std::endl;
 }
