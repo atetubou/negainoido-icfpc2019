@@ -23,6 +23,7 @@ public:
   Direction current_dir = Direction::Right;
   Position current_pos;
 
+  // relative position when Right
   std::vector<Position> manipulator_range = {
     {0, 0},
     {1, 1},
@@ -46,6 +47,8 @@ class AI {
   static const int32_t H_MAX = 1000;
   uint32_t current_time = 0;
 
+  bool fill_cell(Position);
+
   Worker worker;
 
 public:
@@ -54,6 +57,7 @@ public:
 
   uint32_t h, w;
   std::vector<std::string> board;
+  std::vector<std::vector<bool>> filled;
   uint32_t get_time();
   Position get_pos();
   Direction get_dir();

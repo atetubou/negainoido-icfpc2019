@@ -21,7 +21,16 @@ AI::AI() {
       }
     }
   }
+  filled.resize(h);
+  for (uint32_t i = 0; i < h; ++i) filled[i].resize(w);
+
   worker = Worker(worker_pos);
+
+  for (auto&p : worker.manipulator_range) {
+    auto x = worker.current_pos.first + p.first;
+    auto y = worker.current_pos.second + p.second;
+    fill_cell(x, y);
+  }
 }
 
 uint32_t AI::get_time() {
