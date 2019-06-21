@@ -73,8 +73,9 @@ app.get('/stat/api', async (req, res, next) => {
         let score = sol['score'];
         let created = sol['created'];
         let updatedAt = sol['updatedAt'];
-        if (!stat[task_id] || stat[task_id]['best'] || stat[task_id].best.score > score) {
-            stat[task_id].best = sol;
+        if (!stat[task_id]) { stat[task_id] = {}; }
+        if (!stat[task_id]['best'] || stat[task_id].best.score > score) {
+            stat[task_id]['best'] = sol;
         }
     }
     res.json({ stat });
