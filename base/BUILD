@@ -18,3 +18,10 @@ cc_library(
         "@com_github_gflags_gflags//:gflags",
     ]
 )
+
+cc_library(
+    name = "world",
+    hdrs = ["world.h"],
+    srcs = ["world.cc"],
+    deps = []
+)
