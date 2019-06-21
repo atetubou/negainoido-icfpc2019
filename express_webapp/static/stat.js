@@ -60,4 +60,5 @@ function load_data() {
   xhr.send();
 }
 
+setTimeout(load_data, 500);
 setInterval(load_data, 20000);
