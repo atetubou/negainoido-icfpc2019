@@ -16,7 +16,8 @@ WWASSAWWASSAWWASSWAADDWDSSDWWDSSDWWDSS
 #include <glog/logging.h>
 #include <gflags/gflags.h>
 
-DEFINE_string(problem, "","");
+DEFINE_string(problem, "", "");
+DEFINE_string(solution, "", "");
 
 using board = std::vector<std::string>;
 
@@ -24,11 +25,13 @@ int dx[] = {0, 0, -1, 1};
 int dy[] = {1, -1, 0, 0};
 char dir[] = "WSAD";
 
+std::ofstream fout;
+
 void dfs(int sx, int sy, board* b, int* cnt) {
   (*b)[sy][sx] = '#';
   --*cnt;
   if (*cnt == 0) {
-    std::cout << std::endl;
+    fout << std::endl;
     exit(0);
   }
 
@@ -44,7 +47,7 @@ void dfs(int sx, int sy, board* b, int* cnt) {
     if ((*b)[ny][nx] == '#') continue;
     std::cout << dir[i];
     dfs(nx, ny, b, cnt);
-    std::cout << dir[i^1];
+    fout << dir[i^1];
   }
 }
 
@@ -55,6 +58,7 @@ int main(int argc, char *argv[]) {
 
 
   std::ifstream fin(FLAGS_problem);
+  fout = std::ofstream(FLAGS_solution);
 
   int h, w;
   fin >> h >> w;
