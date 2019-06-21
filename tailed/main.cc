@@ -165,10 +165,12 @@ int main(int argc, char *argv[]) {
 
 	string code;
 	for(int i = 0; i < (int)tour.size() - 1; i++) {
-		code += move_from_AtoB(nodes[i], nodes[i+1]);
+		int v = tour[i];
+		int w = tour[i+1];
+		code += move_from_AtoB(nodes[v], nodes[w]);
 
-		cerr << nodes[i].first << " " << nodes[i].second << endl;
-		cerr << move_from_AtoB(nodes[i], nodes[i+1]) << endl;
+		cerr << nodes[v].first << " " << nodes[v].second << endl;
+		cerr << move_from_AtoB(nodes[v], nodes[w]) << endl;
 	}
 
 	cout << code << endl;
