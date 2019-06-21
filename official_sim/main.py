@@ -4,13 +4,15 @@ import re
 import sys
 import os
 
-# example: `python main.py LA001.mdl LA001.nbt`
+# example: `python main.py LA001.desc LA001.sol`
 
-base_path = os.path.dirname(os.path.abspath(__file__))
+script_path = os.path.dirname(os.path.abspath(__file__))
 
 desc = sys.argv[1]
 sol = sys.argv[2]
-url = 'file://' + base_path + '/content/checker.html'
+url = 'file://' + script_path + '/content/checker.html'
+
+base_path = os.getcwd()
 
 if not os.path.isabs(desc):
     desc = os.path.normpath(os.path.join(base_path, desc))
