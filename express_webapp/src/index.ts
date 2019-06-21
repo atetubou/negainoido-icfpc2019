@@ -113,12 +113,16 @@ app.post('/solution', (req, res, next) => {
     });
 });
 
-const getBestSolution = (taskId: number) => {
+const getBestSolutionModel = (taskId: number) => {
     return LSolution.findOne({
         attributes: ['id', 'solver', 'task_id'],
         where: { task_id: taskId },
         order: [['score', 'ASC']]
-    }).then((model) => {
+    });
+};
+
+const getBestSolution = (taskId: number) => {
+    return getBestSolutionModel(taskId).then((model) => {
         const s3 = new AWS.S3();
         const key = generateKey(model); 
         
@@ -176,6 +180,22 @@ app.get('/solution/best/zip', async (req, res, next) => {
             res.json({ error: e });
         });
 });
+
+app.get('/solution/best', async (req, res, next) => {
+    let promises = [];
+    for (let i = 1; i <= 150; i++) {
+        promises.push(getBestSolutionModel(i));
+    }
+    Promise.all(promises).then((solutions) => {
+        res.json({ solutions });
+    })
+        .catch((e) => {
+            console.error(e);
+            res.status(500);
+            res.json({ error: e });
+        });
+});
+
 app.get('/solution/best/:id', async (req, res, next) => {
     const id = parseInt(req.params['id']);
 
