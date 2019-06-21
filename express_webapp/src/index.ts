@@ -1,5 +1,6 @@
 import * as express from 'express';
 import * as path from 'path';
+import * as morgan from 'morgan';
 
 const normalizePort = (val: string) => {
     var port = parseInt(val, 10);
@@ -14,6 +15,12 @@ const normalizePort = (val: string) => {
 
 const app = express();
 const port = normalizePort(process.env.PORT || '3000');
+
+var morgan = require('morgan');
+app.use(morgan('combined'));
+
+console.log(path.join(__dirname, './static'));
+app.use('/static', express.static(path.join(__dirname, './../static')))
 
 app.listen(port);
 app.set('view engine', 'pug');
@@ -96,9 +103,6 @@ AWS.config.update({ region: 'us-east-2' });
 const defaultBucket = process.env.S3_BUCKET || 'negainoido-icfpc2019-dev';
 
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
-
-// app.use('/public', express.static('web/dist'));
-app.use('/public', express.static(path.join(__dirname, './web/dist')))
 
 const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
 
