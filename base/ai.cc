@@ -65,6 +65,8 @@ AI::AI() {
     for (uint32_t j = 0; j < width; ++j) {
       if (board[i][j] == 'W') {
         worker_pos = std::make_pair(i, j);
+      } else if (board[i][j] == '#') {
+        block_count++;
       }
     }
   }
@@ -113,33 +115,37 @@ bool AI::fill_cell(Position pos) {
 uint32_t AI::get_height() { return height; }
 uint32_t AI::get_width() { return width; }
 
-uint32_t AI::get_time() {
-  return current_time;
-}
+uint32_t AI::get_time() { return current_time; }
 
-Position AI::get_pos() {
-  return worker.current_pos;
-}
+Position AI::get_pos() { return worker.current_pos; }
 
-Direction AI::get_dir() {
-  return worker.current_dir;
-}
+Direction AI::get_dir() { return worker.current_dir; }
 
-uint32_t AI::get_filled_count() {
-  return filled_count;
-}
+uint32_t AI::get_filled_count() { return filled_count; }
 
 uint32_t AI::get_count_fast() { return worker.count_fast; }
 uint32_t AI::get_count_drill() { return worker.count_drill; }
 uint32_t AI::get_count_extension() { return worker.count_extension; }
 
+Position AI::get_neighbor(const Direction &dir) {
+  const int dx[] = {0,1, 0,-1};
+  const int dy[] = {1,0,-1, 0};
+  int idx = static_cast<uint32_t>(dir);
+
+  return Position(worker.current_pos.first + dx[idx],
+                  worker.current_pos.second + dy[idx]);
+}
+
 void AI::turn_CW() {
   worker.current_dir =
     static_cast<Direction>( ( static_cast<int>(worker.current_dir) + 1 ) % 4 );
+  executed_cmds.push_back("E");
 }
+
 void AI::turn_CCW() {
   worker.current_dir =
     static_cast<Direction>( ( static_cast<int>(worker.current_dir) - 1 ) % 4 );
+  executed_cmds.push_back("Q");
 }
 
 std::vector<Position> AI::get_absolute_manipulator_positions() {
@@ -173,16 +179,14 @@ std::vector<Position> AI::get_absolute_manipulator_positions() {
 
 void AI::next_turn() {
   current_time++;
-  worker.duration_drill = std::max(0u, worker.duration_drill-1);
-  worker.duration_fast = std::max(0u, worker.duration_fast-1);
+  if (worker.duration_drill > 0)
+    worker.duration_drill--;
+  if (worker.duration_fast > 0)
+    worker.duration_fast--;
 }
 
-bool AI::move(const Direction &dir) {
-  const int dx[] = {0,1, 0,-1};
-  const int dy[] = {1,0,-1, 0};
-  int idx = static_cast<uint32_t>(dir);
-  Position next_pos(worker.current_pos.first + dx[idx],
-                    worker.current_pos.second + dy[idx]);
+bool AI::try_move(const Direction &dir) {
+  Position next_pos = get_neighbor(dir);
 
   // Check validity
   if (!valid_pos(next_pos))
@@ -191,21 +195,39 @@ bool AI::move(const Direction &dir) {
   if (board[next_pos.first][next_pos.second] == '#' && worker.duration_drill == 0)
     return false;
 
+  return true;
+}
+
+bool AI::move_body(const Direction &dir) {
+  // Checks if this is a valid move
+  if(!try_move(dir))
+    return false;
+
   // Move
-  worker.current_pos = next_pos;
+  worker.current_pos = get_neighbor(dir);
 
   // Pick up items
   for(auto p: get_absolute_manipulator_positions()) {
     fill_cell(p);
   }
 
+  return true;
+}
+
+bool AI::move(const Direction &dir) {
+  if (!move_body(dir))
+    return false;
+
+  // When FAST booster is enabled, move twice
+  if (worker.duration_fast > 0) {
+    move_body(dir);
+  }
+
   // Push commandx
   const std::string dir2cmd[4] = {
-    "W", "S", "A", "D"
+    "D", "S", "A", "W"
   };
-
   executed_cmds.push_back(dir2cmd[static_cast<uint32_t>(dir)]);
-
 
   // Update time
   next_turn();
@@ -214,21 +236,77 @@ bool AI::move(const Direction &dir) {
 }
 
 bool AI::is_finished() {
-  return get_filled_count() == height * width;
+  return get_filled_count() + block_count == height * width;
 }
 
-void AI::write_commands() {
-  if(!is_finished())
-    return;
-
+void AI::print_commands() {
   for(auto c: executed_cmds) {
     std::cout << c;
   }
   std::cout << std::endl;
 }
 
+bool AI::use_fast_wheel() {
+  if (worker.count_fast == 0)
+    return false;
 
-//   bool use_extension(const int dx, const int dy);
-//   bool use_fast_wheel();
-//   bool use_drill();
-// };
+  worker.duration_fast = Worker::DURATION_FAST_MAX;
+  worker.count_fast--;
+  executed_cmds.push_back("F");
+
+  return true;
+}
+
+bool AI::use_drill() {
+  if (worker.count_drill == 0)
+    return false;
+
+  worker.duration_drill = Worker::DURATION_DRILL_MAX;
+  worker.count_drill--;
+  executed_cmds.push_back("L");
+
+  return true;
+}
+
+bool AI::use_extension(const int dx, const int dy) {
+  if (worker.count_extension == 0)
+    return false;
+
+  bool can_use = false;
+  for(auto m: worker.manipulator_range) {
+    if (std::abs(m.first - dx) + std::abs(m.second - dy)) {
+      can_use = true;
+    }
+  }
+
+  if(!can_use)
+    return false;
+
+  worker.manipulator_range.push_back({dx, dy});
+  worker.count_extension--;
+  auto cmd = "B(" + std::to_string(dx) + "," + std::to_string(dx) + ")";
+  executed_cmds.push_back(cmd);
+
+  return true;
+}
+
+
+void AI::dump_state() {
+  std::cerr << "time: " << current_time << ", filled_count: " << filled_count << std::endl;
+  std::cerr << "pos: (" << worker.current_pos.first << ", " << worker.current_pos.second << ")" << std::endl;
+  std::cerr << "duration: drill=" << worker.duration_drill << ", fast: " << worker.duration_fast << std::endl;
+  auto p = get_pos();
+
+  for(auto i = 0; i < height; ++i) {
+    for(auto j = 0; j < width; ++j) {
+      if(i == p.first && j == p.second) {
+        std::cerr << "@";
+      } else if(filled[i][j]) {
+        std::cerr << "V";
+      } else {
+        std::cerr << board[i][j];
+      }
+    }
+    std::cerr << std::endl;;
+  }
+}
