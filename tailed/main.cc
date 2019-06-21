@@ -101,7 +101,8 @@ int main(int argc, char *argv[]) {
 	google::InstallFailureSignalHandler();
 
 	if (FLAGS_LKH3path == "") {
-		LOG(FATAL) << "Please specify LKH path" << endl;
+		FLAGS_LKH3path = "./tailed/LKH";
+//		LOG(FATAL) << "Please specify LKH path" << endl;
 	}
 
 
