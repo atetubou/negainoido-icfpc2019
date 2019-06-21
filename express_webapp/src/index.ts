@@ -64,7 +64,19 @@ app.get('/solution', async (req, res, next) => {
 });
 
 app.get('/stat/api', (req, res, next) => {
-    res.json({});
+    const solutions = await LSolution.findAll();
+    var stat = [];
+    var best_by_id = {};
+    for (let sol of solutions) {
+        let task_id = sol['task_id'];
+        let score = sol['score'];
+        if (best_by_id[task_id]) {
+            if (best_by_id[task_id].score > score) {
+                best_by_id[task_id] = sol;
+            }
+        }
+    }
+    res.json({ stat });
 });
 
 app.get('/stat', (req, res, next) => {
