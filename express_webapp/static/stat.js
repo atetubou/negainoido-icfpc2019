@@ -1,33 +1,39 @@
 function draw_data(data) {
 
-  var rows = [];
-  for (var i = 0; i < data.length; ++i) {
-    rows[i] = data[i].best;
-  }
+  $("#content-table").tabulator("setData", data);
 
-  var table = new Tabulator("#content", {
-    data: rows,           //load row data from array
-    layout:"fitColumns",      //fit columns to width of table
-    responsiveLayout:"hide",  //hide columns that dont fit on the table
-    tooltips:true,            //show tool tips on cells
-    addRowPos:"top",          //when adding a new row, add it to the top of the table
-    history:true,             //allow undo and redo actions on the table
-    pagination:"local",       //paginate the data
-    paginationSize:7,         //allow 7 rows per page of data
-    movableColumns:true,      //allow column order to be changed
-    resizableRows:true,       //allow row order to be changed
-    initialSort:[             //set the initial sort order of the data
-      {column:"task_id", dir:"asc"},
-    ],
-    columns:[                 //define the table columns
-      {title:"id", field:"id"},
-      {title:"solver", field:"solver"},
-      {title:"task_id", field:"task_id"},
-      {title:"score", field:"score"},
-      {title:"created", field:"created"},
-      {title:"updatedAt", field:"updatedAt"},
-    ],
-  });
+  // var rows = [];
+  // for (var i = 0; i < data.length; ++i) {
+  //   rows[i] = data[i].best;
+  // }
+  //
+  // var table = new Tabulator("#content", {
+  //   data: rows,           //load row data from array
+  //   layout:"fitColumns",      //fit columns to width of table
+  //   responsiveLayout:"hide",  //hide columns that dont fit on the table
+  //   tooltips:true,            //show tool tips on cells
+  //   addRowPos:"top",          //when adding a new row, add it to the top of the table
+  //   history:true,             //allow undo and redo actions on the table
+  //   pagination:"local",       //paginate the data
+  //   paginationSize:7,         //allow 7 rows per page of data
+  //   movableColumns:true,      //allow column order to be changed
+  //   resizableRows:true,       //allow row order to be changed
+  //   initialSort:[             //set the initial sort order of the data
+  //     {column:"task_id", dir:"asc"},
+  //   ],
+  //   columns: [
+  //     {title: "best",
+  //       columns: [
+  //         {title:"id", field:"id"},
+  //         {title:"solver", field:"solver"},
+  //         {title:"task_id", field:"task_id"},
+  //         {title:"score", field:"score"},
+  //         {title:"created", field:"created"},
+  //         {title:"updatedAt", field:"updatedAt"},
+  //       ]
+  //     }
+  //   ]
+  // });
 }
 
 function load_data() {
