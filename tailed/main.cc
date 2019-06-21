@@ -17,6 +17,7 @@ using namespace std;
 int dx[] = {0, 0, -1, 1};
 int dy[] = {1, -1, 0, 0};
 char dir2chr[] = "WSAD";
+char rot2chr[] = "EQ";
 
 
 /*
@@ -28,6 +29,10 @@ char dir[] = "WSAD";
 */
 
 typedef pair<int, int> node_t;
+
+node_t add(const node_t &a, const node_t &b) {
+	return node_t(a.first + b.first, a.second + b.second);
+}
 
 /*
 void dfs(int sx, int sy, board* b, int* cnt) {
@@ -58,6 +63,13 @@ void dfs(int sx, int sy, board* b, int* cnt) {
 
 map<node_t, int> node2id;
 vector<node_t> nodes;
+set<node_t> unfilled_nodes;
+string code; /* answer */
+
+node_t cur_pos;
+int cur_direction;
+set<node_t> manipulator;
+
 
 string move_from_AtoB(const node_t &s, const node_t &t) {
 	queue<pair<int, int>> q;
@@ -95,6 +107,136 @@ string move_from_AtoB(const node_t &s, const node_t &t) {
 	return seq;
 }
 
+node_t rotate(node_t v, int d) {
+	d = (d % 4 + 4) % 4;
+	rep(i, d) {
+		node_t w;
+		w.first = -v.second;
+		w.second = v.first;
+		v = w;
+	}
+	return v;
+}
+
+class state_t{
+public:
+	node_t pos;
+	int dir;
+
+	bool operator <(const state_t &a) const {
+		return make_pair(pos, dir) < make_pair(a.pos, a.dir);
+	}
+
+	state_t() : dir(0) {}
+	state_t(node_t pos, int dir) : pos(pos), dir(dir) {}
+};
+
+void do_operation(char op) {
+	cerr << op << endl;
+	code += op;
+	string::size_type d = string(dir2chr).find(op);
+	if (d == string::npos) {
+		if (op == 'Q') {
+			cur_direction = (cur_direction + 1) % 4;
+		} else if (op == 'E') {
+			cur_direction = (cur_direction - 1 + 4) % 4;
+		} else {
+			LOG(FATAL) << "Unexpected operation" << endl;
+		}
+	} else {
+		cur_pos.first += dx[d];
+		cur_pos.second += dy[d];
+	}
+
+	for(auto d : manipulator) {
+		node_t v = add(cur_pos, rotate(d, cur_direction));
+		unfilled_nodes.erase(v);
+	}
+}
+
+/* fill target */
+void fill_for(const node_t &target) {
+	for(auto d : manipulator) {
+		node_t v = add(cur_pos, rotate(d, cur_direction));
+		unfilled_nodes.erase(v);
+	}
+	if (!unfilled_nodes.count(target)) return;
+
+	queue<state_t> q;
+	map<state_t, char> lastop;
+	map<state_t, state_t> parent;
+	state_t start_st(cur_pos, cur_direction);
+	q.push(start_st);
+	lastop[start_st] = 0;
+	parent[start_st] = start_st;
+	state_t last = start_st;
+	while(!q.empty()) {
+		state_t st = q.front();
+		q.pop();
+
+//		cout << st.pos.first << " " << st.pos.second << " " << st.dir << endl;
+		bool done = false;
+		for(auto d : manipulator) {
+			node_t v = add(st.pos, rotate(d, st.dir));
+			if (v == target) {
+				last = st;
+				done = true;
+				break;
+			}
+		}
+		if (done) {
+			break;
+		}
+
+		/* move */
+		rep(d, 4) {
+			node_t w(st.pos.first + dx[d], st.pos.second + dy[d]);
+			state_t next_st(w, st.dir);
+			if (node2id.count(w) && !parent.count(next_st)) {
+				lastop[next_st] = dir2chr[d];
+				parent[next_st] = st;
+				q.push(next_st);
+			}
+		}
+
+		/* rotate */
+		rep(r, 2) {
+			state_t next_st(st.pos, (st.dir + 2*r-1 + 4) % 4);
+			if (!parent.count(next_st)) {
+				lastop[next_st] = rot2chr[r];
+				parent[next_st] = st;
+				q.push(next_st);
+			}
+		}
+
+	}
+	int cnt = 0;
+
+	vector<char> operations;
+	state_t v = last;
+	while(lastop[v] != 0) {
+//		cout << v.pos.first << " " << v.pos.second << " " << v.dir << " " << lastop[v] << endl;
+		if (cnt++ == 10) {
+			exit(0);
+		}
+		operations.push_back(lastop[v]);
+		v = parent[v];
+	}
+	reverse(operations.begin(), operations.end());
+
+	for(auto op : operations) {
+		do_operation(op);
+	}
+	cerr << "FILLED " << target.first << " " << target.second << endl;
+}
+
+void initialize_manipulator() {
+	manipulator.insert(node_t(1, 0));
+	manipulator.insert(node_t(1, 1));
+	manipulator.insert(node_t(1, -1));
+	manipulator.insert(node_t(0, 0));
+}
+
 int main(int argc, char *argv[]) {
 	gflags::ParseCommandLineFlags(&argc, &argv, true);
 	google::InitGoogleLogging(argv[0]);
@@ -123,6 +265,7 @@ int main(int argc, char *argv[]) {
 				node_t v(x, y);
 				nodes.push_back(v);
 				node2id[v] = (int)nodes.size() - 1;
+				unfilled_nodes.insert(v);
 			}
 			if (in[y][x] != 'W') {
 				continue;
@@ -130,6 +273,8 @@ int main(int argc, char *argv[]) {
 			start = node_t(x, y);
 		}
 	}
+
+	initialize_manipulator();
 
 	int n = (int)nodes.size();
 	dist_matrix_t dist(n, vector<int>(n, 0));
@@ -164,16 +309,12 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	string code;
-	for(int i = 0; i < (int)tour.size() - 1; i++) {
+	for(int i = 0; i < (int)tour.size(); i++) {
 		int v = tour[i];
-		int w = tour[i+1];
-		code += move_from_AtoB(nodes[v], nodes[w]);
-
-		cerr << nodes[v].first << " " << nodes[v].second << endl;
-		cerr << move_from_AtoB(nodes[v], nodes[w]) << endl;
+		fill_for(nodes[v]);
 	}
 
+	cerr << "solution size: " << code.size() << endl;
 	cout << code << endl;
 
 }
