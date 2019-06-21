@@ -145,12 +145,12 @@ import {Readable} from "stream";
 const formatNumber =(n: number) => {
     let tmp = n;
     let nnn = '';
-    nnn +=  tmp / 100;
+    nnn +=  Math.floor(tmp / 100).toString();
     tmp %= 100;
-    nnn += tmp / 10;
+    nnn += Math.floor(tmp / 10).toString();
     tmp %= 10;
-    nnn += tmp;
-    return tmp;
+    nnn += tmp.toString();
+    return nnn;
 };
 
 app.get('/solution/best/zip', async (req, res, next) => {
