@@ -4,7 +4,7 @@ WORKDIR /app
 ADD . .
 RUN . ./setup-secrets.sh
 RUN npm --prefix ./web i ./web
-RUN npm run build --cwd ./web
+RUN npm run build --prefix ./web 
 RUN npm i
 RUN npm run tsc
 CMD npm start
