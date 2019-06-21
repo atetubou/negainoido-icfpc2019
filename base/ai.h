@@ -49,6 +49,7 @@ class AI {
   uint32_t width = 0;
 
   uint32_t filled_count = 0;
+  uint32_t block_count = 0;
 
   bool fill_cell(Position);
 
@@ -84,12 +85,19 @@ public:
   uint32_t get_count_drill();
   uint32_t get_count_extension();
 
+  // Returns the position that is next to the current position.
+  Position get_neighbor(const Direction &dir);
+
   // Gets the all (possible) positions of manipulators.
   // It may be in invalid postion. (e.g. out of the map, unreachable postion)
   std::vector<Position> get_absolute_manipulator_positions();
 
   // Checks if pos is 'reachable' from the current position.
   bool reachable(Position pos);
+
+  // Checks if the robot can move to the direction.
+  // This doesn't change any internal state.
+  bool try_move(const Direction &dir);
 
   // Executes a command and updates the internal state.
   // If it's a invalid move, it returns false without changing internal states.
@@ -103,5 +111,9 @@ public:
   // Checks if get_filled_count() == Height * Width
   bool is_finished();
   // Outputs executed commands to stdout
-  void write_commands();
+  void print_commands();
+
+
+  // Prints AI's state for debugging.
+  void dump_state();
 };
