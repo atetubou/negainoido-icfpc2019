@@ -53,3 +53,5 @@ function load_data() {
   };
   xhr.send();
 }
+
+setInterval(load_data, 1000);

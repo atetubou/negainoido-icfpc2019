@@ -88,7 +88,11 @@ app.get('/stat/api', async (req, res, next) => {
             stat[task_id]['best'] = sol;
         }
     }
-    res.json({ stat });
+    var stat_arr = [];
+    for (let key in stat) {
+        stat_arr.push(stat[key]);
+    }
+    res.json({ values: stat_arr });
 });
 
 app.get('/stat', (req, res, next) => {
