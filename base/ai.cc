@@ -113,21 +113,13 @@ bool AI::fill_cell(Position pos) {
 uint32_t AI::get_height() { return height; }
 uint32_t AI::get_width() { return width; }
 
-uint32_t AI::get_time() {
-  return current_time;
-}
+uint32_t AI::get_time() { return current_time; }
 
-Position AI::get_pos() {
-  return worker.current_pos;
-}
+Position AI::get_pos() { return worker.current_pos; }
 
-Direction AI::get_dir() {
-  return worker.current_dir;
-}
+Direction AI::get_dir() { return worker.current_dir; }
 
-uint32_t AI::get_filled_count() {
-  return filled_count;
-}
+uint32_t AI::get_filled_count() { return filled_count; }
 
 uint32_t AI::get_count_fast() { return worker.count_fast; }
 uint32_t AI::get_count_drill() { return worker.count_drill; }
@@ -136,10 +128,13 @@ uint32_t AI::get_count_extension() { return worker.count_extension; }
 void AI::turn_CW() {
   worker.current_dir =
     static_cast<Direction>( ( static_cast<int>(worker.current_dir) + 1 ) % 4 );
+  executed_cmds.push_back("E");
 }
+
 void AI::turn_CCW() {
   worker.current_dir =
     static_cast<Direction>( ( static_cast<int>(worker.current_dir) - 1 ) % 4 );
+  executed_cmds.push_back("Q");
 }
 
 std::vector<Position> AI::get_absolute_manipulator_positions() {
@@ -177,7 +172,7 @@ void AI::next_turn() {
   worker.duration_fast = std::max(0u, worker.duration_fast-1);
 }
 
-bool AI::move(const Direction &dir) {
+bool AI::move_body(const Direction &dir) {
   const int dx[] = {0,1, 0,-1};
   const int dy[] = {1,0,-1, 0};
   int idx = static_cast<uint32_t>(dir);
@@ -199,13 +194,22 @@ bool AI::move(const Direction &dir) {
     fill_cell(p);
   }
 
+  return true;
+}
+
+bool AI::move(const Direction &dir) {
+  if (!move_body(dir))
+    return false;
+
+  if (worker.duration_fast > 0) {
+    move_body(dir);
+  }
+
   // Push commandx
   const std::string dir2cmd[4] = {
     "W", "S", "A", "D"
   };
-
   executed_cmds.push_back(dir2cmd[static_cast<uint32_t>(dir)]);
-
 
   // Update time
   next_turn();
@@ -227,8 +231,46 @@ void AI::write_commands() {
   std::cout << std::endl;
 }
 
+bool AI::use_fast_wheel() {
+  if (worker.count_fast == 0)
+    return false;
 
-//   bool use_extension(const int dx, const int dy);
-//   bool use_fast_wheel();
-//   bool use_drill();
-// };
+  worker.duration_fast = Worker::DURATION_FAST_MAX;
+  worker.count_fast--;
+  executed_cmds.push_back("F");
+
+  return true;
+}
+
+bool AI::use_drill() {
+  if (worker.count_drill == 0)
+    return false;
+
+  worker.duration_drill = Worker::DURATION_DRILL_MAX;
+  worker.count_drill--;
+  executed_cmds.push_back("L");
+
+  return true;
+}
+
+bool AI::use_extension(const int dx, const int dy) {
+  if (worker.count_extension == 0)
+    return false;
+
+  bool can_use = false;
+  for(auto m: worker.manipulator_range) {
+    if (std::abs(m.first - dx) + std::abs(m.second - dy)) {
+      can_use = true;
+    }
+  }
+
+  if(!can_use)
+    return false;
+
+  worker.manipulator_range.push_back({dx, dy});
+  worker.count_extension--;
+  auto cmd = "B(" + std::to_string(dx) + "," + std::to_string(dx) + ")";
+  executed_cmds.push_back(cmd);
+
+  return true;
+}
