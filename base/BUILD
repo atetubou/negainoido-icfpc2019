@@ -33,6 +33,7 @@ cc_library(
     srcs = ["ai.cc"],
     deps = [
         "@com_google_absl//absl/strings",
+        "@com_google_glog//:glog",
         ":base",
         ":geometry",
     ]

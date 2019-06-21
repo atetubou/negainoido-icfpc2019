@@ -4,6 +4,7 @@
 #include "base/ai.h"
 #include "base/geometry.h"
 #include "absl/strings/str_split.h"
+#include <glog/logging.h>
 
 Worker::Worker(Position pos) {
   current_pos = pos;
@@ -88,20 +89,19 @@ bool AI::fill_cell(Position pos) {
   if (filled[x][y]) {
     return false;
   }
-
-  // Pick up a item
-  switch(board[pos.first][pos.second]) {
-  case 'B':
-    worker.count_extension += 1;
-    break;
-  case 'F':
-    worker.count_fast += 1;
-    break;
-  case 'L':
-    worker.count_drill += 1;
-    break;
-  default:
-    break;
+  filled[x][y] = true;
+  switch(board[x][y]) {
+    case 'B':
+      worker.count_extension += 1;
+      break;
+    case 'F':
+      worker.count_fast += 1;
+      break;
+    case 'L':
+      worker.count_drill += 1;
+      break;
+    default:
+      break;
   }
 
   filled[x][y] = true;
@@ -155,7 +155,7 @@ std::vector<Position> AI::get_absolute_manipulator_positions() {
         mani = { self.first + p.second, self.second - p.first };
         break;
       default:
-        assert(false);
+        LOG(FATAL) << "UNKNOWN DIRECTION " << static_cast<int>(get_dir());
         break;
     }
     ret.push_back(mani);
