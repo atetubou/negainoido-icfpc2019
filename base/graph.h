@@ -28,6 +28,7 @@ class GraphDistance {
   int shortest_path(int src, int dst);
   int shortest_path(int src, int dst, std::vector<int> &paths);
   std::set<int> enumerate_neighbors(int src, int limit);
+  void shortest_path_tree(int src, std::vector<int> &dist, std::vector<int> &parent);
  private:
   void clear_updates(const std::vector<int> &updated_vertices);
 };
