@@ -20,9 +20,6 @@ const config: webpack.Configuration = {
     filename: 'index.js',
     path: path.resolve(__dirname, 'dist')
   },
-  devServer: {
-    port: 9000
-  }
 };
 
 export default config;
