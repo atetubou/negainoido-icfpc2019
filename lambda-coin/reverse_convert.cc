@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <algorithm>
+#include <unistd.h>
 
 #include <glog/logging.h>
 
@@ -39,6 +40,30 @@ void squash(std::vector<std::pair<int,int>>* line) {
   *line = std::move(squashed_line);
 }
 
+std::vector<P> create_from_edge(std::map<P, std::vector<P>> edge) {
+  std::vector<P> ret;
+  P cur = edge.begin()->first;
+  P prev = cur;
+  ret.push_back(cur);
+  cur = edge[cur][1];
+  edge.erase(prev);
+  while (!edge.empty()) {
+    ret.push_back(cur);
+    P next;
+    for (const auto& v : edge[cur]) {
+      if (v != prev) {
+        next = v;
+        break;
+      }
+    }
+    prev = cur;
+    cur = next;
+    edge.erase(prev);
+  }
+  return ret;
+}
+
+
 // board (x, y)
 // board[W][H]
 int main() {
@@ -65,11 +90,12 @@ int main() {
         if (board[x][y] == '.') {
           vertical_line[x].emplace_back(y, y+1);
         }
-      } else if (x == W - 1) {
-        if (board[x][y] == '.') {
-          vertical_line[x+1].emplace_back(y, y+1);
+      } else{
+        if (x == W - 1) {
+          if (board[x][y] == '.') {
+            vertical_line[x+1].emplace_back(y, y+1);
+          }
         }
-      } else {
         if (board[x-1][y] == '.' && board[x][y] == '#') {
           // .#
           // (x-1)x
@@ -83,16 +109,38 @@ int main() {
     }
   }
 
-  std::set<P> unique_points;
-
+  std::map<P, std::vector<P>> edge;
+  std::map<int, std::vector<int>> y_p;
   // Process for vertical line.
   for (int x = 0; x <= W; x++) {
     squash(&vertical_line[x]);
-    for (const auto& a : vertical_line[x]) {
-      unique_points.insert(P(x, a.first));
-      unique_points.insert(P(x, a.second));
+    // sorted
+    for (size_t j = 0; j < vertical_line[x].size(); j++) {
+      P p1 = P(x, vertical_line[x][j].first);
+      P p2 = P(x, vertical_line[x][j].second);
+      edge[p1].push_back(p2);
+      edge[p2].push_back(p1);
+    }
+    for (const auto& p : vertical_line[x]) {
+      y_p[p.first].push_back(x);
+      y_p[p.second].push_back(x);
     }
   }
+
+  for (const auto& t : y_p) {
+    int y = t.first;
+    const std::vector<int>& xs = t.second;
+    for (int j = 0; j < (int)(xs.size()) - 1; j++) {
+      if (j % 2 != 0)
+        continue;
+      P p1(xs[j], y);
+      P p2(xs[j+1], y);
+      edge[p1].push_back(p2);
+      edge[p2].push_back(p1);
+    }
+  }
+
+  auto unique_points = create_from_edge(std::move(edge));
 
   constexpr char delim = '#';
   // Output
