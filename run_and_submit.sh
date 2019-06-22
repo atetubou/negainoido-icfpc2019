@@ -27,13 +27,16 @@ bazel build $target
 solver=./bazel-bin/$(echo $target | sed -e 's$:$/$g' -e 's$//$$g')
 validator=./bazel-bin/binary_validator/binary_validator
 
-for task in `seq -w 1 220`
+for task in `seq -w 1 999`
 do
+    if [ ! -f problems/prob-$task.in ]; then
+        break
+    fi
     $solver < problems/prob-$task.in > ans
     result=0
     echo "prob-${task}.in"
     score=$(${validator} --in problems/prob-${task}.in --sol ans) || result=$?
-    if [ ! "$result" = "1" ]; then
+    if [ ! "$result" = "0" ]; then
 	echo "#######################################################"
 	echo "#######################################################"
         echo " ERROR: Invalid result for prob-${task}.in!!!!!!!!!!!"
