@@ -80,10 +80,13 @@ int check_cmd(AI &ai, const string &commands, int pos) {
     ai.turn_CCW();
     return pos+1;
   case 'B': {
-    auto r = expect_pair(ai, commands, pos);
+    auto r = expect_pair(ai, commands, pos+1);
     auto p = r.first;
+    int dx = p.first, dy = p.second;
     int np = r.second;
-    LOG_IF(FATAL, !ai.use_extension(p.first, p.second))
+
+    // Convert cardinates
+    LOG_IF(FATAL, !ai.use_extension(-dy, dx))
       << "failed to 'attach a new manipulator (" << p.first << "," << p.second << ")' at " << pos;
     return np + 1;
   }
