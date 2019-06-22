@@ -80,6 +80,8 @@ public:
   int get_height();
   int get_width();
 
+  int get_block_count() const;
+
   // Gets current time
   int get_time();
   // Gets the current position
