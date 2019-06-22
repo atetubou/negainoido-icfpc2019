@@ -129,7 +129,9 @@ absl::optional<Position> KonmariAI::decide_extension_pos() {
 }
 
 void KonmariAI::try_to_use_extensions() {
-  while (get_count_extension() > 0) {
+  int cur_pos_item = board[get_pos().first][get_pos().second] == 'B' ? 1 : 0;
+
+  while (cur_pos_item + get_count_extension() > 0) {
     auto ext_pos = decide_extension_pos();
     if (!ext_pos) {
       return;
@@ -140,6 +142,7 @@ void KonmariAI::try_to_use_extensions() {
       return;
     }
     LOG(INFO) << "Use extension!";
+    cur_pos_item = 0;
   }
 }
 
@@ -173,10 +176,6 @@ void KonmariAI::pick_up_extensions() {
     // pick up extension.
     for (const Direction& dir : GridGraph::path_to_actions(shortest_path)) {
       move(dir);
-    }
-    if (get_count_extension() == 0) {
-      LOG(FATAL) << "Failed to get extension....";
-      return;
     }
 
     // use extension.
