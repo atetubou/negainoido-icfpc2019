@@ -20,12 +20,22 @@ fn dump(ai: &AI, w: &*mut i8, message: &String) {
     wmove(*w, 0, 0);
     addstr(message);
 
+    // count
+    wmove(*w, 2, 0);
+    attrset(COLOR_PAIR(1));
+    waddstr(*w, &format!("#B = {}, #F = {}, #L = {}, #R = {}, #C = {}",
+                         ai.count_extension,
+                         ai.count_fast,
+                         ai.count_drill,
+                         0,
+                         ai.count_clone));
+
     let mybody = ai.get_absolute_manipulator_positions(0);
     let is_my_body = |p: &Position| { mybody.iter().any(|&q| *p == q) };
 
     for i in 0..ai.height {
         for j in 0..ai.width {
-            wmove(*w, i as i32 + 2, j as i32);
+            wmove(*w, i as i32 + 4, j as i32);
             if ai.workers[0].current_pos.0 == i as isize && ai.workers[0].current_pos.1 == j as isize {
                 attrset(COLOR_PAIR(3));
                 let me = match ai.workers[0].current_dir {
@@ -59,16 +69,6 @@ fn dump(ai: &AI, w: &*mut i8, message: &String) {
             }
         }
     }
-
-    // count
-    wmove(*w, ai.height as i32 + 3, 0);
-    attrset(COLOR_PAIR(1));
-    waddstr(*w, &format!("#B = {}, #F = {}, #L = {}, #R = {}, #C = {}",
-                         ai.count_extension,
-                         ai.count_fast,
-                         ai.count_drill,
-                         0,
-                         ai.count_clone));
 
     // your command
     wmove(*w, ai.height as i32 + 5, 0);
@@ -152,6 +152,7 @@ fn main() {
     const CHAR_S: i32 = 's' as i32;
     const CHAR_U: i32 = 'u' as i32;
     const CHAR_W: i32 = 'w' as i32;
+    const CHAR_HELP: i32 = '?' as i32;
     const CHAR_QUIT: i32 = '<' as i32;
 
     clear();
@@ -231,6 +232,9 @@ fn main() {
             CHAR_QUIT => {
                 break;
             },
+            CHAR_HELP => {
+                message = String::from("Move: a/s/d/w, Rotate: q/e, Boost: b/l/f/c");
+            }
             _ => {
                 message = String::from("Unknown??");
                 changed = false;
