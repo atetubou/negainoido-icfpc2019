@@ -21,14 +21,20 @@ fn dump(ai: &AI, w: &*mut i8, message: &String) {
     addstr(message);
 
     // count
-    wmove(*w, 2, 0);
+    wmove(*w, 1, 0);
     attrset(COLOR_PAIR(1));
-    waddstr(*w, &format!("#B = {}, #F = {}, #L = {}, #R = {}, #C = {}",
+    waddstr(*w, &format!("count: #B = {}, #F = {}, #L = {}, #R = {}, #C = {}; com-len = {}",
                          ai.count_extension,
                          ai.count_fast,
                          ai.count_drill,
                          0,
-                         ai.count_clone));
+                         ai.count_clone,
+                         ai.executed_cmds.len(),
+                         ));
+    wmove(*w, 2, 0);
+    waddstr(*w, &format!("duration: F: {}, L: {}",
+                         ai.workers[0].duration_fast,
+                         ai.workers[0].duration_drill));
 
     let mybody = ai.get_absolute_manipulator_positions(0);
     let is_my_body = |p: &Position| { mybody.iter().any(|&q| *p == q) };
@@ -36,7 +42,7 @@ fn dump(ai: &AI, w: &*mut i8, message: &String) {
     for i in 0..ai.height {
         for j in 0..ai.width {
             wmove(*w, i as i32 + 4, j as i32);
-            if ai.workers[0].current_pos.0 == i as isize && ai.workers[0].current_pos.1 == j as isize {
+            if ai.workers[0].current_pos == Position(i as isize, j as isize) {
                 attrset(COLOR_PAIR(3));
                 let me = match ai.workers[0].current_dir {
                     Direction::Left => '<',
@@ -165,7 +171,7 @@ fn main() {
         let mut message = String::new();
 
         match getch() {
-            CHAR_A | CHAR_H => {
+            CHAR_A => {
                 if ai.mv(0, Direction::Left) {
                     message = String::from("Left");
                 } else {
@@ -173,7 +179,7 @@ fn main() {
                     changed = false;
                 }
             },
-            CHAR_D | CHAR_L => {
+            CHAR_D => {
                 if ai.mv(0, Direction::Right) {
                     message = String::from("Right");
                 } else {
@@ -181,7 +187,7 @@ fn main() {
                     changed = false;
                 }
             },
-            CHAR_S | CHAR_J => {
+            CHAR_S => {
                 if ai.mv(0, Direction::Down) {
                     message = String::from("Down");
                 } else {
@@ -189,7 +195,7 @@ fn main() {
                     changed = false;
                 }
             },
-            CHAR_W | CHAR_K => {
+            CHAR_W => {
                 if ai.mv(0, Direction::Up) {
                     message = String::from("Up");
                 } else {
@@ -200,6 +206,10 @@ fn main() {
             CHAR_E => {
                 ai.turn_cw(0);
                 message = String::from("Turn CW");
+            },
+            CHAR_Q => {
+                ai.turn_ccw(0);
+                message = String::from("Turn CCW");
             },
             CHAR_B => {
                 let ps = ai.extension_positions(0);
@@ -215,10 +225,13 @@ fn main() {
                     }
                 }
             },
-            CHAR_Q => {
-                ai.turn_ccw(0);
-                message = String::from("Turn CCW");
-            },
+            CHAR_L => {
+                if ai.use_drill(0) {
+                    message = format!("Using Drill (L)");
+                } else {
+                    message = format!("Cannot Use Drill (L)");
+                }
+            }
             CHAR_U => {
                 if history.len() == 1 {
                     ai = history[0].clone();
