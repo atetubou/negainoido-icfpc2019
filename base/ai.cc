@@ -350,9 +350,9 @@ void AI::dump_state() {
   std::cerr << "duration: drill=" << worker.duration_drill << ", fast: " << worker.duration_fast << std::endl;
   auto p = get_pos();
 
-  for(uint32_t i = 0; i < height; ++i) {
-    for(uint32_t j = 0; j < width; ++j) {
-      if(i == (uint32_t)p.first && j == (uint32_t)p.second) {
+  for(int i = 0; i < height; ++i) {
+    for(int j = 0; j < width; ++j) {
+      if(i == p.first && j == p.second) {
         std::cerr << "@";
       } else if(filled[i][j]) {
         std::cerr << "V";
