@@ -79,7 +79,7 @@ app.get('/solution', async (req, res, next) => {
 });
 
 app.get('/stat/api', async (req, res, next) => {
-    const solutions = await LSolution.findAll({raw: true});
+    const solutions = await LSolution.findAll({raw: true, where: {'valid': true}});
     var stat_by_tasks = {};
     for (let sol of solutions) {
         let tid = sol['task_id'];
