@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 #include <queue>
 
 #include <glog/logging.h>
@@ -14,7 +15,7 @@ GraphDistance::GraphDistance(uint32_t V) {
 
   distance.clear();
   distance.resize(V);
-  fill(distance.begin(), distance.end(), -1);
+
 
   prev.clear();
   prev.resize(V);
@@ -103,6 +104,40 @@ std::set<int> GraphDistance::enumerate_neighbors(int src, int limit) {
   clear_updates(updated_vertices);
   return neighbors;
 }
+
+void GraphDistance::shortest_path_tree(int src, std::vector<int> &dist, std::vector<int> &parents) {
+  dist.clear();
+  dist.resize(graph.size());
+  parents.clear();
+  parents.resize(graph.size());
+  std::fill(dist.begin(), dist.end(), -1);
+  std::fill(parents.begin(), parents.end(), -1);
+
+  std::priority_queue<P, std::vector<P>, std::greater<P>>  que;
+  que.push(P(0, src));
+
+  dist[src] = 0;
+  while (!que.empty()) {
+    P p = que.top(); que.pop();
+    int d = p.first;
+    int v = p.second;
+
+    if (d > dist[v]) {
+      continue;
+    }
+    
+    for (const auto &e: graph[v]) {
+      int w = e.dst;
+      int dw = dist[w];
+      if (dw == -1 || dw > d + e.weight) {
+        dist[w] = d + e.weight;
+        parents[w] = v;
+        que.push(P(dist[w], w));
+      }
+    }
+  }
+}
+
 
 void GraphDistance::clear_updates(const std::vector<int> &updated_vertices) {
   for (auto v: updated_vertices) {
