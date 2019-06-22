@@ -3,7 +3,7 @@ function draw_data(data) {
   var rows = data.values;
 
   var table = new Tabulator("#content", {
-    height: 10000,
+    height: 100000,
     data: rows,           //load row data from array
     layout:"fitColumns",      //fit columns to width of table
     responsiveLayout:"hide",  //hide columns that dont fit on the table
@@ -28,9 +28,9 @@ function draw_data(data) {
   });
 }
 
-function load_data() {
+function load_data(num) {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/score/stat/api', true);
+  xhr.open('GET', `/score/stat/api?num=${num}`, true);
   xhr.onreadystatechange = function() {
     switch ( xhr.readyState ) {
       case 0:
@@ -52,5 +52,4 @@ function load_data() {
   xhr.send();
 }
 
-setTimeout(load_data, 500);
-setInterval(load_data, 20000);
+setTimeout(load_data, 100, 3);

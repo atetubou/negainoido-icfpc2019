@@ -80,6 +80,7 @@ app.get('/solution', async (req, res, next) => {
 });
 
 app.get('/stat/api', async (req, res, next) => {
+    let num = req.query.num | 0;
     const solutions = await LSolution.findAll({raw: true, where: {'valid': true}});
     var stat_by_tasks = {};
     for (let sol of solutions) {
@@ -91,7 +92,7 @@ app.get('/stat/api', async (req, res, next) => {
     var stat = [];
     for (let tid in stat_by_tasks) {
         stat_by_tasks[tid].sort((a, b) => a['score'] - b['score']);
-        for (let idx in stat_by_tasks[tid].slice(0, 10)) {
+        for (let idx in stat_by_tasks[tid].slice(0, num)) {
             stat.push(stat_by_tasks[tid][idx]);
         }
     }
