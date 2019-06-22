@@ -37,15 +37,12 @@ public:
     {-1, 1},
   };
 
-  int count_fast = 0;
-  int count_drill = 0;
-  int count_extension = 0;
-
   // Remaining duration for each drill's effect.
   static const int DURATION_FAST_MAX = 50;
   static const int DURATION_DRILL_MAX = 30;
   int duration_drill = 0;
   int duration_fast = 0;
+
 };
 
 class AI {
@@ -59,16 +56,22 @@ class AI {
 
   bool fill_cell(Position, const int id = 0);
 
+  int count_fast = 0;
+  int count_drill = 0;
+  int count_extension = 0;
+
   int expect_worker_id = 0;   // Rotate from 0 to (workers.size()-1)
   std::vector<Worker> workers;
 
-  void next_turn();
+  void next_turn(const int id);
   bool valid_pos(Position);
   bool move_body(const Direction &dir, const int id = 0);
 
 
   void initialize();
 
+  void init_turn(const int id);
+  void pickup_booster(const int id);
 public:
 
   AI();
@@ -94,9 +97,9 @@ public:
   int get_filled_count();
 
   // Gets the number of available boosters
-  int get_count_fast(const int id = 0);
-  int get_count_drill(const int id = 0);
-  int get_count_extension(const int id = 0);
+  int get_count_fast();
+  int get_count_drill();
+  int get_count_extension();
 
   // Gets the unit time until each tool is consumed.
   // Returns 0 if the tool is not used now.
