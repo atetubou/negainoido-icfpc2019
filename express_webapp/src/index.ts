@@ -117,13 +117,14 @@ app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 
 const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
 
+// endpoint for submission
 app.post('/solution', async (req, res, next) => {
     const solver = req.body['solver'] || 'unknown';
     const task_id = parseInt(req.body['task']) || 0;
     const data = (req.files!.file as fileUpload.UploadedFile).data;
     let valid = false;
     let score;
-    if (req.body['score']) {
+    if (!req.body['score']) {
         const desc = '';
         const sol = '';
         const tmp = os.tmpdir();
