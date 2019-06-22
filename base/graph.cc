@@ -178,19 +178,19 @@ Direction GridGraph::move_to_action(const GridGraph::pos& a,
     << "Invalid args " << a << " " << b;
 
   if (a.first + 1 == b.first) {
-    return Direction::Right;
+    return Direction::Down;
   }
 
   if (a.first - 1 == b.first) {
-    return Direction::Left;
-  }
-
-  if (a.second + 1 == b.second) {
     return Direction::Up;
   }
 
+  if (a.second + 1 == b.second) {
+    return Direction::Right;
+  }
+
   if (a.second - 1 == b.second) {
-    return Direction::Down;
+    return Direction::Left;
   }
 
   LOG(FATAL) << "Invalid args " << a << " " << b;
