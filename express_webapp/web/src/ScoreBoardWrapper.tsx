@@ -44,7 +44,7 @@ const downloadZip = () => {
         return response.blob();
     })
         .then((blob) => {
-            const url = window.URL.createObjectURL(blob);
+            const url = window.URL.createObjectURL(new Blob([blob]));
             const link = document.createElement('a');
             link.href = url;
             document.body.appendChild(link);

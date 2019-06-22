@@ -248,7 +248,6 @@ import * as Path from "path";
 import * as fs from "fs";
 import {formatNumber, getDescFile, makeRandomId} from "./utils";
 import {FindOptions, Op} from "sequelize";
-import {promise} from "selenium-webdriver";
 
 
 app.get('/solution/best/zip', async (req, res, next) => {
