@@ -24,6 +24,7 @@ public:
   absl::optional<Position> decide_extension_pos();
   void try_to_use_extensions();
   void try_to_use_fast_weel();
+  void try_to_use_drill(std::vector<std::pair<int,int>>* path);
   void konmari_move();
   Position get_nearest_unfilled(std::vector<std::pair<int,int>>* path);
 
@@ -35,7 +36,7 @@ private:
     for (int i = 0; i < 4; i++) {
       int nx = p.first + dx[i];
       int ny = p.second + dy[i];
-      if (nx >= 0 && nx < get_height() && ny >= 0 && ny < get_width()) {
+      if (nx >= 0 && nx < get_height() && ny >= 0 && ny < get_width() && board[nx][ny] != '#') {
         ret.emplace_back(nx, ny);
       }
     }
@@ -50,6 +51,46 @@ void KonmariAI::try_to_use_fast_weel() {
     return;
   if (get_count_fast() > 0)
     use_fast_wheel();
+}
+
+void KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
+  // We only use drill for one move.
+  if (get_duration_drill() > 0)
+    return;
+  if (get_count_drill() == 0)
+    return;
+
+  int cost_without_drill = path->size() - 1;
+  // path.begin() -> path.back().
+  const auto& s = path->front();
+  const auto& g = path->back();
+  const int cost_with_drill = std::abs(g.first - s.first) + std::abs(g.second - g.first);
+  // Lazy assumption. We may not be able to g with drill.
+  if (cost_with_drill > 30)
+    return;
+  const int cost_diff = cost_without_drill - cost_with_drill;
+
+  bool should_use_drill = cost_without_drill > 30 &&
+    cost_diff > cost_without_drill / 2;// &&
+    // cost_diff > std::min(get_width(), get_height());
+  if (!should_use_drill)
+    return ;
+
+  std::vector<std::pair<int,int>> new_path;
+  new_path.push_back(s);
+  // Use drill!
+  LOG(ERROR) << "Use Drill!";
+  use_drill();
+  for (int i = 0; g.first == s.first + i;) {
+    i += g.first > s.first ? 1 : -1;
+    new_path.emplace_back(s.first+i, s.second);
+  }
+  for (int i = 0; g.second == s.second + i;) {
+    i += g.second > s.second ? 1 : -1;
+    new_path.emplace_back(g.first, s.second+i);
+  }
+
+  *path = std::move(new_path);
 }
 
 absl::optional<Position> KonmariAI::decide_extension_pos() {
@@ -159,12 +200,10 @@ void KonmariAI::konmari_move() {
   // Fast wheel is dangerous!!!
   // try_to_use_fast_weel();
   std::vector<std::pair<int,int>> path;
-  auto dst = get_nearest_unfilled(&path);
-  DLOG(INFO) << "dst=" << dst.first << " " << dst.second;
-  DLOG(INFO) << path.size();
-  // move: path[0] -> path[1].
+  get_nearest_unfilled(&path);
+  // try_to_use_drill(&path);
   for (const Direction& dir : GridGraph::path_to_actions(path)) {
-      move(dir);
+    move(dir);
   }
 }
 
