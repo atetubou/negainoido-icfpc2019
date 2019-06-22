@@ -19,7 +19,7 @@ interface Props {
 
 const ScoreBoard = (props: Props) => {
     return (
-        <div>
+        <div className="scoreBoard">
             {props.loading && <div> Loading </div>}
             <button onClick={props.onRefresh} disabled={props.loading}>Refresh</button>
             <button onClick={props.onDownloadZip} disabled={props.loading}>Download Zip</button>
@@ -39,7 +39,10 @@ const ScoreBoard = (props: Props) => {
                                 <td>{task.taskId}</td>
                                 <td>{task.solver}</td>
                                 <td>{task.score}</td>
-                                <td>{task.valid ? 'Valid' : 'Not Valid'}</td>
+                                <td>{task.valid ?
+                                    <span className="scoreBoard-valid">Valid</span> :
+                                    <span className="scoreBoard-invalid">Not Valid</span>}
+                                </td>
                                 <td>
                                     <button onClick={() => props.onValidate(task.solutionId)}>Validate</button>
                                 </td>

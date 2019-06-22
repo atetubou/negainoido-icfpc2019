@@ -60,6 +60,7 @@ interface Props {
 interface State {
     loading: boolean;
     solutions?: Solution[];
+    alert?: string;
 }
 
 class ScoreBoardWrapper extends React.Component<Props, State> {
@@ -77,7 +78,10 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                 solutions,
                 loading: false,
             });
-        }).catch((e) => { console.log(e); })
+        }).catch((e) => {
+            console.log(e);
+            this.setState({ alert: 'Failed to fetch '});
+        })
     }
 
     handleValidate = (id: number) => {
@@ -91,9 +95,13 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                     ...prevState,
                     loading: false,
                     solutions,
+                    alert: undefined,
                 });
             });
-        }).catch(() => this.setState({ loading: false }));
+        }).catch(() => this.setState({
+            loading: false,
+            alert: 'failed to validate',
+        }));
     };
 
     handleRefresh = () => {
@@ -102,25 +110,33 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                 this.setState({
                     solutions,
                     loading: false,
+                    alert: undefined,
                 });
             }).catch(() => this.setState({ loading: false }));
         });
     };
 
     render(): React.ReactNode {
-        const { loading, solutions } = this.state;
+        const { loading, solutions, alert } = this.state;
         if (!solutions) {
             return <div>loading</div>;
         }
         return (
-            <ScoreBoard
-                loading={loading}
-                solutions={solutions!}
-                onValidate={this.handleValidate}
-                onRefresh={this.handleRefresh}
-                onDownload={downloadSolution}
-                onDownloadZip={downloadZip}
-            />
+            <div>
+                {alert &&
+                    <div className="alert alert-danger" role="alert">
+                        {alert}
+                    </div>
+                }
+                <ScoreBoard
+                    loading={loading}
+                    solutions={solutions!}
+                    onValidate={this.handleValidate}
+                    onRefresh={this.handleRefresh}
+                    onDownload={downloadSolution}
+                    onDownloadZip={downloadZip}
+                />
+            </div>
 
         );
     }
