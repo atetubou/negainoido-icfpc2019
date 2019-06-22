@@ -90,6 +90,7 @@ if wrap_data:
 
 # parse min_data
 for mine in mine_data.split(';'):
+    mine = mine.strip()
     if not mine:
         continue
     mine_desc = mine[0]
