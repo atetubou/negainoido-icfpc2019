@@ -1,4 +1,5 @@
 #include <iostream>
+#include <fstream>
 #include <cassert>
 #include "base/base.h"
 #include "base/ai.h"
@@ -106,13 +107,13 @@ bool AI::reachable(Position target) {
   return true;
 }
 
-
-AI::AI() {
+void AI::initialize() {
   std::cin >> height >> width;
   std::string buf;
   while (std::cin >> buf) {
     board.push_back(buf);
   }
+
   Position worker_pos = std::make_pair(0, 0);
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
@@ -133,6 +134,20 @@ AI::AI() {
     auto y = worker.current_pos.second + p.second;
     fill_cell(std::make_pair(x, y));
   }
+}
+
+AI::AI() {
+  initialize();
+}
+
+AI::AI(const std::string filename) {
+  std::ifstream in(filename.c_str());
+  LOG_IF(FATAL, !in) <<
+    "failed to open " << filename;
+
+  std::cin.rdbuf(in.rdbuf());
+
+  initialize();
 }
 
 bool AI::fill_cell(Position pos) {
@@ -335,9 +350,9 @@ void AI::dump_state() {
   std::cerr << "duration: drill=" << worker.duration_drill << ", fast: " << worker.duration_fast << std::endl;
   auto p = get_pos();
 
-  for(auto i = 0; i < height; ++i) {
-    for(auto j = 0; j < width; ++j) {
-      if(i == p.first && j == p.second) {
+  for(uint32_t i = 0; i < height; ++i) {
+    for(uint32_t j = 0; j < width; ++j) {
+      if(i == (uint32_t)p.first && j == (uint32_t)p.second) {
         std::cerr << "@";
       } else if(filled[i][j]) {
         std::cerr << "V";

@@ -30,7 +30,12 @@ for task in `seq -w 1 220`
 do
     $solver < problems/prob-$task.in > ans
     # score=$(grep -o '[A-Z]' ans | wc -l)
-    score=$(python official_sim/main.py problems/prob-$task.desc ans)
+    result=0
+    score=$(python official_sim/main.py problems/prob-$task.desc ans) || result=$?
+    if [ ! "$result" = "0" ]; then
+        echo "ERROR: Invalid result for prob-${task}.in!!!!!!!!!!!!!! Skip!"
+        continue
+    fi
     solver_name=$1-@$(git rev-list -n1 HEAD)
     curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@ans -F solver="${solver_name}" -F task=$task
 done

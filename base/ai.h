@@ -66,9 +66,12 @@ class AI {
   bool move_body(const Direction &dir);
 
 
+  void initialize();
+
 public:
 
   AI();
+  AI(const std::string filename);
 
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
