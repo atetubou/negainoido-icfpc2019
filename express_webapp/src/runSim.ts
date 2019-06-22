@@ -11,7 +11,9 @@ const sleep = (ms: number) => {
 const runSimulator = async (discPath: string, solPath: string) => {
     const driver = await new webdriver.Builder()
         .forBrowser('chrome')
-        .setChromeOptions(new chrome.Options().headless().addArguments("--disable-dev-shm-usage"))
+        .setChromeOptions(new chrome.Options().headless()
+            .addArguments("--no-sandbox")
+            .addArguments("--disable-dev-shm-usage"))
         .build();
 
     const url = 'file://' + Path.join(__dirname, '../sim/checker.html');
