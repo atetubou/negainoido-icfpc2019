@@ -9,6 +9,7 @@
 #define rep(i, n) for(int i=0; i<int(n); ++i)
 
 DEFINE_string(LKH3path, "","");
+const int K = 1000; // threshold
 
 #include "LKH3_wrapper.h"
 
@@ -132,7 +133,7 @@ public:
 };
 
 void do_operation(char op) {
-	cerr << op << endl;
+//	cerr << op << endl;
 	code += op;
 	string::size_type d = string(dir2chr).find(op);
 	if (d == string::npos) {
@@ -175,7 +176,7 @@ void fill_for(const node_t &target) {
 		state_t st = q.front();
 		q.pop();
 
-		cerr << st.pos.first << " " << st.pos.second << " " << st.dir << endl;
+//		cerr << st.pos.first << " " << st.pos.second << " " << st.dir << endl;
 		for(auto d : manipulator) {
 			node_t v = add(st.pos, rotate(d, st.dir));
 			if (v == target) {
@@ -229,7 +230,7 @@ void fill_for(const node_t &target) {
 	for(auto op : operations) {
 		do_operation(op);
 	}
-	cerr << "FILLED " << target.first << " " << target.second << endl;
+//	cerr << "FILLED " << target.first << " " << target.second << endl;
 }
 
 void initialize_manipulator() {
@@ -237,6 +238,49 @@ void initialize_manipulator() {
 	manipulator.insert(node_t(1, 1));
 	manipulator.insert(node_t(1, -1));
 	manipulator.insert(node_t(0, 0));
+}
+
+vector<int> ExactTSP(const dist_matrix_t &dist) {
+	int n = (int)dist.size();
+	vector<int> perm(n);
+	rep(i, n-1) perm[i] = i+1;
+	vector<int> best;
+	int bestcost = 1<<29;
+	do {
+		int cost = 0;
+		vector<int> tour;
+		tour.insert(tour.begin(), 0);
+		rep(i, (int)tour.size()-1)
+			cost += dist[tour[i]][tour[i+1]];
+		if (bestcost > cost) {
+			bestcost = cost;
+			best = tour;
+		}
+	} while(next_permutation(perm.begin(), perm.end()));
+	return best;
+}
+
+vector<int> solve_path_TSP_on_submatrix(const vector<int> &nodeids, const dist_matrix_t &dist) {
+	int T = (int)nodeids.size();
+	if (T <= 1) return nodeids;
+	dist_matrix_t sub_dist(T, vector<int>(T, 0));
+	rep(i, T) rep(j, T) {
+		sub_dist[i][j] = dist[nodeids[i]][nodeids[j]];
+	}
+
+	vector<int> tour;
+	if (T <= 7) {
+		tour = ExactTSP(sub_dist);
+	} else {
+		tour = SolveTSPByLKH3(sub_dist, FLAGS_LKH3path.c_str());
+	}
+	if (tour[0] != 0) {
+		LOG(FATAL) << "I thought that the first point of tour is 0" << endl;
+	}
+	rep(i, tour.size()) {
+		tour[i] = nodeids[tour[i]];
+	}
+	return tour;
 }
 
 int main(int argc, char *argv[]) {
@@ -259,23 +303,26 @@ int main(int argc, char *argv[]) {
 
 	std::reverse(in.begin(), in.end());
 
-	node_t start;
 
 	for (int y = 0; y < h; ++y) {
 		for (int x = 0; x < w; ++x) {
+			node_t v(x, y);
+			if (in[y][x] == 'W') {
+				cur_pos = v;
+				continue; // do not push for now; the first index will be start node
+			}
 			if (in[y][x] != '#') {
-				node_t v(x, y);
 				nodes.push_back(v);
-				node2id[v] = (int)nodes.size() - 1;
 				unfilled_nodes.insert(v);
 			}
-			if (in[y][x] != 'W') {
-				continue;
-			}
-			start = node_t(x, y);
 		}
 	}
-	cur_pos = start;
+	mt19937 get_rand_mt;
+	shuffle(nodes.begin(), nodes.end(), get_rand_mt);
+	nodes.insert(nodes.begin(), cur_pos); /* the first node is the start */
+	rep(i, nodes.size()) {
+		node2id[nodes[i]] = i;
+	}
 
 	initialize_manipulator();
 
@@ -299,25 +346,42 @@ int main(int argc, char *argv[]) {
 		if (dist[i][j] > dist[i][k] + dist[k][j])
 			dist[i][j] = dist[i][k] + dist[k][j];
 
+	int T = min(n, K); /* Number of terminals */
+	dist_matrix_t sub_dist(T, vector<int>(T, 0));
+	rep(i, T) rep(j, T) {
+		sub_dist[i][j] = dist[i][j];
+	}
 
-	vector<int> tour = SolveTSPByLKH3(dist, FLAGS_LKH3path.c_str());
+	vector<int> tour = SolveTSPByLKH3(sub_dist, FLAGS_LKH3path.c_str());
+	if (tour[0] != 0) {
+		LOG(FATAL) << "I thought that the first point of tour is 0" << endl;
+	}
 
-	rep(i, tour.size()) {
-		if (tour[i] == node2id[start]) {
-			vector<int> tmp;
-			tmp.insert(tmp.end(), tour.begin() + i, tour.end());
-			tmp.insert(tmp.end(), tour.begin(), tour.begin() + i);
-			tour = tmp;
-			break;
+	vector<vector<int>> clusters(T);
+	rep(i, n) {
+		int best = 1<<29;
+		int bestid = -1;
+		rep(t, T) {
+			if (best > dist[i][t]) {
+				best = dist[i][t];
+				bestid = t;
+			}
+		}
+		clusters[bestid].push_back(i);
+	}
+
+	for(int t = 0; t < (int)tour.size(); t++) {
+		int v = tour[t];
+		vector<int> subtour = solve_path_TSP_on_submatrix(clusters[v], dist);
+
+		for(auto i : subtour) {
+//			cerr << nodes[i].first << " " << nodes[i].second << endl;
+			fill_for(nodes[i]);
 		}
 	}
 
-	for(int i = 0; i < (int)tour.size(); i++) {
-		int v = tour[i];
-		fill_for(nodes[v]);
-	}
-
 	cerr << "solution size: " << code.size() << endl;
+	cerr << "    nodes: " << n << endl;
 	cout << code << endl;
 
 }
