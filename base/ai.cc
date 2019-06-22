@@ -6,6 +6,21 @@
 #include "absl/strings/str_split.h"
 #include <glog/logging.h>
 
+char direction_to_char(Direction d) {
+  switch (d) {
+  case Direction::Right:
+    return 'D';
+  case Direction::Left:
+    return 'A';
+  case Direction::Up:
+    return 'W';
+  case Direction::Down:
+    return 'S';
+  }
+
+  LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
+}
+
 Worker::Worker(Position pos) {
   current_pos = pos;
 }

@@ -11,6 +11,8 @@ enum class Direction {
   Up,
 };
 
+char direction_to_char(Direction d);
+
 typedef std::pair<int32_t, int32_t> Position;
 
 class Worker {
