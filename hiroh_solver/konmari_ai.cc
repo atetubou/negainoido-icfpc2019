@@ -79,7 +79,6 @@ void KonmariAI::try_to_use_extensions() {
   }
 }
 
-
 void KonmariAI::pick_up_extensions() {
   std::set<Position> extensions;
   for (int x = 0; x < get_height(); x++) {
@@ -106,13 +105,11 @@ void KonmariAI::pick_up_extensions() {
       }
     }
     extensions.erase(next);
-
     // move cur -> next.
     // pick up extension.
     for (const Direction& dir : GridGraph::path_to_actions(shortest_path)) {
       move(dir);
     }
-
     if (get_count_extension() == 0) {
       LOG(FATAL) << "Failed to get extension....";
       return;
@@ -155,18 +152,16 @@ void KonmariAI::konmari_move() {
   auto dst = get_nearest_unfilled(&path);
   DLOG(INFO) << "dst=" << dst.first << " " << dst.second;
   DLOG(INFO) << path.size();
-  // for (const auto& p : path) {
-  //   LOG(INFO) << p.first << ", " << p.second << "->";
-  // }
-  DLOG(INFO) << (int) GridGraph::move_to_action(path[0], path[1]);
   // move: path[0] -> path[1].
-  move(GridGraph::move_to_action(path[0], path[1]));
+  for (const Direction& dir : GridGraph::path_to_actions(path)) {
+      move(dir);
+  }
 }
 
 int main() {
   std::unique_ptr<KonmariAI> ai(new KonmariAI());
-
-
+  // First pick up all extensions.
+  ai->pick_up_extensions();
   while (!ai->is_finished()) {
     ai->konmari_move();
 
