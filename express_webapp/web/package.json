@@ -5,7 +5,8 @@
   "private": true,
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "rm -fr ./dist && cross-env TS_NODE_PROJECT=\"tsconfig-webpack.json\" webpack --config webpack.config.ts --mode production"
+    "build": "rm -fr ./dist && cross-env TS_NODE_PROJECT=\"tsconfig-webpack.json\" webpack --config webpack.config.ts --mode production",
+    "start": "webpack-dev-server"
   },
   "keywords": [],
   "author": "",
@@ -20,7 +21,8 @@
     "tsconfig-paths": "^3.8.0",
     "typescript": "^3.5.2",
     "webpack": "^4.34.0",
-    "webpack-cli": "^3.3.4"
+    "webpack-cli": "^3.3.4",
+    "webpack-dev-server": "^3.7.2"
   },
   "dependencies": {
     "@material-ui/core": "^4.1.1",

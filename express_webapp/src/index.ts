@@ -26,6 +26,7 @@ app.use(morgan('combined'));
 
 console.log(path.join(__dirname, './static'));
 app.use('/static', express.static(path.join(__dirname, './../static')))
+app.use('/public', express.static(path.join(__dirname, './../web/dist')))
 
 app.listen(port);
 app.set('view engine', 'pug');

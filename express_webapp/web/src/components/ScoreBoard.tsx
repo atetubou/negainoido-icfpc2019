@@ -1,51 +1,57 @@
-import React from 'react';
-import Table from '@material-ui/core/Table';
-import TableBody from '@material-ui/core/TableBody';
-import TableCell from '@material-ui/core/TableCell';
-import TableHead from '@material-ui/core/TableHead';
-import TablePagination from '@material-ui/core/TablePagination';
-import TableRow from '@material-ui/core/TableRow';
-import TableSortLabel from '@material-ui/core/TableSortLabel';
-import {Button} from "@material-ui/core";
+import React, {MouseEventHandler} from 'react';
 
-export interface Task {
-    id: number;
-    best_solver: string;
+export interface Solution {
+    taskId: number;
+    solver: string;
     score: number;
+    solutionId: number;
+    valid: boolean;
 }
 
 interface Props {
-    tasks: Task[];
+    solutions: Solution[];
+    onValidate: (id: number) => void;
+    onDownload: (id: number) => void;
+    onRefresh: MouseEventHandler;
 }
 
 const ScoreBoard = (props: Props) => {
     return (
-        <div/>
-        /*
-        <Table>
-            <TableHead>
-                <TableRow>
-                    <TableCell>Task ID</TableCell>
-                    <TableCell>Best Solver</TableCell>
-                    <TableCell>Best Score</TableCell>
-                    <TableCell>Download</TableCell>
-                </TableRow>
-            </TableHead>
-            <TableBody>
-                {props.tasks.map((task) => {
-                    return (
-                        <TableRow>
-                            <TableCell>{task.id}</TableCell>
-                            <TableCell>{task.best_solver}</TableCell>
-                            <TableCell>{task.score}</TableCell>
-                            <TableCell>
-                                <Button variant="contained" className="scoreBoard-downloadButton">Download</Button>
-                            </TableCell>
-                        </TableRow>
-                    );
-                })}
-            </TableBody>
-        </Table>
-        */
+        <div>
+            <button onClick={props.onRefresh}>Refresh</button>
+            <table>
+                <th>
+                    <tr>
+                        <td>Task ID</td>
+                        <td>Solver</td>
+                        <td>Score</td>
+                        <td>isValid</td>
+                        <td>Validate</td>
+                        <td>Download</td>
+                    </tr>
+                </th>
+                <tbody>
+                    {props.solutions.map((task) => {
+                        return (
+                            <tr>
+                                <td>{task.taskId}</td>
+                                <td>{task.solver}</td>
+                                <td>{task.score}</td>
+                                <td>{task.valid ? 'Valid' : 'Not Valid'}</td>
+                                <td>{task.score}</td>
+                                <td>
+                                    <button onClick={() => props.onValidate(task.solutionId)}>Validate</button>
+                                </td>
+                                <td>
+                                    <button onClick={() => props.onValidate(task.solutionId)}>Download</button>
+                                </td>
+                            </tr>
+                        );
+                    })}
+                </tbody>
+            </table>
+        </div>
     );
 };
+
+export default ScoreBoard;

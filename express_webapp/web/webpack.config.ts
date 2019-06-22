@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as webpack from 'webpack';
+import * as _ from 'webpack-dev-server';
 
 const config: webpack.Configuration = {
   entry: './src/index.tsx',
@@ -18,6 +19,9 @@ const config: webpack.Configuration = {
   output: {
     filename: 'index.js',
     path: path.resolve(__dirname, 'dist')
+  },
+  devServer: {
+    port: 9000
   }
 };
 
