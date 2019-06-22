@@ -20,7 +20,15 @@ fn dump(ai: &AI, w: &*mut i8) {
             wmove(*w, i as i32 + 2, j as i32);
             if ai.workers[0].current_pos.0 == i as isize && ai.workers[0].current_pos.1 == j as isize {
                 attrset(COLOR_PAIR(3));
-                waddch(*w, 'W' as u32);
+
+                let me = match ai.workers[0].current_dir {
+                    Direction::Left => '<',
+                    Direction::Right => '>',
+                    Direction::Up => '^',
+                    Direction::Down => 'v',
+                };
+                
+                waddch(*w, me as u32);
             } else if ai.filled[i][j] {
                 attrset(COLOR_PAIR(2));
                 waddch(*w, ai.board[i][j] as u32);
