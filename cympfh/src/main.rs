@@ -25,11 +25,19 @@ fn dump(ai: &AI, w: &*mut i8) {
                 attrset(COLOR_PAIR(2));
                 waddch(*w, ai.board[i][j] as u32);
             } else {
-                attrset(COLOR_PAIR(1));
-                if ai.board[i][j] == 'W' {
-                    waddch(*w, '.' as u32);
-                } else {
-                    waddch(*w, ai.board[i][j] as u32);
+                match ai.board[i][j] {
+                    '#' => {
+                        attrset(COLOR_PAIR(4));
+                        waddch(*w, ' ' as u32);
+                    },
+                    '.' | 'W' => {
+                        attrset(COLOR_PAIR(5));
+                        waddch(*w, ' ' as u32);
+                    },
+                    _ => {
+                        attrset(COLOR_PAIR(1));
+                        waddch(*w, ai.board[i][j] as u32);
+                    }
                 }
             }
         }
@@ -76,7 +84,9 @@ fn main() {
     start_color();
     init_pair(1, COLOR_BLACK, COLOR_WHITE);   // default
     init_pair(2, COLOR_BLACK, COLOR_YELLOW);  // occupied
-    init_pair(3, COLOR_WHITE, COLOR_BLACK);   // self
+    init_pair(3, COLOR_BLUE, COLOR_YELLOW);   // self
+    init_pair(4, COLOR_BLACK, COLOR_BLACK);   // obs
+    init_pair(5, COLOR_WHITE, COLOR_WHITE);   // empty
 
     const CHAR_A: i32 = 'a' as i32;
     const CHAR_S: i32 = 's' as i32;
