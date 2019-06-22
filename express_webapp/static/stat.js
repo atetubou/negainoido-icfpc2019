@@ -1,9 +1,6 @@
 function draw_data(data) {
 
-  var rows = [];
-  for (var i = 0; i < data.values.length; ++i) {
-    rows[i] = data.values[i].best;
-  }
+  var rows = data.values;
 
   var table = new Tabulator("#content", {
     height: 10000,
@@ -21,16 +18,12 @@ function draw_data(data) {
       {column:"task_id", dir:"asc"},
     ],
     columns: [
-      {title: "best",
-        columns: [
-          {title:"id", field:"id"},
-          {title:"solver", field:"solver"},
-          {title:"task_id", field:"task_id"},
-          {title:"score", field:"score"},
-          {title:"created", field:"created"},
-          {title:"updatedAt", field:"updatedAt"},
-        ]
-      }
+      {title:"id", field:"id"},
+      {title:"solver", field:"solver"},
+      {title:"task_id", field:"task_id"},
+      {title:"score", field:"score"},
+      {title:"created", field:"created"},
+      {title:"updatedAt", field:"updatedAt"},
     ]
   });
 }

@@ -80,26 +80,22 @@ app.get('/solution', async (req, res, next) => {
 
 app.get('/stat/api', async (req, res, next) => {
     const solutions = await LSolution.findAll({raw: true});
-    var stat = {}
+    var stat_by_tasks = {};
     for (let sol of solutions) {
-        let id = sol['id'];
-        let solver = sol['solver'];
-        let task_id = sol['task_id'];
-        let score = sol['score'];
-        let created = sol['created'];
-        let updatedAt = sol['updatedAt'];
-        if (!stat[task_id]) { stat[task_id] = {}; }
-        if (!stat[task_id]['best'] || stat[task_id].best.score > score ||
-            (stat[task_id].best.score == score && stat[task_id].best.id > id)
-        ) {
-            stat[task_id]['best'] = sol;
+        let tid = sol['task_id'];
+        if (stat_by_tasks[tid]) stat_by_tasks[tid].push(sol);
+        else stat_by_tasks[tid] = [sol];
+    }
+
+    var stat = [];
+    for (let tid in stat_by_tasks) {
+        stat_by_tasks[tid].sort((a, b) => a['score'] - b['score']);
+        for (let idx in stat_by_tasks[tid].slice(0, 10)) {
+            stat.push(stat_by_tasks[tid][idx]);
         }
     }
-    var stat_arr = [];
-    for (let key in stat) {
-        stat_arr.push(stat[key]);
-    }
-    res.json({ values: stat_arr });
+
+    res.json({ values: stat });
 });
 
 app.get('/stat', (req, res, next) => {
