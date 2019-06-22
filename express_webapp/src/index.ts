@@ -74,15 +74,19 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/solution', async (req, res, next) => {
-    const valid = req.params.valid || false;
-    const limit = req.params.limit;
-    const page = parseInt(req.params.page || '1');
+    const valid = req.query.valid || false;
+    const limit = req.query.limit;
+    const taskId = parseInt(req.query.taskId || '0');
+    const page = parseInt(req.query.page || '1');
     const options: FindOptions = {
         attributes: ['id', 'solver', 'task_id', 'score', 'valid'],
     };
     const where: any = {};
     if (valid) {
         where.valid = true;
+    }
+    if (taskId > 0) {
+        where.task_id = taskId;
     }
     if (where) {
         options.where = where;
@@ -274,7 +278,7 @@ app.get('/solution/best/zip', async (req, res, next) => {
 });
 
 app.get('/solution/best', async (req, res, next) => {
-    const valid = req.params.valid || false;
+    const valid = req.query.valid || false;
     let promises = [];
     for (let i = 1; i <= taskNum; i++) {
         promises.push(getBestSolutionModel(i, valid));

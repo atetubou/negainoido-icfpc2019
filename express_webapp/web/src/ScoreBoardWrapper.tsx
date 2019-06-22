@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import ScoreBoard, {Solution} from "./components/ScoreBoard";
 
 const fromJsonToSolution = (s: any) =>
@@ -10,14 +10,31 @@ const fromJsonToSolution = (s: any) =>
         score: s.score,
     } as Solution);
 
-const getSolution = () => fetch('./solution').then((response) => {
-    return response.json();
-}).then((json) => {
-    if (Array.isArray(json.solutions)) {
-        return json.solutions.map(fromJsonToSolution);
+const optionToUrlParam = (options: any) => {
+    let res = '';
+    for (const key in options) {
+        if (res) {
+            res += '&';
+        }
+        res += key + '=' + encodeURIComponent(options[key] as string);
     }
-    throw 'invalid response';
-});
+    return res;
+};
+
+interface Options {
+    taskId?: number;
+}
+
+const getSolution = (options: Options) => {
+    return fetch('./solution?' + optionToUrlParam(options)).then((response) => {
+        return response.json();
+    }).then((json) => {
+        if (Array.isArray(json.solutions)) {
+            return json.solutions.map(fromJsonToSolution);
+        }
+        throw 'invalid response';
+    });
+};
 
 const validateSolution = (id: number) => {
     return fetch(`./solution/${id}/validate`).then((response) => {
@@ -61,6 +78,8 @@ interface State {
     loading: boolean;
     solutions?: Solution[];
     alert?: string;
+    filterByTask: boolean;
+    taskId: number;
 }
 
 class ScoreBoardWrapper extends React.Component<Props, State> {
@@ -69,11 +88,13 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
 
         this.state = {
             loading: true,
+            filterByTask: false,
+            taskId: 0,
         }
     }
 
     componentDidMount(): void {
-        getSolution().then((solutions) => {
+        getSolution({}).then((solutions) => {
             this.setState({
                 solutions,
                 loading: false,
@@ -105,8 +126,13 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
     };
 
     handleRefresh = () => {
+        const option: Options = {};
+        const { filterByTask, taskId } = this.state;
+        if (filterByTask && taskId > 0) {
+            option['taskId'] = taskId;
+        }
         this.setState({ loading: false }, () => {
-            getSolution().then((solutions) => {
+            getSolution(option).then((solutions) => {
                 this.setState({
                     solutions,
                     loading: false,
@@ -117,7 +143,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
     };
 
     render(): React.ReactNode {
-        const { loading, solutions, alert } = this.state;
+        const { loading, solutions, alert, filterByTask, taskId } = this.state;
         if (!solutions) {
             return <div>loading</div>;
         }
@@ -128,6 +154,11 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                         {alert}
                     </div>
                 }
+                <div>
+                    <input name="filterByTask" type="checkbox" checked={filterByTask} onChange={(e) => this.setState({ filterByTask: e.currentTarget.checked })}/>
+                    <label> filter by Task Id</label>
+                    <input type="number" disabled={!filterByTask} value={taskId} onChange={(e) => { this.setState({ taskId: parseInt(e.target.value) })}} />
+                </div>
                 <ScoreBoard
                     loading={loading}
                     solutions={solutions!}
