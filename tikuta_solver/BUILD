@@ -12,6 +12,7 @@ cc_binary(
     srcs = ["main2.cc"],
     deps = [
         "//base:ai",
+        "//base:graph",
         "//tailed:LKH3",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings",

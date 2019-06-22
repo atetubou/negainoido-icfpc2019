@@ -41,7 +41,7 @@ public:
 
   int shortest_path(int sx, int sy, int gx, int gy);
   int shortest_path(int sx, int sy, int gx, int gy,
-		    std::vector<std::pair<int, int>> &path);
+		    std::vector<pos> &path);
 
   int to_graph_node(int x, int y);
 

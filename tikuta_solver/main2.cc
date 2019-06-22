@@ -10,6 +10,7 @@
 #include "absl/strings/str_join.h"
 
 #include "base/ai.h"
+#include "base/graph.h"
 #include "tailed/LKH3_wrapper.h"
 
 DEFINE_string(LKH3path, "./tailed/LKH", "");
@@ -70,4 +71,25 @@ int main(int argc, char *argv[]) {
 
   auto groups = get_groups(ai, tsp_tours);
 
+  std::vector<pos> order;
+  for (const auto& group : groups) {
+    for (const auto& p : group) {
+      order.push_back(p);
+    }
+  }
+
+  GridGraph gridg(ai.board);
+
+  for (auto i = 0u; i + 1 < order.size(); ++i) {
+    const auto& s = order[i];
+    const auto& g = order[i+1];
+    std::vector<pos> path;
+    gridg.shortest_path(s.first, s.second,
+			g.first, g.second, path);
+    auto actions = GridGraph::path_to_actions(path);
+    for (auto c : actions) {
+      std::cout << direction_to_char(c);
+    }
+  }
+  std::cout << std::endl;
 }
