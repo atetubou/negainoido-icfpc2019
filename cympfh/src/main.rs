@@ -76,29 +76,6 @@ fn dump(ai: &AI, w: &*mut i8, message: &String) {
     waddstr(*w, &ai.print_commands());
 }
 
-fn extension_positions(ai: &AI, idx: usize) -> Vec<Position> {
-    let Position(x, y) = ai.workers[idx].current_pos;
-    let mut ret = vec![];
-    for i in x-10..=x+10 {
-        for j in y-10..=y+10 {
-            let mut can_use = false;
-            for &Position(x, y) in ai.workers[idx].manipulator_range.iter() {
-                let dist = (i - x).abs() + (j - y).abs();
-                if dist == 0 {
-                    can_use = false;
-                    break;
-                } else if dist == 1 {
-                    can_use = true;
-                }
-            }
-            if can_use {
-                ret.push(Position(i, j))
-            }
-        }
-    }
-    ret
-}
-
 fn main() {
 
     let args: Vec<String> = env::args().collect();
@@ -201,14 +178,17 @@ fn main() {
                 message = String::from("Turn CW");
             },
             CHAR_B => {
-                let ps = extension_positions(&ai, 0);
+                let ps = ai.extension_positions(0);
                 if ps.len() == 0 {
                     changed = false;
-                    message = String::from("Cannot Use Extension (B)");
+                    message = String::from("No Candidates for Extension (B)");
                 } else {
                     let i: usize = rand::random();
-                    ai.use_extension(0, ps[i % ps.len()]);
-                    message = format!("Using Extension (B) at {:?}", ps[i % ps.len()]);
+                    if ai.use_extension(0, ps[i % ps.len()]) {
+                        message = format!("Using Extension (B) at {:?}", ps[i % ps.len()]);
+                    } else {
+                        message = format!("Cannot Apply Extension (B) at {:?}", ps[i % ps.len()]);
+                    }
                 }
             },
             CHAR_Q => {
