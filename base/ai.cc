@@ -156,12 +156,11 @@ bool AI::fill_cell(Position pos) {
   if (!reachable(pos)) {
     return false;
   }
-  if (filled[x][y]) {
-    return false;
+
+  if (!filled[x][y]) {
+    filled_count++;
   }
   filled[x][y] = true;
-  filled_count++;
-
   if (pos != worker.current_pos)
     return true;
 
@@ -179,6 +178,7 @@ bool AI::fill_cell(Position pos) {
     default:
       break;
   }
+  board[x][y] = '.';
 
   return true;
 }
