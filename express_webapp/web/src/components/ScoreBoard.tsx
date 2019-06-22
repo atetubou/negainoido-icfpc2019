@@ -26,6 +26,7 @@ const ScoreBoard = (props: Props) => {
             <table>
                 <tr>
                     <th>Task ID</th>
+                    <th>Solution ID</th>
                     <th>Solver</th>
                     <th>Score</th>
                     <th>isValid</th>
@@ -37,6 +38,7 @@ const ScoreBoard = (props: Props) => {
                         return (
                             <tr>
                                 <td>{task.taskId}</td>
+                                <td>{task.solutionId}</td>
                                 <td>{task.solver}</td>
                                 <td>{task.score}</td>
                                 <td>{task.valid ?

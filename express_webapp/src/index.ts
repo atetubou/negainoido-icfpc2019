@@ -120,35 +120,10 @@ app.post('/solution', async (req, res, next) => {
     const task_id = parseInt(req.body['task']) || 0;
     const data = (req.files!.file as fileUpload.UploadedFile).data;
     let valid = false;
-    let score;
+    const score = parseInt(req.body['score']) || -1;
     if (!req.body['score']) {
         const desc = '';
         const sol = '';
-        const tmp = os.tmpdir();
-        const key = makeRandomId(`${solver}_${task_id}_`);
-        const file = Path.join(tmp, key);
-
-        await new Promise((resolve, reject) => {
-            fs.writeFile(file, data, async (err) => {
-                if (err) {
-                    console.error('failed to write file: ' + err);
-                    reject(err);
-                } else {
-                    runSim(getDescFile(task_id), file)
-                        .then((s) => {
-                            score = parseInt(s);
-                            valid = true;
-                            resolve();
-                        })
-                        .catch((e) => {
-                            console.log('Failed to run sim : ' + e);
-                            reject(e);
-                        });
-                }
-            });
-        });
-    } else {
-        score = parseInt(req.body['score']);
     }
 
     const solution = new LSolution({solver, task_id, score, valid});
@@ -176,6 +151,31 @@ app.post('/solution', async (req, res, next) => {
                 });
             }
         });
+        const tmp = os.tmpdir();
+        const key = makeRandomId(`${solver}_${task_id}_`);
+        const file = Path.join(tmp, key);
+
+        new Promise((resolve, reject) => {
+            fs.writeFile(file, data, async (err) => {
+                if (err) {
+                    console.error('failed to write file: ' + err);
+                    reject(err);
+                } else {
+                    runSim(getDescFile(task_id), file)
+                        .then((s) => {
+                            model.score = parseInt(s);
+                            model.valid = true;
+                            model.save().then(resolve).catch(reject);
+                        })
+                        .catch((e) => {
+                            console.log('Failed to run sim : ' + e);
+                            reject(e);
+                        });
+                }
+            });
+        }).catch((e) => {
+            console.log('error in validate: ' + e);
+        });
     }).catch((e) => {
         console.error('error: ' + e);
         next(e);
@@ -192,7 +192,7 @@ const getSolutionById = (id: number) => {
 const getBestSolutionModel = (taskId: number, valid = false) => {
     return LSolution.findOne({
         attributes: ['id', 'solver', 'task_id', 'valid'],
-        where: { task_id: taskId, valid },
+        where: { task_id: taskId, valid, score: { [Op.gt]: 0 } },
         order: [['score', 'ASC']]
     });
 };
@@ -225,6 +225,7 @@ import * as os from "os";
 import * as Path from "path";
 import * as fs from "fs";
 import {formatNumber, getDescFile, makeRandomId} from "./utils";
+import { Op } from "sequelize";
 
 
 app.get('/solution/best/zip', async (req, res, next) => {
