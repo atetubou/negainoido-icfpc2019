@@ -173,4 +173,5 @@ int main() {
     // std::cerr << "State-------" << std::endl;
     // ai->dump_state();
   }
+  ai->print_commands();
 }
