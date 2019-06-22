@@ -1,10 +1,13 @@
 #ifndef GRAPH_H
 #define GRAPH_H
 
-#include <vector>
-#include <set>
 #include <stdint.h>
 
+#include <vector>
+#include <set>
+#include <string>
+
+#include "base/ai.h"
 
 class GraphDistance {
   struct Edge {
@@ -18,8 +21,7 @@ class GraphDistance {
   std::vector<std::vector<Edge>> graph;
   std::vector<int> distance;
   std::vector<int> prev;
-  
-  
+
  public:
   GraphDistance(uint32_t V);
   void add_edge(int src, int dst, int weight);
@@ -31,6 +33,27 @@ class GraphDistance {
 };
 
 
+class GridGraph {
+public:
+  GridGraph(const std::vector<std::string>& board);
+
+  using pos = std::pair<int, int>;
+
+  int shortest_path(int sx, int sy, int gx, int gy);
+  int shortest_path(int sx, int sy, int gx, int gy,
+		    std::vector<std::pair<int, int>> &path);
+
+  int to_graph_node(int x, int y);
+
+  // returns (x, y) in grid from graph node.
+  std::pair<int, int> to_grid_node(int v);
+
+  static Direction move_to_action(const pos& a, const pos& b);
+  static std::vector<Direction> path_to_actions(const std::vector<pos>& path);
+
+private:
+  std::vector<std::string> board_;
+  GraphDistance graph_;
+};
 
 #endif /* GRAPH_H */
-

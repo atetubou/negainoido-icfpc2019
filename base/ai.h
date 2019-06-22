@@ -1,8 +1,11 @@
 #pragma once
+
 #include<string>
 #include<vector>
 #include<map>
+
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 
 enum class Direction {
   Right = 0,
@@ -10,6 +13,9 @@ enum class Direction {
   Left,
   Up,
 };
+
+char direction_to_char(Direction d);
+absl::optional<Direction> char_to_direction(char c);
 
 typedef std::pair<int32_t, int32_t> Position;
 
@@ -59,14 +65,17 @@ class AI {
   bool valid_pos(Position);
   bool move_body(const Direction &dir);
 
-  std::vector<std::string> executed_cmds;
+
+  void initialize();
 
 public:
 
   AI();
+  AI(const std::string filename);
 
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
+  std::vector<std::string> executed_cmds;
 
   int get_height();
   int get_width();
@@ -84,6 +93,11 @@ public:
   int get_count_fast();
   int get_count_drill();
   int get_count_extension();
+
+  // Gets the unit time until each tool is consumed.
+  // Returns 0 if the tool is not used now.
+  int get_duration_fast();
+  int get_duration_drill();
 
   // Returns the position that is next to the current position.
   Position get_neighbor(const Direction &dir);

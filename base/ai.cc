@@ -1,10 +1,64 @@
 #include <iostream>
+#include <fstream>
 #include <cassert>
 #include "base/base.h"
 #include "base/ai.h"
 #include "base/geometry.h"
 #include "absl/strings/str_split.h"
 #include <glog/logging.h>
+
+char direction_to_char(Direction d) {
+  switch (d) {
+  case Direction::Right:
+    return 'D';
+  case Direction::Left:
+    return 'A';
+  case Direction::Up:
+    return 'W';
+  case Direction::Down:
+    return 'S';
+  }
+
+  LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
+}
+
+// relative p when Right => ??? when dir
+Position rotate(Position p, Direction d) {
+  switch (d) {
+  case Direction::Right:
+    return { p.first, p.second };
+  case Direction::Up:
+    return { -p.second, p.first };
+  case Direction::Left:
+    return { -p.first, -p.second };
+  case Direction::Down:
+    return { p.second, -p.first };
+  }
+  LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
+}
+
+// relative p when dir => ??? when Right
+Position rotate_reverse(Position p, Direction dir) {
+  Position q = rotate(p, dir);
+  q = rotate(q, dir);
+  q = rotate(q, dir);
+  return q;
+}
+
+absl::optional<Direction> char_to_direction(char c) {
+  switch(c) {
+  case 'D':
+    return Direction::Right;
+  case 'A':
+    return Direction::Left;
+  case 'W':
+    return Direction::Up;
+  case 'S':
+    return Direction::Down;
+  };
+
+  return absl::nullopt;
+}
 
 Worker::Worker(Position pos) {
   current_pos = pos;
@@ -53,13 +107,13 @@ bool AI::reachable(Position target) {
   return true;
 }
 
-
-AI::AI() {
+void AI::initialize() {
   std::cin >> height >> width;
   std::string buf;
   while (std::cin >> buf) {
     board.push_back(buf);
   }
+
   Position worker_pos = std::make_pair(0, 0);
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
@@ -82,16 +136,35 @@ AI::AI() {
   }
 }
 
+AI::AI() {
+  initialize();
+}
+
+AI::AI(const std::string filename) {
+  std::ifstream in(filename.c_str());
+  LOG_IF(FATAL, !in) <<
+    "failed to open " << filename;
+
+  std::cin.rdbuf(in.rdbuf());
+
+  initialize();
+}
+
 bool AI::fill_cell(Position pos) {
   int x = pos.first;
   int y = pos.second;
   if (!reachable(pos)) {
     return false;
   }
-  if (filled[x][y]) {
-    return false;
+
+  if (!filled[x][y]) {
+    filled_count++;
   }
   filled[x][y] = true;
+  if (pos != worker.current_pos)
+    return true;
+
+  // Pick up a booster if pos == worker's position
   switch(board[x][y]) {
     case 'B':
       worker.count_extension += 1;
@@ -105,9 +178,7 @@ bool AI::fill_cell(Position pos) {
     default:
       break;
   }
-
-  filled[x][y] = true;
-  filled_count++;
+  board[x][y] = '.';
 
   return true;
 }
@@ -126,6 +197,9 @@ int AI::get_filled_count() { return filled_count; }
 int AI::get_count_fast() { return worker.count_fast; }
 int AI::get_count_drill() { return worker.count_drill; }
 int AI::get_count_extension() { return worker.count_extension; }
+
+int AI::get_duration_fast() { return worker.duration_fast; }
+int AI::get_duration_drill() { return worker.duration_drill; }
 
 Position AI::get_neighbor(const Direction &dir) {
   const int dx[] = {0,1, 0,-1};
@@ -154,24 +228,9 @@ std::vector<Position> AI::get_absolute_manipulator_positions() {
   std::vector<Position> ret;
 
   for (Position&p : worker.manipulator_range) {
-    Position mani;
-    switch (get_dir()) {
-      case Direction::Right:
-        mani = { self.first + p.first, self.second + p.second };
-        break;
-      case Direction::Up:
-        mani = { self.first - p.second, self.second + p.first };
-        break;
-      case Direction::Left:
-        mani = { self.first - p.first, self.second - p.second };
-        break;
-      case Direction::Down:
-        mani = { self.first + p.second, self.second - p.first };
-        break;
-      default:
-        LOG(FATAL) << "UNKNOWN DIRECTION " << static_cast<int>(get_dir());
-        break;
-    }
+    Position mani = rotate(p, get_dir());
+    mani.first += self.first;
+    mani.second += self.second;
     ret.push_back(mani);
   }
   return ret;
@@ -282,9 +341,11 @@ bool AI::use_extension(const int dx, const int dy) {
   if(!can_use)
     return false;
 
-  worker.manipulator_range.push_back({dx, dy});
+  worker.manipulator_range.push_back( rotate_reverse({dx, dy}, get_dir()) );
   worker.count_extension--;
-  auto cmd = "B(" + std::to_string(dx) + "," + std::to_string(dx) + ")";
+
+  // Convert coordinate: (dx, dy) -> (dy, -dx)
+  auto cmd = "B(" + std::to_string(dy) + "," + std::to_string(-dx) + ")";
   executed_cmds.push_back(cmd);
 
   return true;
@@ -297,8 +358,8 @@ void AI::dump_state() {
   std::cerr << "duration: drill=" << worker.duration_drill << ", fast: " << worker.duration_fast << std::endl;
   auto p = get_pos();
 
-  for(auto i = 0; i < height; ++i) {
-    for(auto j = 0; j < width; ++j) {
+  for(int i = 0; i < height; ++i) {
+    for(int j = 0; j < width; ++j) {
       if(i == p.first && j == p.second) {
         std::cerr << "@";
       } else if(filled[i][j]) {
