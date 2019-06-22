@@ -65,7 +65,6 @@ class AI {
   bool valid_pos(Position);
   bool move_body(const Direction &dir);
 
-  std::vector<std::string> executed_cmds;
 
 public:
 
@@ -73,6 +72,7 @@ public:
 
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
+  std::vector<std::string> executed_cmds;
 
   int get_height();
   int get_width();
