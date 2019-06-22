@@ -36,6 +36,8 @@ class GridGraph {
 public:
   GridGraph(const std::vector<std::string>& board);
 
+  using pos = std::pair<int, int>;
+
   int shortest_path(int sx, int sy, int gx, int gy);
   int shortest_path(int sx, int sy, int gx, int gy,
 		    std::vector<std::pair<int, int>> &path);
@@ -44,6 +46,9 @@ public:
 
   // returns (x, y) in grid from graph node.
   std::pair<int, int> to_grid_node(int v);
+
+  static char move_to_action(const pos& a, const pos& b);
+  static std::string path_to_actions(const std::vector<pos>& path);
 
 private:
   std::vector<std::string> board_;
