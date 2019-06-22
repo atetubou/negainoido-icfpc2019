@@ -30,7 +30,7 @@ validator=./bazel-bin/binary_validator/binary_validator
 for task in `seq -w 1 999`
 do
     if [ ! -f problems/prob-$task.in ]; then
-        break
+        continue
     fi
     $solver < problems/prob-$task.in > ans
     result=0

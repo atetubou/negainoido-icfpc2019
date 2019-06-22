@@ -26,8 +26,11 @@ bazel build $target
 
 solver=./bazel-bin/$(echo $target | sed -e 's$:$/$g' -e 's$//$$g')
 
-for task in `seq -w 1 220`
+for task in `seq -w 1 999`
 do
+    if [ ! -f problems/prob-$task.in ]; then
+        continue
+    fi
     $solver < problems/prob-$task.in > ans
     # score=$(grep -o '[A-Z]' ans | wc -l)
     result=0
