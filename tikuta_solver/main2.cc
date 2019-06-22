@@ -86,7 +86,12 @@ int main(int argc, char *argv[]) {
   auto groups = get_groups(ai, tsp_tours);
 
   std::vector<pos> order;
-  for (const auto& group : groups) {
+  for (auto group : groups) {
+    if (group != groups[0]) {
+      std::sort(group.begin(), group.end());
+    } else {
+      std::sort(group.begin()+1, group.end());
+    }
     LOG(INFO) << "group " << group;
     for (const auto& p : group) {
       order.push_back(p);
@@ -106,6 +111,7 @@ int main(int argc, char *argv[]) {
     for (auto c : actions) {
       spath +=  direction_to_char(c);
     }
+    LOG(INFO) << s << " " << g << " " << spath;
     std:: cout << spath;
   }
   std::cout << std::endl;
