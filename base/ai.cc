@@ -160,6 +160,12 @@ bool AI::fill_cell(Position pos) {
     return false;
   }
   filled[x][y] = true;
+  filled_count++;
+
+  if (pos != worker.current_pos)
+    return true;
+
+  // Pick up a booster if pos == worker's position
   switch(board[x][y]) {
     case 'B':
       worker.count_extension += 1;
@@ -173,9 +179,6 @@ bool AI::fill_cell(Position pos) {
     default:
       break;
   }
-
-  filled[x][y] = true;
-  filled_count++;
 
   return true;
 }
