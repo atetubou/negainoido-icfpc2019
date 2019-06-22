@@ -153,7 +153,8 @@ impl AI {
         let Position(x, y) = *p;
         if !self.valid_pos(p) { return false; }
         if !self.reachable(idx, p) { return false; }
-        if self.filled[x as usize][y as usize] { return false; }
+
+        // pick up when item is on body,
         if self.workers[idx].current_pos == *p {  // when on body
           match self.board[x as usize][y as usize] {
               'B' => { self.count_extension += 1; },
@@ -164,6 +165,8 @@ impl AI {
           }
           self.board[x as usize][y as usize] = '.';
         }
+
+        if self.filled[x as usize][y as usize] { return false; }
         self.filled[x as usize][y as usize] = true;
         self.filled_count += 1;
         true
@@ -307,10 +310,13 @@ impl AI {
         }
         if !can_use { return false; }
         self.count_extension -= 1;
-        self.executed_cmds.push(format!("B({},{})", p.1, -p.1));
+        self.executed_cmds.push(format!("B({},{})", p.1, -p.0));
         {
           let q = p.rotate_reverse(self.workers[idx].current_dir);
           self.workers[idx].manipulator_range.push(q);
+        }
+        for &p in self.get_absolute_manipulator_positions(idx).iter() {
+            self.fill_cell(idx, &p);
         }
         true
     }
