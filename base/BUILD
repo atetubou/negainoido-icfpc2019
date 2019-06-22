@@ -32,6 +32,7 @@ cc_library(
     srcs = ["graph.cc"],
     hdrs = ["graph.h"],
     deps = [
+        "@com_google_glog//:glog",
     ],
 )
 
