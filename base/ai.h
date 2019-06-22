@@ -1,8 +1,11 @@
 #pragma once
+
 #include<string>
 #include<vector>
 #include<map>
+
 #include "absl/strings/string_view.h"
+#include "absl/types/optional.h"
 
 enum class Direction {
   Right = 0,
@@ -10,6 +13,9 @@ enum class Direction {
   Left,
   Up,
 };
+
+char direction_to_char(Direction d);
+absl::optional<Direction> char_to_direction(char c);
 
 typedef std::pair<int32_t, int32_t> Position;
 
