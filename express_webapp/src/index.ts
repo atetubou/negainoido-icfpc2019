@@ -2,6 +2,7 @@ import * as express from 'express';
 import * as path from 'path';
 import * as morgan from 'morgan';
 import * as timeout from 'connect-timeout'
+import runSim from './runSim';
 
 const normalizePort = (val: string) => {
     var port = parseInt(val, 10);
@@ -17,7 +18,7 @@ const normalizePort = (val: string) => {
 const app = express();
 const port = normalizePort(process.env.PORT || '3000');
 
-app.use(timeout('30s'));
+app.use(timeout('180s'));
 
 var morgan = require('morgan');
 app.use(morgan('combined'));
@@ -178,6 +179,9 @@ const getBestSolution = (taskId: number) => {
 import * as archiver from 'archiver';
 import {GetObjectOutput} from "aws-sdk/clients/s3";
 import {Readable} from "stream";
+import * as os from "os";
+import * as Path from "path";
+import * as fs from "fs";
 
 const formatNumber =(n: number) => {
     let tmp = n;
@@ -225,6 +229,58 @@ app.get('/solution/best', async (req, res, next) => {
             console.error(e);
             next(e);
         });
+});
+
+app.get('/solution/:id/validate', async (req, res, next) => {
+    const id = parseInt(req.params['id']);
+
+    const target = await LSolution.findOne({
+        attributes: ['id', 'solver', 'task_id'],
+        where: { id: id },
+    }).catch((e) => {
+        console.error("DB error" + e);
+        res.status(500);
+        res.json({ error: e });
+    });
+
+    if (!target) {
+        console.error("error");
+        res.status(404);
+        res.render('not found solution');
+        return;
+    }
+    const s3 = new AWS.S3();
+    const key = generateKey(target);
+
+    const params = {
+        Bucket: defaultBucket,
+        Key: key,
+    };
+    s3.getObject(params, (err, data) => {
+        if (err) {
+            console.error('failed to download: ' + err);
+            next(err);
+        } else {
+            const tmp = os.tmpdir();
+            const file = Path.join(tmp, key + '.sol');
+            fs.writeFile(Path.join(tmp, key + '.sol'), data.Body, (err) => {
+                console.error('failed to write file: ' + err);
+                next(err);
+            });
+            runSim(Path.join(__dirname, '../descs', `prob-${formatNumber(target.task_id)}.desc`), file)
+                .then((score) => {
+                    target.score = parseInt(score);
+                    return target.save().then(() => {
+                        res.json({ solution: target });
+                    });
+                })
+                .catch((e) => {
+                    console.log('Failed to run sim : ' + e);
+                    next(e);
+                });
+
+        }
+    });
 });
 
 app.get('/solution/best/:id', async (req, res, next) => {
