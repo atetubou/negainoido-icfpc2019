@@ -1,6 +1,6 @@
 cc_library(
-  name = "union_find",
-  hdrs = ["union_find.h"]
+    name = "union_find",
+    hdrs = ["union_find.h"],
 )
 
 cc_binary(
