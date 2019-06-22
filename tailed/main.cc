@@ -1,4 +1,4 @@
-// vim-compile: bazel build --verbose_failures //tailed/... && ../bazel-bin/tailed/tailed < ../part-1-initial/prob-002.in --LKH3path ./LKH
+// vim-compile: bazel build --verbose_failures //tailed/... && ../bazel-bin/tailed/tailed < ../problems/prob-002.in --LKH3path ./LKH
 
 
 #include <bits/stdc++.h>

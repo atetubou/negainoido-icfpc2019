@@ -3,7 +3,7 @@
 The algorithm is same with tikuta_solver's one.
 
 example usage:
-$ bazel run //sample_ai:sample_ai < part-1-initial/prob-001.in
+$ bazel run //sample_ai:sample_ai < problems/prob-001.in
 WWDSAWDDSAWDDS
 */
 
