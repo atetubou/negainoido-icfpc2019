@@ -172,36 +172,35 @@ int GridGraph::shortest_path(int sx, int sy, int gx, int gy,
 }
 
 /* static */
-char GridGraph::move_to_action(const GridGraph::pos& a,
+Direction GridGraph::move_to_action(const GridGraph::pos& a,
 			       const GridGraph::pos& b) {
   LOG_IF(FATAL, abs(a.first - b.first) + abs(a.second - b.second) != 1)
     << "Invalid args " << a << " " << b;
 
   if (a.first + 1 == b.first) {
-    return 'D';
+    return Direction::Right;
   }
 
   if (a.first - 1 == b.first) {
-    return 'A';
+    return Direction::Left;
   }
 
   if (a.second + 1 == b.second) {
-    return 'W';
+    return Direction::Up;
   }
 
   if (a.second - 1 == b.second) {
-    return 'S';
+    return Direction::Down;
   }
 
   LOG(FATAL) << "Invalid args " << a << " " << b;
-  return '\0';
 }
 
 /* static */
-std::string GridGraph::path_to_actions(const std::vector<pos>& path) {
-  std::string actions;
+std::vector<Direction> GridGraph::path_to_actions(const std::vector<pos>& path) {
+  std::vector<Direction> actions;
   for (size_t i = 0; i + 1 < path.size(); ++i) {
-    actions += move_to_action(path[i], path[i+1]);
+    actions.push_back(move_to_action(path[i], path[i+1]));
   }
   return actions;
 }

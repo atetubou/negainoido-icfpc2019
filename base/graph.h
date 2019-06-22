@@ -7,6 +7,7 @@
 #include <set>
 #include <string>
 
+#include "base/ai.h"
 
 class GraphDistance {
   struct Edge {
@@ -47,8 +48,8 @@ public:
   // returns (x, y) in grid from graph node.
   std::pair<int, int> to_grid_node(int v);
 
-  static char move_to_action(const pos& a, const pos& b);
-  static std::string path_to_actions(const std::vector<pos>& path);
+  static Direction move_to_action(const pos& a, const pos& b);
+  static std::vector<Direction> path_to_actions(const std::vector<pos>& path);
 
 private:
   std::vector<std::string> board_;
