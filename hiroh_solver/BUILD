@@ -3,6 +3,5 @@ cc_binary(
     srcs = ["duskin_ai.cc"],
     deps = [
         "@com_google_absl//absl/types:optional",
-    ]
-
+    ],
 )

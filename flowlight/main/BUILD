@@ -2,9 +2,10 @@ cc_binary(
     name = "flowlight_solver",
     srcs = ["main.cc"],
     deps = [
-        "@com_google_glog//:glog",
-        "//base:base",
+        "//base",
+        "//base:ai",
         "//base:flags",
-        "//base:ai"
-    ]
+        "//base:graph",
+        "@com_google_glog//:glog",
+    ],
 )

@@ -5,7 +5,7 @@
 #include "absl/strings/string_view.h"
 
 enum class Direction {
-  Right,
+  Right = 0,
   Down,
   Left,
   Up,
@@ -31,51 +31,89 @@ public:
     {-1, 1},
   };
 
-  uint32_t count_fast = 0;
-  uint32_t count_drill = 0;
-  uint32_t count_extension = 0;
+  int count_fast = 0;
+  int count_drill = 0;
+  int count_extension = 0;
 
   // Remaining duration for each drill's effect.
-  static const uint32_t FAST_DURATION_MAX = 50;
-  static const uint32_t DRILL_DURATION_MAX = 30;
-  uint32_t duration_drill = 0;
-  uint32_t duration_fast = 0;
+  static const int DURATION_FAST_MAX = 50;
+  static const int DURATION_DRILL_MAX = 30;
+  int duration_drill = 0;
+  int duration_fast = 0;
 };
 
 class AI {
-
   static const int32_t H_MAX = 1000;
-  uint32_t current_time = 0;
+  int current_time = 0;
+  int height = 0;
+  int width = 0;
+
+  int filled_count = 0;
+  int block_count = 0;
 
   bool fill_cell(Position);
 
   Worker worker;
 
   void next_turn();
-
   bool valid_pos(Position);
+  bool move_body(const Direction &dir);
+
+  std::vector<std::string> executed_cmds;
 
 public:
 
-  bool reachable(Position);
-
   AI();
 
-  uint32_t h, w;
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
-  uint32_t get_time();
-  Position get_pos();
-  Direction get_dir();
-  std::vector<Position> get_absolute_manipulator_positions();
-  uint32_t get_count_fast();
-  uint32_t get_count_drill();
-  uint32_t get_count_extension();
 
+  int get_height();
+  int get_width();
+
+  // Gets current time
+  int get_time();
+  // Gets the current position
+  Position get_pos();
+  // Gets the current direction
+  Direction get_dir();
+  // Gets the current direction
+  int get_filled_count();
+
+  // Gets the number of available boosters
+  int get_count_fast();
+  int get_count_drill();
+  int get_count_extension();
+
+  // Returns the position that is next to the current position.
+  Position get_neighbor(const Direction &dir);
+
+  // Gets the all (possible) positions of manipulators.
+  // It may be in invalid postion. (e.g. out of the map, unreachable postion)
+  std::vector<Position> get_absolute_manipulator_positions();
+
+  // Checks if pos is 'reachable' from the current position.
+  bool reachable(Position pos);
+
+  // Checks if the robot can move to the direction.
+  // This doesn't change any internal state.
+  bool try_move(const Direction &dir);
+
+  // Executes a command and updates the internal state.
+  // If it's a invalid move, it returns false without changing internal states.
   bool move(const Direction &dir);
   bool use_extension(const int dx, const int dy);
   bool use_fast_wheel();
   bool use_drill();
-  void turn_CW();
+  void turn_CW();  // Turn commands always succeed
   void turn_CCW();
+
+  // Checks if get_filled_count() == Height * Width
+  bool is_finished();
+  // Outputs executed commands to stdout
+  void print_commands();
+
+
+  // Prints AI's state for debugging.
+  void dump_state();
 };
