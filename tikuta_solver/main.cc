@@ -1,7 +1,7 @@
 /*
 
 example usage:
-$ bazel run //tikuta_solver:tikuta_solver < part-1-initial/prob-001.in
+$ bazel run //tikuta_solver:tikuta_solver < problems/prob-001.in
 WWDSSDWWDSSDWWDSSWDD
 */
 
