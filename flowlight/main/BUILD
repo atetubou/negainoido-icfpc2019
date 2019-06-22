@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
   name = "union_find",
   hdrs = ["union_find.h"]
@@ -22,14 +24,3 @@ cc_binary(
         "@com_google_glog//:glog",
     ],
 )
-
-cc_binary(
-    name = "puzzle_solver",
-    srcs = ["puzzle_solver.cc"],
-    deps = [
-        "//base:graph",
-        ":common",
-        "@com_google_glog//:glog",
-    ],              
-)
-
