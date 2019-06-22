@@ -94,6 +94,11 @@ public:
   int get_count_drill();
   int get_count_extension();
 
+  // Gets the unit time until each tool is consumed.
+  // Returns 0 if the tool is not used now.
+  int get_duration_fast();
+  int get_duration_drill();
+
   // Returns the position that is next to the current position.
   Position get_neighbor(const Direction &dir);
 

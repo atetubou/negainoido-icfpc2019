@@ -23,6 +23,7 @@ public:
   void pick_up_extensions();
   absl::optional<Position> decide_extension_pos();
   void try_to_use_extensions();
+  void try_to_use_fast_weel();
   void konmari_move();
   Position get_nearest_unfilled(std::vector<std::pair<int,int>>* path);
 
@@ -43,6 +44,13 @@ private:
 
   GridGraph graph;
 };
+
+void KonmariAI::try_to_use_fast_weel() {
+  if (get_duration_fast() > 0)
+    return;
+  if (get_count_fast() > 0)
+    use_fast_wheel();
+}
 
 absl::optional<Position> KonmariAI::decide_extension_pos() {
   std::set<Position> unfilled_cands;
@@ -148,6 +156,8 @@ Position KonmariAI::get_nearest_unfilled(std::vector<std::pair<int,int>>* path) 
 
 void KonmariAI::konmari_move() {
   try_to_use_extensions();
+  // Fast wheel is dangerous!!!
+  // try_to_use_fast_weel();
   std::vector<std::pair<int,int>> path;
   auto dst = get_nearest_unfilled(&path);
   DLOG(INFO) << "dst=" << dst.first << " " << dst.second;
