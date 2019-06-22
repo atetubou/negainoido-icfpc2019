@@ -83,7 +83,7 @@ public:
   // Gets current time
   int get_time();
   // Gets the current position
-  Position get_pos();
+  Position get_pos() const;
   // Gets the current direction
   Direction get_dir();
   // Gets the current direction

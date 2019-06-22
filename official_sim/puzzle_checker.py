@@ -11,31 +11,22 @@ import os
 
 script_path = os.path.dirname(os.path.abspath(__file__))
 
-desc = sys.argv[1]
-sol = sys.argv[2]
-buy = ''
-if len(sys.argv) > 3:
-    buy = sys.argv[3];
+cond = sys.argv[1]
+desc = sys.argv[2]
     
-url = 'file://' + script_path + '/full_content/content.html'
+url = 'file://' + script_path + '/checker/checker.html'
 
 base_path = os.getcwd()
+
+if not os.path.isabs(cond):
+    cond = os.path.normpath(os.path.join(base_path, cond))
+else:
+    cond = os.path.normpath(cond)
 
 if not os.path.isabs(desc):
     desc = os.path.normpath(os.path.join(base_path, desc))
 else:
     desc = os.path.normpath(desc)
-
-if not os.path.isabs(sol):
-    sol = os.path.normpath(os.path.join(base_path, sol))
-else:
-    sol = os.path.normpath(sol)
-
-if buy:
-    if not os.path.isabs(buy):
-        buy = os.path.normpath(os.path.join(base_path, buy))
-    else:
-        buy = os.path.normpath(buy)
 
 options = ChromeOptions()
 # ヘッドレスモードを有効にする（次の行をコメントアウトすると画面が表示される）。
@@ -46,7 +37,7 @@ driver = Chrome(options=options)
 try:
     driver.get(url)
 
-    assert 'Checker' in driver.title
+    assert 'Puzzle' in driver.title
 
     # find input model file
     task_input = WebDriverWait(driver, 1000).until(
@@ -55,36 +46,14 @@ try:
     solution_input = WebDriverWait(driver, 1000).until(
         expected_conditions.presence_of_element_located((By.ID, "submit_solution"))
     )
-    booster_input = WebDriverWait(driver, 1000).until(
-        expected_conditions.presence_of_element_located((By.ID, "submit_boosters"))
-    )
     button = WebDriverWait(driver, 1000).until(
         expected_conditions.presence_of_element_located((By.ID, "execute_solution"))
     )
 
-    wait_limit = 300
-    task_input.send_keys(desc);
-    while wait_limit > 0:
-        stdout_text = WebDriverWait(driver, 1000).until(
-            expected_conditions.presence_of_element_located((By.ID, "output"))
-        ).text
-        if stdout_text.find('Done uploading task') >= 0:
-            break;
-        sleep(1)
-        wait_limit -= 1
-    solution_input.send_keys(sol)
-    while wait_limit > 0:
-        stdout_text = WebDriverWait(driver, 1000).until(
-            expected_conditions.presence_of_element_located((By.ID, "output"))
-        ).text
-        if stdout_text.find('Done uploading solution') >= 0:
-            break;
-        sleep(1)
-        wait_limit -= 1
-
-    if buy:
-        booster_input.send_keys(buy)
-    
+    task_input.send_keys(cond);
+    sleep(1)
+    solution_input.send_keys(desc)
+    sleep(1)
     button.click()
 
     stdout_text = ''
@@ -105,12 +74,11 @@ try:
         sleep(1)
         wait_limit -= 1
 
-    energy = re.search('Success! Your solution took ([0-9]+) time units.', stdout_text)
-    if energy == None:
+    if stdout_text.find('Success!') < 0:
         print('timeout')
         exit(1)
 
-    print(energy.group(1))
+    print('Success')
 # スクリーンショットを撮る。
 #driver.save_screenshot('tracer.png')
 

@@ -3,6 +3,7 @@
  * http://akira.ruc.dk/~keld/research/LKH-3/
  */
 
+#include "tailed/LKH3_wrapper.h"
 
 #include <algorithm>
 #include <fstream>
@@ -16,6 +17,9 @@
 #include <random>
 
 #include <experimental/filesystem>
+
+#include "glog/logging.h"
+
 using namespace std;
 
 
@@ -116,9 +120,10 @@ EOF
 }
 
 std::vector<std::pair<int, int>>
-SolveShrinkedTSP(const std::vector<std::string>& board, int n, const std::string& path_to_LKH3) {
+SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
   int sx = 0, sy = 0;
   std::vector<std::pair<int, int>> selected;
+  const auto& board = ai.board;
   std::vector<std::vector<int>>
     selected_to_pos(board.size(),
 		    std::vector<int>(board[0].size(), -1));
@@ -126,7 +131,7 @@ SolveShrinkedTSP(const std::vector<std::string>& board, int n, const std::string
   for (size_t i = 0; i < board.size(); ++i) {
     for (size_t j = 0; j < board[i].size(); ++j) {
       if (board[i][j] == '#') continue;
-      if (board[i][j] == 'W') {
+      if (ai.get_pos() == std::make_pair(int(i), int(j))){
 	sx = i;
 	sy = j;
 	continue;
@@ -156,41 +161,44 @@ SolveShrinkedTSP(const std::vector<std::string>& board, int n, const std::string
 
   std::vector<std::vector<int>> matrix(n, std::vector<int>(n, 1e8));
 
-  {
-    std::vector<std::vector<int>> a;
-    for (auto sidx = 0u; sidx < selected.size(); ++sidx) {
-      const auto& start = selected[sidx];
-      std::queue<std::pair<int, int>> q;
-      q.push(start);
-      std::vector<std::vector<int>> cost(board.size(),
-					 std::vector<int>(board[0].size(), -1));
-      cost[start.first][start.second] = 0;
+  for (auto sidx = 0u; sidx < selected.size(); ++sidx) {
+    const auto& start = selected[sidx];
+    std::queue<std::pair<int, int>> q;
+    q.push(start);
+    std::vector<std::vector<int>> cost(board.size(),
+				       std::vector<int>(board[0].size(), -1));
+    cost[start.first][start.second] = 0;
 
-      while (!q.empty()) {
-	const auto cur = q.front();
-	q.pop();
-	for (int i = 0; i < 4; ++i) {
-	  int nx = cur.first + dx[i];
-	  int ny = cur.second + dy[i];
-	  if (nx < 0 || ny < 0 ||
-	      nx >= static_cast<int>(board.size()) ||
-	      ny >= static_cast<int>(board[nx].size()) ||
-	      board[nx][ny] == '#' || cost[nx][ny] != -1) {
-	    continue;
-	  }
-	  cost[nx][ny] = cost[cur.first][cur.second] + 1;
-	  q.push(std::make_pair(nx, ny));
+    while (!q.empty()) {
+      const auto cur = q.front();
+      q.pop();
+      for (int i = 0; i < 4; ++i) {
+	int nx = cur.first + dx[i];
+	int ny = cur.second + dy[i];
+	if (nx < 0 || ny < 0 ||
+	    nx >= static_cast<int>(board.size()) ||
+	    ny >= static_cast<int>(board[nx].size()) ||
+	    board[nx][ny] == '#' || cost[nx][ny] != -1) {
+	  continue;
 	}
+	cost[nx][ny] = cost[cur.first][cur.second] + 1;
+	q.push(std::make_pair(nx, ny));
       }
+    }
 
-      for (auto gidx = 0u; gidx < selected.size(); ++gidx) {
-	const auto& g = selected[gidx];
-	matrix[sidx][gidx] = cost[g.first][g.second];
-      }
+    for (auto gidx = 0u; gidx < selected.size(); ++gidx) {
+      const auto& g = selected[gidx];
+      matrix[sidx][gidx] = cost[g.first][g.second];
     }
   }
 
+  for (auto i = 0u; i < selected.size(); ++i) {
+    matrix[i][0] = 0;
+  }
+
   const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
+
+  CHECK_EQ(ans.size(), selected.size());
 
   std::vector<std::pair<int, int>> ret;
   // find 0 (start position)

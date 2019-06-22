@@ -5,6 +5,7 @@
 #include <vector>
 
 #include <glog/logging.h>
+#include <glog/stl_logging.h>
 #include <gflags/gflags.h>
 
 #include "absl/strings/str_join.h"
@@ -65,14 +66,19 @@ int main(int argc, char *argv[]) {
   // AI's constructor accepts a input file from stdin.
   AI ai;
 
+  LOG(INFO) << ai.board;
+
   const AI init_ai = ai;
 
-  auto tsp_tours = SolveShrinkedTSP(ai.board, 100, FLAGS_LKH3path);
+  auto tsp_tours = SolveShrinkedTSP(ai, 100, FLAGS_LKH3path);
+
+  LOG(INFO) << tsp_tours;
 
   auto groups = get_groups(ai, tsp_tours);
 
   std::vector<pos> order;
   for (const auto& group : groups) {
+    LOG(INFO) << "group " << group;
     for (const auto& p : group) {
       order.push_back(p);
     }
@@ -87,9 +93,11 @@ int main(int argc, char *argv[]) {
     gridg.shortest_path(s.first, s.second,
 			g.first, g.second, path);
     auto actions = GridGraph::path_to_actions(path);
+    std::string spath;
     for (auto c : actions) {
-      std::cout << direction_to_char(c);
+      spath +=  direction_to_char(c);
     }
+    std:: cout << spath;
   }
   std::cout << std::endl;
 }

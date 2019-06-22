@@ -4,6 +4,10 @@ cc_library(
     name = "LKH3",
     srcs = ["LKH3_wrapper.cpp"],
     hdrs = ["LKH3_wrapper.h"],
+    deps = [
+        "//base:ai",
+        "@com_google_glog//:glog",
+    ],
 )
 
 cc_binary(
