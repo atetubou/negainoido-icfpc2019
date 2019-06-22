@@ -243,6 +243,13 @@ impl AI {
         if !self.try_move(idx, dir) { return false; }
         // move
         self.workers[idx].current_pos = self.get_neighbor(idx, dir);
+
+        let Position(wx, wy) = self.workers[idx].current_pos;
+        if self.board[wx as usize][wy as usize] == '#' {
+          self.board[wx as usize][wy as usize] = '.';
+          self.block_count -= 1;
+        }
+
         // fill && pick up
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
