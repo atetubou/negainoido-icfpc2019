@@ -1,6 +1,5 @@
 import * as express from 'express';
 import * as path from 'path';
-import * as morgan from 'morgan';
 import * as timeout from 'connect-timeout'
 import runSim from './runSim';
 
@@ -75,7 +74,26 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/solution', async (req, res, next) => {
-    const solutions = await LSolution.findAll();
+    const valid = req.params.valid || false;
+    const limit = req.params.limit;
+    const page = parseInt(req.params.page || '1');
+    const options: FindOptions = {
+        attributes: ['id', 'solver', 'task_id', 'score', 'valid'],
+    };
+    const where: any = {};
+    if (valid) {
+        where.valid = true;
+    }
+    if (where) {
+        options.where = where;
+    }
+    if (limit) {
+        options.limit = limit;
+    }
+    if (page > 1) {
+        options.offset = limit * (page - 1);
+    }
+    const solutions = await LSolution.findAll(options);
     res.json({ solutions });
 });
 
@@ -129,7 +147,7 @@ app.post('/solution', async (req, res, next) => {
 
     const solution = new LSolution({solver, task_id, score, valid});
 
-    solution.save().then((model) => {
+    solution.save().then(async (model) => {
         console.log('created object ' + model);
         const params = {
             Bucket: defaultBucket,
@@ -156,7 +174,7 @@ app.post('/solution', async (req, res, next) => {
         const key = makeRandomId(`${solver}_${task_id}_`);
         const file = Path.join(tmp, key);
 
-        new Promise((resolve, reject) => {
+        await new Promise((resolve, reject) => {
             fs.writeFile(file, data, async (err) => {
                 if (err) {
                     console.error('failed to write file: ' + err);
@@ -200,6 +218,9 @@ const getBestSolutionModel = (taskId: number, valid = false) => {
 
 const getBestSolution = (taskId: number, valid = false) => {
     return getBestSolutionModel(taskId, valid).then((model) => {
+        if (!model) {
+            return Promise.resolve();
+        }
         const s3 = new AWS.S3();
         const key = generateKey(model); 
         
@@ -226,7 +247,8 @@ import * as os from "os";
 import * as Path from "path";
 import * as fs from "fs";
 import {formatNumber, getDescFile, makeRandomId} from "./utils";
-import { Op } from "sequelize";
+import {FindOptions, Op} from "sequelize";
+import {promise} from "selenium-webdriver";
 
 
 app.get('/solution/best/zip', async (req, res, next) => {
@@ -238,7 +260,7 @@ app.get('/solution/best/zip', async (req, res, next) => {
         promises.push(getBestSolution(i, true));
     }
     await Promise.all(promises).then((solutions) => {
-        solutions.forEach((solution, i) => {
+        solutions.filter((solution) => solution).forEach((solution, i) => {
             const name = `prob-${formatNumber(i+1)}.sol`;
             archive.append(solution.Body as Readable, { name });
         });
@@ -253,9 +275,10 @@ app.get('/solution/best/zip', async (req, res, next) => {
 });
 
 app.get('/solution/best', async (req, res, next) => {
+    const valid = req.params.valid || false;
     let promises = [];
     for (let i = 1; i <= taskNum; i++) {
-        promises.push(getBestSolutionModel(i));
+        promises.push(getBestSolutionModel(i, valid));
     }
     Promise.all(promises).then((solutions) => {
         res.json({ solutions });
@@ -333,7 +356,7 @@ app.get('/solution/:id/validate', async (req, res, next) => {
         } else {
             const tmp = os.tmpdir();
             const file = Path.join(tmp, encodeURIComponent(key) + '.sol');
-            fs.writeFile(file, data.Body, (err) => {
+            fs.writeFile(file, data.Body, async (err) => {
                 if (err) {
                     console.error('failed to write file: ' + err);
                     next(err);
@@ -343,7 +366,7 @@ app.get('/solution/:id/validate', async (req, res, next) => {
                             target.score = parseInt(score);
                             target.valid = true;
                             return target.save().then(() => {
-                                res.json({ solution: target });
+                                res.json({solution: target});
                             });
                         })
                         .catch((e) => {
