@@ -298,7 +298,10 @@ impl AI {
         }
         let mut can_use = false;
         for &Position(x, y) in self.workers[idx].manipulator_range.iter() {
-            if (p.0 - x).abs() + (p.1 - y).abs() == 1 {
+            let dist = (p.0 - x).abs() + (p.1 - y).abs();
+            if dist == 0 {
+                return false;
+            } else if dist == 1 {
                 can_use = true;
             }
         }
