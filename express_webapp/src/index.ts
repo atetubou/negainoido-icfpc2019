@@ -264,20 +264,23 @@ app.get('/solution/:id/validate', async (req, res, next) => {
             const tmp = os.tmpdir();
             const file = Path.join(tmp, encodeURIComponent(key) + '.sol');
             fs.writeFile(file, data.Body, (err) => {
-                console.error('failed to write file: ' + err);
-                next(err);
+                if (err) {
+                    console.error('failed to write file: ' + err);
+                    next(err);
+                } else {
+                    runSim(Path.join(__dirname, '../descs', `prob-${formatNumber(target.task_id)}.desc`), file)
+                        .then((score) => {
+                            target.score = parseInt(score);
+                            return target.save().then(() => {
+                                res.json({ solution: target });
+                            });
+                        })
+                        .catch((e) => {
+                            console.log('Failed to run sim : ' + e);
+                            next(e);
+                        });
+                }
             });
-            runSim(Path.join(__dirname, '../descs', `prob-${formatNumber(target.task_id)}.desc`), file)
-                .then((score) => {
-                    target.score = parseInt(score);
-                    return target.save().then(() => {
-                        res.json({ solution: target });
-                    });
-                })
-                .catch((e) => {
-                    console.log('Failed to run sim : ' + e);
-                    next(e);
-                });
 
         }
     });
