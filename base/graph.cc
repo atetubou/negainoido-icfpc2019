@@ -140,7 +140,7 @@ GridGraph::GridGraph(const std::vector<std::string>& board)
       for (int k = 0; k < 4; ++k) {
 	int nx = i + dx[k];
 	int ny = j + dy[k];
-	if (nx < 0 || ny < 0 || nx >= w || ny >= h || board_[ny][nx] == '#') {
+	if (nx < 0 || ny < 0 || nx >= w || ny >= h || board_[nx][ny] == '#') {
 	  continue;
 	}
 
