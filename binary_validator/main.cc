@@ -135,5 +135,5 @@ int main(int argc, char *argv[]) {
     LOG(FATAL) << "AI terminated before it visits all cells";
   }
 
-  cerr << "OK" << endl;
+  cout << ai.get_time() << endl;
 }
