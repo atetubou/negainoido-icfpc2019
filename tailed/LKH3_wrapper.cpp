@@ -48,12 +48,12 @@ vector<int> SolveTSPByLKH3(const dist_matrix_t &d, const char *path_to_LKH3) {
 	file_tsp << "EDGE_WEIGHT_SECTION"  << endl;
 
 	for(int i = 0; i < n; i++) {
-		assert((int)d[i].size() == n);
-		for(int j = 0; j < n; j++) {
-			if (j) file_tsp << " ";
-			file_tsp << d[i][j];
-		}
-		file_tsp << endl;
+	  LOG_IF(FATAL, (int)d[i].size() != n);
+	  for(int j = 0; j < n; j++) {
+	    if (j) file_tsp << " ";
+	    file_tsp << d[i][j];
+	  }
+	  file_tsp << endl;
 	}
 
 	file_tsp << "EOF"  << endl;
@@ -67,9 +67,9 @@ vector<int> SolveTSPByLKH3(const dist_matrix_t &d, const char *path_to_LKH3) {
 	ofstream file_par(file_par_name.c_str());
 	file_par << "PROBLEM_FILE = " << file_tsp_name.c_str() << endl;
 	file_par << "MOVE_TYPE = 5" << endl;
-//	file_par << "PATCHING_C = 3" << endl;
-//	file_par << "PATCHING_A = 2" << endl;
-	file_par << "RUNS = 1" << endl;
+	file_par << "PATCHING_C = 3" << endl;
+	file_par << "PATCHING_A = 2" << endl;
+	// file_par << "RUNS = 1" << endl;
 	file_par << "OUTPUT_TOUR_FILE = " << file_output_name << endl;
 	file_par.close();
 
@@ -192,13 +192,18 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
     }
   }
 
-  for (auto i = 0u; i < selected.size(); ++i) {
-    matrix[i][0] = 0;
-  }
-
   const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
 
   CHECK_EQ(ans.size(), selected.size());
+  {
+    int sum = 0;
+    for (auto i = 0u; i + 1 < ans.size(); ++i) {
+      int s = ans[i];
+      int t = ans[i+1];
+      sum += matrix[s][t];
+    }
+    LOG(INFO) << "sum " << sum;
+  }
 
   std::vector<std::pair<int, int>> ret;
   // find 0 (start position)
@@ -213,6 +218,8 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
   for (auto i = 0u; i < ans.size(); ++i) {
     ret.push_back(selected[(start + i) % ans.size()]);
   }
+
+
   return ret;
 }
 
