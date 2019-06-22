@@ -1,4 +1,7 @@
 from selenium.webdriver import Chrome, ChromeOptions
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.common.by import By
 from time import sleep
 import re
 import sys
@@ -36,23 +39,50 @@ try:
     assert 'Checker' in driver.title
 
     # find input model file
-    task_input = driver.find_element_by_id('submit_task')
-    task_input.send_keys(desc);
-
-    solution_input = driver.find_element_by_id('submit_solution')
-    solution_input.send_keys(sol)
-    
-    button = driver.find_element_by_id('execute_solution')
-    button.click()
+    task_input = WebDriverWait(driver, 1000).until(
+        expected_conditions.presence_of_element_located((By.ID, "submit_task"))
+    )
+    solution_input = WebDriverWait(driver, 1000).until(
+        expected_conditions.presence_of_element_located((By.ID, "submit_solution"))
+    )
+    button = WebDriverWait(driver, 1000).until(
+        expected_conditions.presence_of_element_located((By.ID, "execute_solution"))
+    )
 
     wait_limit = 3000
+    task_input.send_keys(desc);
+    while wait_limit > 0:
+        stdout_text = WebDriverWait(driver, 1000).until(
+            expected_conditions.presence_of_element_located((By.ID, "output"))
+        ).text
+        if stdout_text.find('Done uploading task') >= 0:
+            break;
+        wait_limit -= 1
+    solution_input.send_keys(sol)
+    while wait_limit > 0:
+        stdout_text = WebDriverWait(driver, 1000).until(
+            expected_conditions.presence_of_element_located((By.ID, "output"))
+        ).text
+        if stdout_text.find('Done uploading solution') >= 0:
+            break;
+        wait_limit -= 1
+
+    
+    button.click()
+
     stdout_text = ''
     while wait_limit > 0:
-        stdout_text = driver.find_element_by_id('output').text
+        stdout_text = WebDriverWait(driver, 1000).until(
+            expected_conditions.presence_of_element_located((By.ID, "output"))
+        ).text
+
         if stdout_text.find('Success!') >= 0:
             break
         if stdout_text.find('Failed') >= 0 or stdout_text.find('Cannot check') >= 0:
             print('Found failure: ' + stdout_text)
+            exit(1)
+        if stdout_text.find('Not all parts of the task were covered.') >= 0:
+            print('Wrong solution: ' + stdout_text)
             exit(1)
         sleep(1)
         wait_limit -= 1
