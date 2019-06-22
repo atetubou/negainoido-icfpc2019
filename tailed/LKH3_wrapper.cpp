@@ -17,6 +17,9 @@
 #include <random>
 
 #include <experimental/filesystem>
+
+#include "glog/logging.h"
+
 using namespace std;
 
 
@@ -189,7 +192,13 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
     }
   }
 
+  for (auto i = 0u; i < selected.size(); ++i) {
+    matrix[i][0] = 0;
+  }
+
   const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
+
+  CHECK_EQ(ans.size(), selected.size());
 
   std::vector<std::pair<int, int>> ret;
   // find 0 (start position)
