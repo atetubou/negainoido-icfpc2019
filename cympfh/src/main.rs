@@ -201,14 +201,17 @@ fn main() {
                 message = String::from("Turn CW");
             },
             CHAR_B => {
-                let ps = extension_positions(&ai, 0);
+                let ps = ai.extension_positions(0);
                 if ps.len() == 0 {
                     changed = false;
-                    message = String::from("Cannot Use Extension (B)");
+                    message = String::from("No Candidates for Extension (B)");
                 } else {
                     let i: usize = rand::random();
-                    ai.use_extension(0, ps[i % ps.len()]);
-                    message = format!("Using Extension (B) at {:?}", ps[i % ps.len()]);
+                    if ai.use_extension(0, ps[i % ps.len()]) {
+                        message = format!("Using Extension (B) at {:?}", ps[i % ps.len()]);
+                    } else {
+                        message = format!("Cannot Apply Extension (B) at {:?}", ps[i % ps.len()]);
+                    }
                 }
             },
             CHAR_Q => {

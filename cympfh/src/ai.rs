@@ -295,20 +295,30 @@ impl AI {
         true
     }
 
+    // return relative positions
+    pub fn extension_positions(&self, idx: usize) -> Vec<Position> {
+        let Position(wx, wy) = self.workers[idx].current_pos;
+        let mybody = self.get_absolute_manipulator_positions(0);
+        let is_my_body = |p: &Position| { mybody.iter().any(|&q| *p == q) };
+        let mut ret = vec![];
+        for &Position(x, y) in mybody.iter() {
+            for p in vec![Position(x + 1, y), Position(x - 1, y), Position(x, y + 1), Position(x, y - 1)] {
+                if !is_my_body(&p) {
+                    ret.push(Position(p.0 - wx, p.1 - wy));
+                }
+            }
+        }
+        ret
+    }
+
+    // p is relative
     pub fn use_extension(&mut self, idx: usize, p: Position) -> bool {
         if self.count_extension == 0 {
             return false;
         }
-        let mut can_use = false;
-        for &Position(x, y) in self.workers[idx].manipulator_range.iter() {
-            let dist = (p.0 - x).abs() + (p.1 - y).abs();
-            if dist == 0 {
-                return false;
-            } else if dist == 1 {
-                can_use = true;
-            }
+        if !self.extension_positions(idx).iter().any(|&q| q == p) {
+          return false;
         }
-        if !can_use { return false; }
         self.count_extension -= 1;
         self.executed_cmds.push(format!("B({},{})", p.1, -p.0));
         {
