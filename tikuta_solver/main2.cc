@@ -66,11 +66,20 @@ int main(int argc, char *argv[]) {
   // AI's constructor accepts a input file from stdin.
   AI ai;
 
-  LOG(INFO) << ai.board;
+  {
+    auto board = ai.board;
+    auto p = ai.get_pos();
+    board[p.first][p.second] = 'W';
+    for (auto b : board) {
+      LOG(INFO) << b;
+    }
+  }
 
   const AI init_ai = ai;
 
-  auto tsp_tours = SolveShrinkedTSP(ai, 100, FLAGS_LKH3path);
+  auto tsp_tours = SolveShrinkedTSP(ai, 3, FLAGS_LKH3path);
+
+  // return 0;
 
   LOG(INFO) << tsp_tours;
 
