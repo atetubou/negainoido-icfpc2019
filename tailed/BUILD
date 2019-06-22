@@ -1,3 +1,5 @@
+package(default_visibility = ["//visibility:public"])
+
 cc_library(
     name = "LKH3",
     srcs = ["LKH3_wrapper.cpp"],
