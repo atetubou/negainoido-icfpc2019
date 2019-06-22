@@ -28,6 +28,14 @@ cc_library(
 )
 
 cc_library(
+    name = "graph",
+    srcs = ["graph.cc"],
+    hdrs = ["graph.h"],
+    deps = [
+    ],
+)
+
+cc_library(
     name = "ai",
     srcs = ["ai.cc"],
     hdrs = ["ai.h"],

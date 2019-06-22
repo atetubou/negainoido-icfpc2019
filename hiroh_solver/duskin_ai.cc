@@ -156,23 +156,59 @@ bool is_at_bottom(const Point& p) {
 bool can_go_to_next_line(const Point& p, Point* next_start) {
   const int y_inc = is_at_bottom(p) ? 1 : -1;
   Point cur = p;
-  while(can_go(cur)) {
+  bool can_go_next = false;
+  while (can_go(cur)) {
     // next here means => (x+1, y)
     Point next(cur.first + 1, cur.second);
-    // If point in next line is not CLEAR yet, go to next line.
-    if (can_go(next) && board[next.first][next.second] == GARBAGE) {
+    if (can_go(next)) {
       *next_start = next;
-      return true;
+      can_go_next = true;
+      break;
     }
     cur = Point(cur.first, cur.second + y_inc);
   }
-  return false;
+
+  if (!can_go_next)
+    return false;
+
+  // Look for ceil.
+  bool exist_garbage_in_line = false;
+  Point ceil = *next_start;
+  cur = Point(next_start->first, next_start->second + 1);
+  while(can_go(cur)) {
+    exist_garbage_in_line |= board[cur.first][cur.second] == GARBAGE;
+    ceil = cur;
+    cur = Point(cur.first, cur.second + 1);
+  }
+
+  // Look for floor.
+  Point floor = *next_start;
+  cur = Point(next_start->first, next_start->second - 1);
+  while(can_go(cur)) {
+    exist_garbage_in_line |= board[cur.first][cur.second] == GARBAGE;
+    floor = cur;
+    cur = Point(cur.first, cur.second - 1);
+  }
+
+  if (!exist_garbage_in_line)
+    return false;
+
+  print_point(floor);
+  print_point(ceil);
+  // This line needs to be cleaned.
+  if (is_at_bottom(p)) {
+    *next_start = floor;
+  } else {
+    *next_start = ceil;
+  }
+  // We clean up this line from next_start.
+  return true;
 }
 
 std::string solution;
 
 void robot_move(const Point& start, const Point dst,
-                bool must_neigbor_move = true) {
+                bool must_neigbor_move = false) {
   print_point(start);
   print_point(dst);
   print_table();
@@ -186,6 +222,15 @@ void robot_move(const Point& start, const Point dst,
 
   auto path = get_nearest_path(start, dst);
   for (size_t i = 0; i < path.size() - 1; i++) {
+    auto p = path[i+1];
+    // Clear current position.
+    board[p.first][p.second] = CLEAR;
+    // default body.
+    constexpr int body_dy[] = {-1, 0, 1};
+    for (int k = 0; k < 3; k++) {
+      if (can_go(Point(p.first + 1, p.second + body_dy[k])))
+        board[p.first + 1][p.second + body_dy[k]] = CLEAR;
+    }
     solution += get_move_symbol(path[i], path[i+1]);
   }
 
@@ -199,24 +244,39 @@ Point naive_clean_up(const Point& start) {
     while (true) {
       // Clear current position.
       board[cur.first][cur.second] = CLEAR;
+      // default body.
+      constexpr int body_dy[] = {-1, 0, 1};
+      for (int k = 0; k < 3; k++) {
+        if (can_go(Point(cur.first + 1, cur.second + body_dy[k])))
+          board[cur.first + 1][cur.second + body_dy[k]] = CLEAR;
+      }
       Point next = Point(cur.first, cur.second + y_inc);
       if (!can_go(next)) {
         break;
       }
       // Move cur->next
-      robot_move(cur, next);
+      robot_move(cur, next, true);
       cur = next;
     }
 
     Point next_start;
     if (!can_go_to_next_line(cur, &next_start)) {
-      return cur;
+      Point next_start2;
+      if (!can_go_to_next_line(next_start, &next_start2)) {
+        return cur;
+      }
+      // move cur->next_start first.
+      robot_move(cur, next_start);
+      // move next_start->next_start2 will be done in the folloing robot_move.
+      cur = next_start;
+      next_start = next_start2;
     }
 
     // Move cur->next_start.
-    robot_move(cur, next_start, false);
+    robot_move(cur, next_start);
     cur = next_start;
-    y_inc = -y_inc;
+
+    y_inc = is_at_bottom(cur) ? 1 : -1;
   }
 }
 

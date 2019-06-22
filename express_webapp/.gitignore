@@ -3,3 +3,4 @@
 aws_key.json
 setup-secrets.sh
 /.idea
+env.txt
