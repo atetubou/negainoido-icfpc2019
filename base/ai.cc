@@ -270,8 +270,15 @@ bool AI::move_body(const Direction &dir) {
   if(!try_move(dir))
     return false;
 
+  auto pos = get_neighbor(dir);
   // Move
-  worker.current_pos = get_neighbor(dir);
+  worker.current_pos = pos;
+
+  // Check drill
+  if (board[pos.first][pos.second] == '#' &&
+      0 < worker.duration_drill) {
+    board[pos.first][pos.second] = '.';
+  }
 
   // Pick up items
   for(auto p: get_absolute_manipulator_positions()) {

@@ -76,6 +76,29 @@ fn dump(ai: &AI, w: &*mut i8, message: &String) {
     waddstr(*w, &ai.print_commands());
 }
 
+fn extension_positions(ai: &AI, idx: usize) -> Vec<Position> {
+    let Position(x, y) = ai.workers[idx].current_pos;
+    let mut ret = vec![];
+    for i in x-10..=x+10 {
+        for j in y-10..=y+10 {
+            let mut can_use = false;
+            for &Position(x, y) in ai.workers[idx].manipulator_range.iter() {
+                let dist = (i - x).abs() + (j - y).abs();
+                if dist == 0 {
+                    can_use = false;
+                    break;
+                } else if dist == 1 {
+                    can_use = true;
+                }
+            }
+            if can_use {
+                ret.push(Position(i, j))
+            }
+        }
+    }
+    ret
+}
+
 fn main() {
 
     let args: Vec<String> = env::args().collect();
