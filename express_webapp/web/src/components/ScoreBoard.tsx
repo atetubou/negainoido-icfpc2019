@@ -20,6 +20,8 @@ interface Props {
 
 const ScoreBoard = (props: Props) => {
     return (
+        <div/>
+        /*
         <Table>
             <TableHead>
                 <TableRow>
@@ -44,5 +46,6 @@ const ScoreBoard = (props: Props) => {
                 })}
             </TableBody>
         </Table>
+        */
     );
 };
