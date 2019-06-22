@@ -188,7 +188,7 @@ int AI::get_width() { return width; }
 
 int AI::get_time() { return current_time; }
 
-Position AI::get_pos() { return worker.current_pos; }
+Position AI::get_pos() const { return worker.current_pos; }
 
 Direction AI::get_dir() { return worker.current_dir; }
 

@@ -3,6 +3,7 @@
  * http://akira.ruc.dk/~keld/research/LKH-3/
  */
 
+#include "tailed/LKH3_wrapper.h"
 
 #include <algorithm>
 #include <fstream>
@@ -116,9 +117,10 @@ EOF
 }
 
 std::vector<std::pair<int, int>>
-SolveShrinkedTSP(const std::vector<std::string>& board, int n, const std::string& path_to_LKH3) {
+SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
   int sx = 0, sy = 0;
   std::vector<std::pair<int, int>> selected;
+  const auto& board = ai.board;
   std::vector<std::vector<int>>
     selected_to_pos(board.size(),
 		    std::vector<int>(board[0].size(), -1));
@@ -126,7 +128,7 @@ SolveShrinkedTSP(const std::vector<std::string>& board, int n, const std::string
   for (size_t i = 0; i < board.size(); ++i) {
     for (size_t j = 0; j < board[i].size(); ++j) {
       if (board[i][j] == '#') continue;
-      if (board[i][j] == 'W') {
+      if (ai.get_pos() == std::make_pair(int(i), int(j))){
 	sx = i;
 	sy = j;
 	continue;
