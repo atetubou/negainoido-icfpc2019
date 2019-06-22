@@ -119,6 +119,39 @@ EOF
 
 }
 
+std::vector<int> SolveByOurselfs(const std::vector<std::vector<int>>& matrix) {
+  std::vector<int> bestans;
+  for (auto i = 0u; i < matrix.size(); ++i) {
+    bestans.push_back(i);
+  }
+
+  auto cost = [&](const std::vector<int>& ans) -> int {
+		int sum = 0;
+		for (auto i = 0u; i + 1 < ans.size(); ++i) {
+		  sum += matrix[ans[i]][ans[i+1]];
+		}
+		return sum;
+	      };
+
+  int cur_cost = cost(bestans);
+
+  std::random_device seed_gen;
+  std::mt19937 engine(seed_gen());
+
+  for (int i = 0; i < 100; ++i) {
+    auto tans = bestans;
+    std::shuffle(tans.begin() + 1, tans.end(), engine);
+
+    int tcost = cost(tans);
+    if (tcost < cur_cost) {
+      bestans = tans;
+      cur_cost = tcost;
+    }
+  }
+
+  return bestans;
+}
+
 std::vector<std::pair<int, int>>
 SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
   int sx = 0, sy = 0;
@@ -192,7 +225,8 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
     }
   }
 
-  const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
+  // const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
+  const auto& ans = SolveByOurselfs(matrix);
 
   CHECK_EQ(ans.size(), selected.size());
   {
