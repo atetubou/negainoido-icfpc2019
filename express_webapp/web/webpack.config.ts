@@ -1,6 +1,5 @@
 import * as path from 'path';
 import * as webpack from 'webpack';
-import * as _ from 'webpack-dev-server';
 
 const config: webpack.Configuration = {
   entry: './src/index.tsx',
