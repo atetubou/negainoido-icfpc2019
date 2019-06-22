@@ -5,13 +5,6 @@
 int main() {
 
   AI ai;
-  {
-    std::cout << "absolute_manipulator_positions(";
-    for (Position&p : ai.get_absolute_manipulator_positions()) {
-      std::cout << "(" << p.first << ", " << p.second << "); ";
-    }
-    std::cout << ")" << std::endl;
-  }
   ai.turn_CW();
   {
     std::cout << "absolute_manipulator_positions(";
@@ -20,7 +13,7 @@ int main() {
     }
     std::cout << ")" << std::endl;
   }
-  ai.turn_CW();
+  ai.use_extension(2, 2);
   {
     std::cout << "absolute_manipulator_positions(";
     for (Position&p : ai.get_absolute_manipulator_positions()) {

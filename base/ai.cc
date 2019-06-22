@@ -21,6 +21,29 @@ char direction_to_char(Direction d) {
   LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
 }
 
+// relative p when Right => ??? when dir
+Position rotate(Position p, Direction d) {
+  switch (d) {
+  case Direction::Right:
+    return { p.first, p.second };
+  case Direction::Up:
+    return { -p.second, p.first };
+  case Direction::Left:
+    return { -p.first, -p.second };
+  case Direction::Down:
+    return { p.second, -p.first };
+  }
+  LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
+}
+
+// relative p when dir => ??? when Right
+Position rotate_reverse(Position p, Direction dir) {
+  Position q = rotate(p, dir);
+  q = rotate(q, dir);
+  q = rotate(q, dir);
+  return q;
+}
+
 absl::optional<Direction> char_to_direction(char c) {
   switch(c) {
   case 'D':
@@ -184,24 +207,9 @@ std::vector<Position> AI::get_absolute_manipulator_positions() {
   std::vector<Position> ret;
 
   for (Position&p : worker.manipulator_range) {
-    Position mani;
-    switch (get_dir()) {
-      case Direction::Right:
-        mani = { self.first + p.first, self.second + p.second };
-        break;
-      case Direction::Up:
-        mani = { self.first - p.second, self.second + p.first };
-        break;
-      case Direction::Left:
-        mani = { self.first - p.first, self.second - p.second };
-        break;
-      case Direction::Down:
-        mani = { self.first + p.second, self.second - p.first };
-        break;
-      default:
-        LOG(FATAL) << "UNKNOWN DIRECTION " << static_cast<int>(get_dir());
-        break;
-    }
+    Position mani = rotate(p, get_dir());
+    mani.first += self.first;
+    mani.second += self.second;
     ret.push_back(mani);
   }
   return ret;
@@ -312,7 +320,7 @@ bool AI::use_extension(const int dx, const int dy) {
   if(!can_use)
     return false;
 
-  worker.manipulator_range.push_back({dx, dy});
+  worker.manipulator_range.push_back( rotate_reverse({dx, dy}, get_dir()) );
   worker.count_extension--;
   auto cmd = "B(" + std::to_string(dx) + "," + std::to_string(dx) + ")";
   executed_cmds.push_back(cmd);
