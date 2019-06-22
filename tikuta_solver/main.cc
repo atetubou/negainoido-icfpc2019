@@ -2,7 +2,7 @@
 
 example usage:
 $ bazel run //tikuta_solver:tikuta_solver < part-1-initial/prob-001.in
-WWASSAWWASSAWWASSWAADDWDSSDWWDSSDWWDSS
+WWDSSDWWDSSDWWDSSWDD
 */
 
 
