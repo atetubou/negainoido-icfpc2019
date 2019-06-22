@@ -5,3 +5,13 @@ cc_binary(
         "@com_google_absl//absl/types:optional",
     ],
 )
+
+cc_binary(
+    name = "konmari_ai",
+    srcs = ["konmari_ai.cc"],
+    deps = [
+        "//base:ai",
+        "//base:graph",
+        "@com_google_glog//:glog",
+    ],
+)
