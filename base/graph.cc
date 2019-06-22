@@ -49,7 +49,7 @@ int GraphDistance::shortest_path(int src, int dst, std::vector<int> &paths) {
       break;
     }
 
-    
+
     for (const auto &e: graph[v]) {
       int w = e.dst;
       int dw = distance[w];
@@ -83,7 +83,7 @@ std::set<int> GraphDistance::enumerate_neighbors(int src, int limit) {
     if (v > 0) {
       neighbors.insert(v);
     }
-    
+
     for (const auto &e: graph[v]) {
       int w = e.dst;
       int cdw = distance[w];
@@ -105,4 +105,64 @@ void GraphDistance::clear_updates(const std::vector<int> &updated_vertices) {
     distance[v] = -1;
     prev[v] = -1;
   }
+}
+
+int GridGraph::to_graph_node(int x, int y){
+  const int h = board_.size();
+  return y * h + x;
+}
+
+std::pair<int, int> GridGraph::to_grid_node(int v) {
+  const int h = board_.size();
+  return {v % h, v / h};
+}
+
+GridGraph::GridGraph(const std::vector<std::string>& board)
+  : board_(board), graph_(board.size() * board[0].size()) {
+  const int h = board.size();
+  const int w = board[0].size();
+
+  const int dx[] = {0, 0, 1, -1};
+  const int dy[] = {1, -1, 0, 0};
+
+  for (int i = 0; i < h; ++i) {
+    for (int j = 0; j < w; ++j) {
+      if (board_[i][j] == '#') {
+	continue;
+      }
+
+      int cv = to_graph_node(j, i);
+
+      for (int k = 0; k < 4; ++k) {
+	int nx = j + dx[k];
+	int ny = i + dy[k];
+	if (nx < 0 || ny < 0 || nx >= w || ny >= h || board_[ny][nx] == '#') {
+	  continue;
+	}
+
+	int nv = to_graph_node(nx, ny);
+	graph_.add_edge(cv, nv, 1);
+      }
+    }
+  }
+}
+
+int GridGraph::shortest_path(int sx, int sy, int gx, int gy) {
+  std::vector<std::pair<int, int>> path;
+  return shortest_path(sx, sy, gx, gy, path);
+}
+
+int GridGraph::shortest_path(int sx, int sy, int gx, int gy,
+			     std::vector<std::pair<int, int>> &path) {
+  std::vector<int> gpath;
+  int src = to_graph_node(sx, sy);
+  int dst = to_graph_node(gx, gy);
+
+  int ret = graph_.shortest_path(src, dst, gpath);
+
+  for (auto v : gpath) {
+    path.push_back(to_grid_node(v));
+  }
+
+  return ret;
 }
