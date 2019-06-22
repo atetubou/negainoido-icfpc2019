@@ -17,6 +17,7 @@ const normalizePort = (val: string) => {
 
 const app = express();
 const port = normalizePort(process.env.PORT || '3000');
+const taskNum = 220;
 
 app.use(timeout('180s'));
 
@@ -41,6 +42,8 @@ class LSolution extends Model<LSolution> {
     task_id: number;
     @Column(DataType.BIGINT)
     score: number;
+    @Column(DataType.BOOLEAN)
+    valid: boolean;
     @CreatedAt
     @Column
     created: Date;
@@ -114,13 +117,44 @@ app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 
 const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
 
-app.post('/solution', (req, res, next) => {
-    const solver = req.body['solver'] ||  'unknown';
+// endpoint for submission
+app.post('/solution', async (req, res, next) => {
+    const solver = req.body['solver'] || 'unknown';
     const task_id = parseInt(req.body['task']) || 0;
-    const score = req.body['score'] || Infinity;
     const data = (req.files!.file as fileUpload.UploadedFile).data;
+    let valid = false;
+    let score;
+    if (!req.body['score']) {
+        const desc = '';
+        const sol = '';
+        const tmp = os.tmpdir();
+        const key = makeRandomId(`${solver}_${task_id}_`);
+        const file = Path.join(tmp, key);
 
-    const solution = new LSolution({ solver, task_id, score });
+        await new Promise((resolve, reject) => {
+            fs.writeFile(file, data, async (err) => {
+                if (err) {
+                    console.error('failed to write file: ' + err);
+                    reject(err);
+                } else {
+                    runSim(getDescFile(task_id), file)
+                        .then((s) => {
+                            score = parseInt(s);
+                            valid = true;
+                            resolve();
+                        })
+                        .catch((e) => {
+                            console.log('Failed to run sim : ' + e);
+                            reject(e);
+                        });
+                }
+            });
+        });
+    } else {
+        score = parseInt(req.body['score']);
+    }
+
+    const solution = new LSolution({solver, task_id, score, valid});
 
     solution.save().then((model) => {
         console.log('created object ' + model);
@@ -133,30 +167,31 @@ app.post('/solution', (req, res, next) => {
 
         s3.putObject(params, (err, data) => {
             if (err) {
-                LSolution.destroy({ where: { id: model.id }}).catch(() => {});
+                LSolution.destroy({where: {id: model.id}}).catch(() => {
+                });
                 console.error('faield to upload: ' + err);
                 next(err);
             } else {
                 console.log(data);
-                res.json({ data });
+                res.json({data});
             }
         });
     }).catch((e) => {
-        console.error('error: '+ e);
+        console.error('error: ' + e);
         next(e);
     });
 });
 
-const getBestSolutionModel = (taskId: number) => {
+const getBestSolutionModel = (taskId: number, valid = false) => {
     return LSolution.findOne({
-        attributes: ['id', 'solver', 'task_id'],
-        where: { task_id: taskId },
+        attributes: ['id', 'solver', 'task_id', 'valid'],
+        where: { task_id: taskId, valid },
         order: [['score', 'ASC']]
     });
 };
 
-const getBestSolution = (taskId: number) => {
-    return getBestSolutionModel(taskId).then((model) => {
+const getBestSolution = (taskId: number, valid = false) => {
+    return getBestSolutionModel(taskId, valid).then((model) => {
         const s3 = new AWS.S3();
         const key = generateKey(model); 
         
@@ -182,25 +217,16 @@ import {Readable} from "stream";
 import * as os from "os";
 import * as Path from "path";
 import * as fs from "fs";
+import {formatNumber, getDescFile, makeRandomId} from "./utils";
 
-const formatNumber =(n: number) => {
-    let tmp = n;
-    let nnn = '';
-    nnn +=  Math.floor(tmp / 100).toString();
-    tmp %= 100;
-    nnn += Math.floor(tmp / 10).toString();
-    tmp %= 10;
-    nnn += tmp.toString();
-    return nnn;
-};
 
 app.get('/solution/best/zip', async (req, res, next) => {
     const archive = archiver('zip');
     let promises: Promise<GetObjectOutput>[] = [];
     res.attachment('solutions.zip');
     archive.pipe(res);
-    for (let i = 1; i <= 150; i++) {
-        promises.push(getBestSolution(i));
+    for (let i = 1; i <= taskNum; i++) {
+        promises.push(getBestSolution(i, true));
     }
     await Promise.all(promises).then((solutions) => {
         solutions.forEach((solution, i) => {
@@ -219,7 +245,7 @@ app.get('/solution/best/zip', async (req, res, next) => {
 
 app.get('/solution/best', async (req, res, next) => {
     let promises = [];
-    for (let i = 1; i <= 150; i++) {
+    for (let i = 1; i <= taskNum; i++) {
         promises.push(getBestSolutionModel(i));
     }
     Promise.all(promises).then((solutions) => {
@@ -268,9 +294,10 @@ app.get('/solution/:id/validate', async (req, res, next) => {
                     console.error('failed to write file: ' + err);
                     next(err);
                 } else {
-                    runSim(Path.join(__dirname, '../descs', `prob-${formatNumber(target.task_id)}.desc`), file)
+                    runSim(getDescFile(target.task_id), file)
                         .then((score) => {
                             target.score = parseInt(score);
+                            target.valid = true;
                             return target.save().then(() => {
                                 res.json({ solution: target });
                             });
@@ -289,11 +316,7 @@ app.get('/solution/:id/validate', async (req, res, next) => {
 app.get('/solution/best/:id', async (req, res, next) => {
     const id = parseInt(req.params['id']);
 
-    const best = await LSolution.findOne({
-        attributes: ['id', 'solver', 'task_id'],
-        where: { task_id: id },
-        order: [['score', 'ASC']]
-    }).catch((e) => {
+    const best = await getBestSolutionModel(id).catch((e) => {
         console.error("DB error" + e);
         res.status(500);
         res.json({ error: e });
