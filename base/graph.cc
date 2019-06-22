@@ -112,34 +112,34 @@ void GraphDistance::clear_updates(const std::vector<int> &updated_vertices) {
 }
 
 int GridGraph::to_graph_node(int x, int y){
-  const int h = board_.size();
-  return y * h + x;
+  const int h = board_[0].size();
+  return x * h + y;
 }
 
 std::pair<int, int> GridGraph::to_grid_node(int v) {
-  const int h = board_.size();
-  return {v % h, v / h};
+  const int h = board_[0].size();
+  return {v / h, v % h};
 }
 
 GridGraph::GridGraph(const std::vector<std::string>& board)
   : board_(board), graph_(board.size() * board[0].size()) {
-  const int h = board.size();
-  const int w = board[0].size();
+  const int w = board.size();
+  const int h = board[0].size();
 
   const int dx[] = {0, 0, 1, -1};
   const int dy[] = {1, -1, 0, 0};
 
-  for (int i = 0; i < h; ++i) {
-    for (int j = 0; j < w; ++j) {
+  for (int i = 0; i < w; ++i) {
+    for (int j = 0; j < h; ++j) {
       if (board_[i][j] == '#') {
 	continue;
       }
 
-      int cv = to_graph_node(j, i);
+      int cv = to_graph_node(i, j);
 
       for (int k = 0; k < 4; ++k) {
-	int nx = j + dx[k];
-	int ny = i + dy[k];
+	int nx = i + dx[k];
+	int ny = j + dy[k];
 	if (nx < 0 || ny < 0 || nx >= w || ny >= h || board_[ny][nx] == '#') {
 	  continue;
 	}
