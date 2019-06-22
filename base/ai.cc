@@ -186,6 +186,8 @@ bool AI::fill_cell(Position pos) {
 int AI::get_height() { return height; }
 int AI::get_width() { return width; }
 
+int AI::get_block_count() const { return block_count; }
+
 int AI::get_time() { return current_time; }
 
 Position AI::get_pos() const { return worker.current_pos; }
@@ -214,12 +216,18 @@ void AI::turn_CW() {
   worker.current_dir =
     static_cast<Direction>( ( static_cast<int>(worker.current_dir) + 1 ) % 4 );
   executed_cmds.push_back("E");
+  for(auto p: get_absolute_manipulator_positions()) {
+    fill_cell(p);
+  }
 }
 
 void AI::turn_CCW() {
   worker.current_dir =
     static_cast<Direction>( ( static_cast<int>(worker.current_dir) - 1 ) % 4 );
   executed_cmds.push_back("Q");
+  for(auto p: get_absolute_manipulator_positions()) {
+    fill_cell(p);
+  }
 }
 
 std::vector<Position> AI::get_absolute_manipulator_positions() {

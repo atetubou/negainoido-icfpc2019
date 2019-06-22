@@ -37,7 +37,7 @@ fn ccw(a: &Point, b: &Point, c: &Point) -> i32 {
         &Point(c.0 - a.0, c.1 - a.1))
 }
 
-pub fn intersectSS(s: &Line, t: &Line) -> bool {
+pub fn intersect_ss(s: &Line, t: &Line) -> bool {
   ccw(&s.0, &s.1,&t.0)*ccw(&s.0,&s.1,&t.1) < 0 && ccw(&t.0,&t.1,&s.0)*ccw(&t.0,&t.1,&s.1) < 0
 }
 
@@ -45,6 +45,6 @@ fn dist(p: &Point, q: &Point) -> f64 {
   ((p.0 - q.0) * (p.0 - q.0) + (p.1 - q.1) * (p.1 - q.1)).sqrt()
 }
 
-pub fn intersectSP(s: &Line, p: &Point) -> bool {
+pub fn intersect_sp(s: &Line, p: &Point) -> bool {
   (dist(&s.0, p) + dist(&s.1, p) - dist(&s.0, &s.1)).abs() < EPS
 }

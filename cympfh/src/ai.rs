@@ -2,7 +2,7 @@
 
 use std::cmp::{min, max};
 
-use crate::geo::{Line, Point, intersectSS, intersectSP};
+use crate::geo::{Line, Point, intersect_ss, intersect_sp};
 
 #[derive(Debug, Clone, Copy)]
 pub enum Direction {
@@ -12,16 +12,16 @@ pub enum Direction {
   Up,
 }
 
-#[derive(Debug, Clone, Copy)]
-struct Position(isize, isize);
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub struct Position(pub isize, pub isize);
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Worker {
-    current_dir: Direction,
-    current_pos: Position,
-    manipulator_range: Vec<Position>,
-    duration_drill: usize,
-    duration_fast: usize,
+    pub current_dir: Direction,
+    pub current_pos: Position,
+    pub manipulator_range: Vec<Position>,
+    pub duration_drill: usize,
+    pub duration_fast: usize,
 }
 
 impl Position {
@@ -41,10 +41,10 @@ impl Position {
 impl Direction {
     fn to_pos(&self) -> Position {
         match self {
-            Direction::Right => Position(1, 0),
-            Direction::Down => Position(0, 1),
-            Direction::Left => Position(-1, 0),
-            Direction::Up => Position(0, -1),
+            Direction::Right => Position(0, 1),
+            Direction::Down => Position(1, 0),
+            Direction::Left => Position(0, -1),
+            Direction::Up => Position(-1, 0),
         }
     }
 }
@@ -66,21 +66,21 @@ impl Worker {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AI {
-    current_time: usize,
-    height: usize,
-    width: usize,
-    count_fast: usize,
-    count_drill: usize,
-    count_extension: usize,
-    count_clone: usize,
-    filled_count: usize,
-    block_count: usize,
-    workers: Vec<Worker>,
-    executed_cmds: Vec<String>,
-    board: Vec<Vec<char>>,
-    filled: Vec<Vec<bool>>,
+    pub current_time: usize,
+    pub height: usize,
+    pub width: usize,
+    pub count_fast: usize,
+    pub count_drill: usize,
+    pub count_extension: usize,
+    pub count_clone: usize,
+    pub filled_count: usize,
+    pub block_count: usize,
+    pub workers: Vec<Worker>,
+    pub executed_cmds: Vec<String>,
+    pub board: Vec<Vec<char>>,
+    pub filled: Vec<Vec<bool>>,
 }
 
 impl AI {
@@ -97,6 +97,8 @@ impl AI {
             }
             pos
         };
+        let block_count = board.iter().map(|row|
+                  row.iter().filter(|&c| *c == '#').count()).sum();
         AI {
             current_time: 0,
             height: h,
@@ -106,7 +108,7 @@ impl AI {
             count_extension: 0,
             count_clone: 0,
             filled_count: 0,
-            block_count: 0,
+            block_count: block_count,
             workers: vec![Worker::new(w_pos)],
             executed_cmds: vec![],
             board: board,
@@ -119,18 +121,18 @@ impl AI {
         0 <= x && x < self.height as isize && 0 <= y && y < self.width as isize
     }
 
-    fn reachable(&self, idx: usize, p: &Position) -> bool {
+    pub fn reachable(&self, idx: usize, p: &Position) -> bool {
         if !self.valid_pos(p) { return false; }
         let Position(x, y) = *p;
         if self.board[x as usize][y as usize] == '#' { return false; }
         let Position(wx, wy) = self.workers[idx].current_pos;
         for cx in min(x, wx)..=max(x, wx) {
           for cy in min(y, wy)..=max(y, wy) {
-            if self.board[cx as usize][cy as usize] == '#' { continue }
+            if self.board[cx as usize][cy as usize] != '#' { continue }
             let l = Line(Point(wx as f64 +0.5, wy as f64 + 0.5),
                          Point(x as f64 + 0.5, y as f64 + 0.5));
             let cell = Point(cx as f64 + 0.5, cy as f64 + 0.5);
-            if intersectSP(&l, &cell) { return false; }
+            if intersect_sp(&l, &cell) { return false; }
 
             let corners = vec![
               Point(cx as f64, cy as f64),
@@ -140,55 +142,66 @@ impl AI {
             ];
             for i in 0..4 {
               let edge = Line(corners[i].clone(), corners[(i + 1) % 4].clone());
-              if intersectSS(&l, &edge) { return false; }
+              if intersect_ss(&l, &edge) { return false; }
             }
           }
         }
         true
     }
 
-    fn fill_cell(&mut self, idx: usize, p: &Position) -> bool {
+    pub fn fill_cell(&mut self, idx: usize, p: &Position) -> bool {
         let Position(x, y) = *p;
         if !self.valid_pos(p) { return false; }
         if !self.reachable(idx, p) { return false; }
         if self.filled[x as usize][y as usize] { return false; }
-        match self.board[x as usize][y as usize] {
-            'B' => { self.count_extension += 1; },
-            'F' => { self.count_fast += 1; },
-            'L' => { self.count_drill += 1; },
-            'C' => { self.count_clone += 1; },
-            _ => {}
+        if self.workers[idx].current_pos == *p {  // when on body
+          match self.board[x as usize][y as usize] {
+              'B' => { self.count_extension += 1; },
+              'F' => { self.count_fast += 1; },
+              'L' => { self.count_drill += 1; },
+              'C' => { self.count_clone += 1; },
+              _ => {}
+          }
+          self.board[x as usize][y as usize] = '.';
         }
         self.filled[x as usize][y as usize] = true;
         self.filled_count += 1;
         true
     }
 
-    fn get_neighbor(&self, idx: usize, d: Direction) -> Position {
+    pub fn get_neighbor(&self, idx: usize, d: Direction) -> Position {
         let Position(x, y) = self.workers[idx].current_pos;
         let Position(dx, dy) = d.to_pos();
         Position(x + dx, y + dy)
     }
 
-    fn turn_cw(&mut self, idx: usize) {
+    pub fn turn_cw(&mut self, idx: usize) {
         self.workers[idx].current_dir = match self.workers[idx].current_dir {
             Direction::Right => Direction::Down,
             Direction::Down => Direction::Left,
             Direction::Left => Direction::Up,
             Direction::Up => Direction::Right,
+        };
+        self.executed_cmds.push(String::from("E"));
+        for &p in self.get_absolute_manipulator_positions(idx).iter() {
+            self.fill_cell(idx, &p);
         }
     }
 
-    fn turn_ccw(&mut self, idx: usize) {
+    pub fn turn_ccw(&mut self, idx: usize) {
         self.workers[idx].current_dir = match self.workers[idx].current_dir {
             Direction::Right => Direction::Up,
             Direction::Up => Direction::Left,
             Direction::Left => Direction::Down,
             Direction::Down => Direction::Right,
+        };
+        self.executed_cmds.push(String::from("Q"));
+        for &p in self.get_absolute_manipulator_positions(idx).iter() {
+            self.fill_cell(idx, &p);
         }
     }
 
-    fn get_absolute_manipulator_positions(&self, idx: usize) -> Vec<Position> {
+    pub fn get_absolute_manipulator_positions(&self, idx: usize) -> Vec<Position> {
         let Position(x, y) = self.workers[idx].current_pos;
         let mut ret = vec![];
         for &p in self.workers[idx].manipulator_range.iter() {
@@ -227,14 +240,14 @@ impl AI {
         if !self.try_move(idx, dir) { return false; }
         // move
         self.workers[idx].current_pos = self.get_neighbor(idx, dir);
-        // pick up
+        // fill && pick up
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
         true
     }
 
-    fn mv(&mut self, idx: usize, dir: Direction) -> bool {
+    pub fn mv(&mut self, idx: usize, dir: Direction) -> bool {
         if !self.move_body(idx, dir) { return false; }
         // when FAST
         if self.workers[idx].duration_fast > 0 {
@@ -251,15 +264,15 @@ impl AI {
         true
     }
 
-    fn is_finished(&self) -> bool {
+    pub fn is_finished(&self) -> bool {
         self.filled_count + self.block_count == self.height * self.width
     }
 
-    fn print_commands(&self) -> String {
+    pub fn print_commands(&self) -> String {
         self.executed_cmds.join("")
     }
 
-    fn use_fast_wheel(&mut self, idx: usize) -> bool {
+    pub fn use_fast_wheel(&mut self, idx: usize) -> bool {
         if self.count_fast == 0 {
             return false;
         }
@@ -269,7 +282,7 @@ impl AI {
         true
     }
 
-    fn use_drill(&mut self, idx: usize) -> bool {
+    pub fn use_drill(&mut self, idx: usize) -> bool {
         if self.count_drill == 0 {
             return false;
         }
@@ -279,7 +292,7 @@ impl AI {
         true
     }
 
-    fn use_extension(&mut self, idx: usize, p: Position) -> bool {
+    pub fn use_extension(&mut self, idx: usize, p: Position) -> bool {
         if self.count_extension == 0 {
             return false;
         }

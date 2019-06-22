@@ -1,7 +1,13 @@
+cc_library(
+  name = "union_find",
+  hdrs = ["union_find.h"]
+)
+
 cc_binary(
     name = "flowlight_solver",
-    srcs = ["main.cc"],
+    srcs = ["clone.cc"],
     deps = [
+        ":union_find",
         "//base",
         "//base:ai",
         "//base:flags",
