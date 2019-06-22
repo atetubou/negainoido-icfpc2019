@@ -77,7 +77,9 @@ int main(int argc, char *argv[]) {
 
   const AI init_ai = ai;
 
-  auto tsp_tours = SolveShrinkedTSP(ai, 3, FLAGS_LKH3path);
+  auto tsp_tours = SolveShrinkedTSP(ai,
+				    sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count()),
+				    FLAGS_LKH3path);
 
   // return 0;
 
@@ -85,20 +87,43 @@ int main(int argc, char *argv[]) {
 
   auto groups = get_groups(ai, tsp_tours);
 
+  GridGraph gridg(ai.board);
+
   std::vector<pos> order;
-  for (auto group : groups) {
-    if (group != groups[0]) {
-      std::sort(group.begin(), group.end());
-    } else {
-      std::sort(group.begin()+1, group.end());
-    }
-    LOG(INFO) << "group " << group;
-    for (const auto& p : group) {
-      order.push_back(p);
+
+  {
+    std::vector<std::vector<bool>> visited(ai.board.size(),
+					   std::vector<bool>(ai.board[0].size()));
+    pos cur = groups[0][0];
+
+    for (auto group : groups) {
+      for(;;) {
+	order.push_back(cur);
+	visited[cur.first][cur.second] = true;
+	bool end = true;
+
+	int nearest = 1e9;
+	pos ne;
+
+	for (const auto& p : group) {
+	  if (visited[p.first][p.second]) {
+	    continue;
+	  }
+	  end = false;
+	  int nc = gridg.shortest_path(cur.first, cur.second,
+				       p.first, p.second);
+	  if (nc < nearest) {
+	    nearest = nc;
+	    ne = p;
+	  }
+	}
+
+	if (end) break;
+	cur = ne;
+      }
     }
   }
 
-  GridGraph gridg(ai.board);
 
   for (auto i = 0u; i + 1 < order.size(); ++i) {
     const auto& s = order[i];

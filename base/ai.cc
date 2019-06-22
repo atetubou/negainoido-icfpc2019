@@ -186,6 +186,8 @@ bool AI::fill_cell(Position pos) {
 int AI::get_height() { return height; }
 int AI::get_width() { return width; }
 
+int AI::get_block_count() const { return block_count; }
+
 int AI::get_time() { return current_time; }
 
 Position AI::get_pos() const { return worker.current_pos; }
