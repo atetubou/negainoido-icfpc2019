@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React from 'react';
 import ScoreBoard, {Solution} from "./components/ScoreBoard";
 
 const fromJsonToSolution = (s: any) =>
@@ -23,6 +23,7 @@ const optionToUrlParam = (options: any) => {
 
 interface Options {
     taskId?: number;
+    valid?: boolean;
 }
 
 const getSolution = (options: Options) => {
@@ -80,6 +81,8 @@ interface State {
     alert?: string;
     filterByTask: boolean;
     taskId: number;
+    onlyValid: boolean;
+    sortBy?: string;
 }
 
 class ScoreBoardWrapper extends React.Component<Props, State> {
@@ -90,6 +93,8 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
             loading: true,
             filterByTask: false,
             taskId: 0,
+            onlyValid: false,
+            sortBy: undefined,
         }
     }
 
@@ -127,9 +132,12 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
 
     handleRefresh = () => {
         const option: Options = {};
-        const { filterByTask, taskId } = this.state;
+        const { filterByTask, taskId, onlyValid } = this.state;
         if (filterByTask && taskId > 0) {
             option['taskId'] = taskId;
+        }
+        if (onlyValid) {
+            option.valid = true;
         }
         this.setState({ loading: false }, () => {
             getSolution(option).then((solutions) => {
@@ -143,10 +151,35 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
     };
 
     render(): React.ReactNode {
-        const { loading, solutions, alert, filterByTask, taskId } = this.state;
+        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy } = this.state;
         if (!solutions) {
             return <div>loading</div>;
         }
+        let sorted;
+        switch(sortBy) {
+            case 'task':
+                sorted = solutions.sort((a,b) => a.taskId - b.taskId);
+                break;
+            case 'score':
+                sorted = solutions.sort((a,b) => a.score - b.score);
+                break;
+            case 'solver':
+                sorted = solutions.sort((a,b) => {
+                    if (a.solver < b.solver) {
+                        return -1;
+                    }
+                    if (b.solver < a.solver) {
+                        return 1;
+                    }
+                    return 0;
+                });
+                break;
+            default:
+                sorted = solutions.concat();
+                break;
+        }
+
+
         return (
             <div>
                 {alert &&
@@ -159,9 +192,21 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                     <label> filter by Task Id</label>
                     <input type="number" disabled={!filterByTask} value={taskId} onChange={(e) => { this.setState({ taskId: parseInt(e.target.value) })}} />
                 </div>
+                <div>
+                    <input name="onlyValid" type="checkbox" checked={onlyValid} onChange={(e) => this.setState({ onlyValid: e.currentTarget.checked })}/>
+                    <label>Only Valid</label>
+                </div>
+                <div>
+                    <select onChange={(e) => this.setState({ sortBy: e.currentTarget.value })}>
+                        <option value="">None</option>
+                        <option value="task">Task</option>
+                        <option value="score">Score</option>
+                        <option value="solver">Solver</option>
+                    </select>
+                </div>
                 <ScoreBoard
                     loading={loading}
-                    solutions={solutions!}
+                    solutions={sorted}
                     onValidate={this.handleValidate}
                     onRefresh={this.handleRefresh}
                     onDownload={downloadSolution}
