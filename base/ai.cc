@@ -21,6 +21,21 @@ char direction_to_char(Direction d) {
   LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
 }
 
+absl::optional<Direction> char_to_direction(char c) {
+  switch(c) {
+  case 'D':
+    return Direction::Right;
+  case 'A':
+    return Direction::Left;
+  case 'W':
+    return Direction::Up;
+  case 'S':
+    return Direction::Down;
+  };
+
+  return absl::nullopt;
+}
+
 Worker::Worker(Position pos) {
   current_pos = pos;
 }

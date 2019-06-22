@@ -45,6 +45,7 @@ cc_library(
         ":base",
         ":geometry",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/types:optional",
         "@com_google_glog//:glog",
     ],
 )
