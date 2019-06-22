@@ -9,7 +9,7 @@
 #define rep(i, n) for(int i=0; i<int(n); ++i)
 
 DEFINE_string(LKH3path, "","");
-const int K = 1000; // threshold
+const int K = 300; // threshold
 
 #include "LKH3_wrapper.h"
 
@@ -277,10 +277,11 @@ vector<int> solve_path_TSP_on_submatrix(const vector<int> &nodeids, const dist_m
 	if (tour[0] != 0) {
 		LOG(FATAL) << "I thought that the first point of tour is 0" << endl;
 	}
+	vector<int> res(tour.size());
 	rep(i, tour.size()) {
-		tour[i] = nodeids[tour[i]];
+		res[i] = nodeids[tour[i]];
 	}
-	return tour;
+	return res;
 }
 
 int main(int argc, char *argv[]) {
@@ -371,8 +372,12 @@ int main(int argc, char *argv[]) {
 	}
 
 	for(int t = 0; t < (int)tour.size(); t++) {
-		int v = tour[t];
-		vector<int> subtour = solve_path_TSP_on_submatrix(clusters[v], dist);
+		vector<int> clst = clusters[tour[t]];
+		while(t+1 < (int)tour.size() && clst.size() + clusters[tour[t+1]].size() < K) {
+			clst.insert(clst.end(), clusters[tour[t+1]].begin(), clusters[tour[t+1]].end());
+			t++;
+		}
+		vector<int> subtour = solve_path_TSP_on_submatrix(clst, dist);
 
 		for(auto i : subtour) {
 //			cerr << nodes[i].first << " " << nodes[i].second << endl;
