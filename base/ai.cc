@@ -198,6 +198,9 @@ int AI::get_count_fast() { return worker.count_fast; }
 int AI::get_count_drill() { return worker.count_drill; }
 int AI::get_count_extension() { return worker.count_extension; }
 
+int AI::get_duration_fast() { return worker.duration_fast; }
+int AI::get_duration_drill() { return worker.duration_drill; }
+
 Position AI::get_neighbor(const Direction &dir) {
   const int dx[] = {0,1, 0,-1};
   const int dy[] = {1,0,-1, 0};
