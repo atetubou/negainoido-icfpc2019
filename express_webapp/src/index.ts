@@ -170,7 +170,10 @@ app.post('/solution', async (req, res, next) => {
                 next(err);
             } else {
                 console.log(data);
-                res.json({data});
+                res.json({
+                    solution: model,
+                    s3_data: data,
+                });
             }
         });
     }).catch((e) => {
