@@ -9,27 +9,29 @@ export interface Solution {
 }
 
 interface Props {
+    loading: boolean;
     solutions: Solution[];
     onValidate: (id: number) => void;
     onDownload: (id: number) => void;
     onRefresh: MouseEventHandler;
+    onDownloadZip: MouseEventHandler;
 }
 
 const ScoreBoard = (props: Props) => {
     return (
         <div>
-            <button onClick={props.onRefresh}>Refresh</button>
+            {props.loading && <div> Loading </div>}
+            <button onClick={props.onRefresh} disabled={props.loading}>Refresh</button>
+            <button onClick={props.onDownloadZip} disabled={props.loading}>Download Zip</button>
             <table>
-                <th>
-                    <tr>
-                        <td>Task ID</td>
-                        <td>Solver</td>
-                        <td>Score</td>
-                        <td>isValid</td>
-                        <td>Validate</td>
-                        <td>Download</td>
-                    </tr>
-                </th>
+                <tr>
+                    <th>Task ID</th>
+                    <th>Solver</th>
+                    <th>Score</th>
+                    <th>isValid</th>
+                    <th>Validate</th>
+                    <th>Download</th>
+                </tr>
                 <tbody>
                     {props.solutions.map((task) => {
                         return (
@@ -38,12 +40,11 @@ const ScoreBoard = (props: Props) => {
                                 <td>{task.solver}</td>
                                 <td>{task.score}</td>
                                 <td>{task.valid ? 'Valid' : 'Not Valid'}</td>
-                                <td>{task.score}</td>
                                 <td>
                                     <button onClick={() => props.onValidate(task.solutionId)}>Validate</button>
                                 </td>
                                 <td>
-                                    <button onClick={() => props.onValidate(task.solutionId)}>Download</button>
+                                    <button onClick={() => props.onDownload(task.solutionId)}>Download</button>
                                 </td>
                             </tr>
                         );

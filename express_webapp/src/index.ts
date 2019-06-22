@@ -179,6 +179,13 @@ app.post('/solution', async (req, res, next) => {
     });
 });
 
+const getSolutionById = (id: number) => {
+    return LSolution.findOne({
+        attributes: ['id', 'solver', 'task_id', 'valid'],
+        where: { id },
+    });
+};
+
 const getBestSolutionModel = (taskId: number, valid = false) => {
     return LSolution.findOne({
         attributes: ['id', 'solver', 'task_id', 'valid'],
@@ -254,6 +261,41 @@ app.get('/solution/best', async (req, res, next) => {
         });
 });
 
+app.get('/solution/:id', async (req, res, next) => {
+    const id = parseInt(req.params['id']);
+
+    const model = await getSolutionById(id).catch((e) => {
+        console.error("DB error" + e);
+        res.status(500);
+        res.json({ error: e });
+    });
+
+    if (!model) {
+        console.error("error");
+        res.status(404);
+        res.render('not found solution');
+        return;
+    }
+    const s3 = new AWS.S3();
+    const key = generateKey(model);
+
+    const params = {
+        Bucket: defaultBucket,
+        Key: key,
+    };
+    s3.getObject(params, (err, data) => {
+        if (err) {
+            console.error('failed to download: ' + err);
+            next(err);
+        } else {
+            res.set('Content-Type', data.ContentType);
+            res.set('Content-Disposition', 'attachment; filename='+key);
+            res.set('Content-Length', data.ContentLength.toString());
+            res.end(data.Body, 'binary');
+        }
+    });
+});
+
 app.get('/solution/:id/validate', async (req, res, next) => {
     const id = parseInt(req.params['id']);
 
@@ -309,6 +351,7 @@ app.get('/solution/:id/validate', async (req, res, next) => {
         }
     });
 });
+
 
 app.get('/solution/best/:id', async (req, res, next) => {
     const id = parseInt(req.params['id']);
