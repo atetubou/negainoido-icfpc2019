@@ -337,7 +337,9 @@ bool AI::use_extension(const int dx, const int dy) {
 
   worker.manipulator_range.push_back( rotate_reverse({dx, dy}, get_dir()) );
   worker.count_extension--;
-  auto cmd = "B(" + std::to_string(dx) + "," + std::to_string(dx) + ")";
+
+  // Convert coordinate: (dx, dy) -> (dy, -dx)
+  auto cmd = "B(" + std::to_string(dy) + "," + std::to_string(-dx) + ")";
   executed_cmds.push_back(cmd);
 
   return true;
