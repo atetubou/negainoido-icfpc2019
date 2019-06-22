@@ -1,5 +1,4 @@
-FROM node:8.16.0-jessie
-
+FROM score_server_base
 WORKDIR /app
 ADD web web
 RUN npm --prefix ./web i ./web

@@ -262,8 +262,8 @@ app.get('/solution/:id/validate', async (req, res, next) => {
             next(err);
         } else {
             const tmp = os.tmpdir();
-            const file = Path.join(tmp, key + '.sol');
-            fs.writeFile(Path.join(tmp, key + '.sol'), data.Body, (err) => {
+            const file = Path.join(tmp, encodeURIComponent(key) + '.sol');
+            fs.writeFile(file, data.Body, (err) => {
                 console.error('failed to write file: ' + err);
                 next(err);
             });
