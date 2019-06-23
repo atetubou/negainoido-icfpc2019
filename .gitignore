@@ -12,3 +12,4 @@ ans
 *.sol
 
 /lambda-client/blocks
+/tmp
