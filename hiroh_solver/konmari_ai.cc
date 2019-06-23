@@ -303,7 +303,7 @@ void KonmariAI::konmari_move() {
   }
 
   // Clean up cells that are isolated due to this move.
-  clean_up_isolated_cells();
+  // clean_up_isolated_cells();
 }
 
 int main() {
