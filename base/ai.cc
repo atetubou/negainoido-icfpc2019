@@ -548,6 +548,16 @@ bool AI::jump_to_beacon(Position dst, const int id) {
   return true;
 }
 
+bool AI::nop(const int id) {
+  if(!init_turn(id))
+    return false;
+
+  push_command({CmdType::Nop}, id);
+
+  next_turn(id);
+  return true;
+}
+
 bool AI::do_command(Command cmd, const int id) {
   switch (cmd.type) {
   case CmdType::Move:
@@ -568,6 +578,8 @@ bool AI::do_command(Command cmd, const int id) {
     return install_beacon(id);
   case CmdType::JumpToBeacon:
     return jump_to_beacon(Position(cmd.x, cmd.y), id);
+  case CmdType::Nop:
+    return nop(id);
   default:
     LOG(FATAL) << "BUG?: unknown command name: " << static_cast<int>(cmd.type);
   }
@@ -622,6 +634,9 @@ void print_command(struct Command cmd, int height) {
     break;
   case CmdType::JumpToBeacon:
     s = "T(" + std::to_string(cmd.y) + "," + std::to_string(height - cmd.x) + ")";
+    break;
+  case CmdType::Nop:
+    s = "Z";
     break;
   default:
     LOG(FATAL) << "BUG?: unknown command name: " << static_cast<int>(cmd.type);

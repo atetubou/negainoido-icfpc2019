@@ -29,6 +29,7 @@ enum class CmdType {
   UseClone,
   InstallBeacon,
   JumpToBeacon,
+  Nop,
 };
 
 struct Command {
@@ -171,6 +172,10 @@ public:
   // This doesn't change any internal state.
   bool try_move(const Direction &dir, const int id = 0) const;
 
+  /*
+   * Command execution
+   */
+
   // Executes a command. This is a wrapper of 'move', 'use_extesion', etc.
   bool do_command(Command cmd, const int id);
 
@@ -187,6 +192,8 @@ public:
 
   bool install_beacon(const int id);
   bool jump_to_beacon(Position dst, const int id);
+
+  bool nop(const int id);
 
   // Checks if get_filled_count() == Height * Width
   bool is_finished() const;
