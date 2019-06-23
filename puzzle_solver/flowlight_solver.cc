@@ -31,6 +31,7 @@ int main() {
   int exclude_num;
   cin >> b_num >> e_num >> t_size >> v_min >> v_max >> m_num >>  f_num >>  d_num >>  r_num >>  c_num >> x_num;
   cin >> include_num >> exclude_num;
+  cerr << t_size << endl;
 
   vector<P> include_squares(include_num);
   vector<P> exclude_squares(exclude_num);
@@ -148,6 +149,6 @@ int main() {
 
   cout << L - 2 << " "<< L - 2 << endl;
   REP2(i, 1, t_size + 1) {
-    cout << string(board[i].begin() + 1, board[i].end() - 1) << endl;
+    cout << string(board[L - i - 1].begin() + 1, board[L - i - 1].end() - 1) << endl;
   }
 }
