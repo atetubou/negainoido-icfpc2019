@@ -38,6 +38,10 @@ int main(int argc, char *argv[]) {
     const auto s = ai.get_pos();
     const auto g = q.front().first;
     const bool deferable = q.front().second;
+    if (s == g){
+      q.pop_front();
+      continue;
+    }
     if (ai.board[g.first][g.second] != 'B' &&
 	ai.filled[g.first][g.second]) {
       q.pop_front();
