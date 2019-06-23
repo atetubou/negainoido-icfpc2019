@@ -190,16 +190,6 @@ AI::AI() {
   initialize();
 }
 
-AI::AI(const std::string filename) {
-  std::ifstream in(filename.c_str());
-  LOG_IF(FATAL, !in) <<
-    "failed to open " << filename;
-
-  std::cin.rdbuf(in.rdbuf());
-
-  initialize();
-}
-
 void AI::pickup_booster(const int id) {
   auto p = get_pos(id);
 
