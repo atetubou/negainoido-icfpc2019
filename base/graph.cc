@@ -239,3 +239,78 @@ std::vector<Direction> GridGraph::path_to_actions(const std::vector<pos>& path) 
   }
   return actions;
 }
+
+bool GridGraph::can_visit(int x, int y) const {
+  return 
+    0 <= x && x < static_cast<int>(board_.size()) &&
+    0 <= y && y < static_cast<int>(board_[0].size()) &&
+    board_[x][y] != '#';
+}
+
+std::vector<Direction> GridGraph::shortest_paths(pos start, const std::vector<pos>& goals) {
+  const int dx[] = {0, 0, 1, -1};
+  const int dy[] = {1, -1, 0, 0};
+
+  const int sx = start.first;
+  const int sy = start.second;
+
+  std::vector<std::vector<int>> costs(board_.size(),
+				      std::vector<int>(board_[0].size(), -1));
+  std::queue<pos> q;
+  for (const auto& g : goals) {
+    if (start == g) {
+      return std::vector<Direction>();
+    }
+    q.push(g);
+    costs[g.first][g.second] = 0;
+  }
+
+  while (!q.empty()) {
+    auto cur = q.front();
+    q.pop();
+    
+    const int cx = cur.first;
+    const int cy = cur.second;
+
+    for (int i = 0; i < 4; ++i) {
+      int nx = cx + dx[i];
+      int ny = cy + dy[i];
+      if (!can_visit(nx, ny) || costs[nx][ny] != -1) {
+	continue;
+      }
+      costs[nx][ny] = costs[cx][cy] + 1;
+
+      if (costs[sx][sy] != -1) {
+	break;
+      }
+
+      q.push({nx, ny});
+    }
+
+    if (costs[sx][sy] != -1) {
+      break;
+    }
+  }
+
+  LOG_IF(FATAL, costs[sx][sy] == -1) << "unreachable from " << start << " to " << goals;
+
+  std::vector<pos> path;
+
+  for (;;) {
+    path.push_back(start);
+    if (costs[start.first][start.second] == 0) {
+      break;
+    }
+    
+    for (int i = 0; i < 4; ++i) {
+      int nx = start.first + dx[i];
+      int ny = start.second + dx[i];
+      if (can_visit(nx, ny) && costs[nx][ny] < costs[start.first][start.second]) {
+	start = {nx, ny};
+	break;
+      }
+    }
+  }
+
+  return path_to_actions(path);
+}
