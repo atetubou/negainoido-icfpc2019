@@ -7,7 +7,7 @@
 #include "absl/strings/str_split.h"
 #include <glog/logging.h>
 
- Position dir2vec(const Direction &dir) {
+Position dir2vec(const Direction &dir) {
   static const int dx[] = {0, 1, 0, -1};
   static const int dy[] = {1, 0, -1, 0};
   int idx = static_cast<int>(dir);
@@ -151,7 +151,7 @@ void AI::initialize() {
   pickup_booster(0);
 }
 
-void AI::init_turn(const int id) {
+bool AI::init_turn(const int id) {
   LOG_IF(FATAL, expect_worker_id != id)
     << "command for the worker " << expect_worker_id
     << "must be called but the ID was" << id;
@@ -159,6 +159,8 @@ void AI::init_turn(const int id) {
   // Pick up a booster.
   // See Appendix in clone document
   pickup_booster(id);
+
+  return !is_finished();
 }
 
 AI::AI() {
@@ -321,7 +323,8 @@ bool AI::move_body(const Direction &dir, const int id) {
 }
 
 bool AI::move(const Direction &dir, const int id) {
-  init_turn(id);
+  if(!init_turn(id))
+    return false;
 
   if (!move_body(dir, id))
     return false;
@@ -340,8 +343,10 @@ bool AI::move(const Direction &dir, const int id) {
   return true;
 }
 
-void AI::turn_CW(const int id) {
-  init_turn(id);
+bool AI::turn_CW(const int id) {
+  if(!init_turn(id))
+    return false;
+
   workers[id].current_dir =
     static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 1 ) % 4 );
 
@@ -353,10 +358,14 @@ void AI::turn_CW(const int id) {
   push_command(cmd, id);
 
   next_turn(id);
+
+  return true;
 }
 
-void AI::turn_CCW(const int id) {
-  init_turn(id);
+bool AI::turn_CCW(const int id) {
+  if(!init_turn(id))
+    return false;
+
   workers[id].current_dir =
     static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 3 ) % 4 );
 
@@ -368,10 +377,13 @@ void AI::turn_CCW(const int id) {
   push_command(cmd, id);
 
   next_turn(id);
+
+  return true;
 }
 
 bool AI::use_fast_wheel(const int id) {
-  init_turn(id);
+  if(!init_turn(id))
+    return false;
 
   if (count_fast == 0)
     return false;
@@ -387,7 +399,8 @@ bool AI::use_fast_wheel(const int id) {
 }
 
 bool AI::use_drill(const int id) {
-  init_turn(id);
+  if(!init_turn(id))
+    return false;
   if (count_drill == 0)
     return false;
 
@@ -403,7 +416,8 @@ bool AI::use_drill(const int id) {
 }
 
 bool AI::use_extension(const int dx, const int dy, const int id) {
-  init_turn(id);
+  if(!init_turn(id))
+    return false;
 
   if (count_extension == 0)
     return false;
@@ -443,7 +457,8 @@ bool AI::use_extension(const int dx, const int dy, const int id) {
 }
 
 bool AI::use_clone(const int id) {
-  init_turn(id);
+  if(!init_turn(id))
+    return false;
   if (count_clone == 0)
     return false;
 
@@ -467,7 +482,8 @@ bool AI::use_clone(const int id) {
 }
 
 bool AI::install_beacon(const int id) {
-  init_turn(id);
+  if(!init_turn(id))
+    return false;
 
   auto p = get_pos(id);
   if (board[p.first][p.second] == 'X' ||
@@ -489,7 +505,8 @@ bool AI::install_beacon(const int id) {
 }
 
 bool AI::jump_to_beacon(Position dst, const int id) {
-  init_turn(id);
+  if(!init_turn(id))
+    return false;
 
   if (beacon_pos.find(dst) == beacon_pos.end()) {
     return false;
@@ -509,12 +526,9 @@ bool AI::do_command(Command cmd, const int id) {
   case CmdType::Move:
     return move(cmd.dir, id);
   case CmdType::TurnCW:
-    turn_CW(id);
-    return true;
+    return turn_CW(id);
   case CmdType::TurnCCW:
-    turn_CCW(id);
-    return true;
-    break;
+    return turn_CCW(id);
   case CmdType::UseExtension:
     return use_extension(cmd.x, cmd.y, id);
   case CmdType::UseFastWheel:

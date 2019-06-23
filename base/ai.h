@@ -98,7 +98,7 @@ class AI {
 
   void initialize();
 
-  void init_turn(const int id);
+  bool init_turn(const int id);
   void pickup_booster(const int id);
 
   void push_command(struct Command cmd, const int id);
@@ -164,8 +164,8 @@ public:
   // If it's a invalid move, it returns false without changing internal states.
   bool move(const Direction &dir, const int id = 0);
   bool use_extension(const int dx, const int dy, const int id = 0);
-  void turn_CW(const int id = 0);  // Turn commands always succeed
-  void turn_CCW(const int id = 0);
+  bool turn_CW(const int id = 0);  // Turn commands always succeed
+  bool turn_CCW(const int id = 0);
 
   bool use_fast_wheel(const int id = 0);
   bool use_drill(const int id = 0);
