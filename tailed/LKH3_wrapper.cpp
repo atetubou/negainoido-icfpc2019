@@ -389,6 +389,7 @@ std::vector<std::pair<int, int>> tikutaOrder(const AI& ai, int n,
     }
   }
 
+  return order;
 }
 
 /*
