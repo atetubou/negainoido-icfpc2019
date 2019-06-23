@@ -157,22 +157,16 @@ std::vector<int> SolveByOurselfs(const std::vector<std::vector<int>>& matrix) {
 
 std::vector<std::pair<int, int>>
 SolveShrinkedTSP(const AI& ai, int n, const std::vector<std::pair<int, int>>& want_visit) {
-  int sx = 0, sy = 0;
-  std::vector<std::pair<int, int>> selected;
+  std::vector<std::pair<int, int>> selected = want_visit;
   const auto& board = ai.board;
   std::vector<std::vector<int>>
     selected_to_pos(board.size(),
 		    std::vector<int>(board[0].size(), -1));
 
-  for (size_t i = 0; i < board.size(); ++i) {
-    for (size_t j = 0; j < board[i].size(); ++j) {
-      if (board[i][j] == '#') continue;
-      if (ai.get_pos() == std::make_pair(int(i), int(j))){
-	sx = i;
-	sy = j;
-	continue;
-      }
-      selected.emplace_back(i, j);
+  {
+    auto st = std::find(selected.begin(), selected.end(), ai.get_pos());
+    if (st != selected.end()) {
+      selected.erase(st);
     }
   }
 
@@ -181,7 +175,7 @@ SolveShrinkedTSP(const AI& ai, int n, const std::vector<std::pair<int, int>>& wa
 
   n = std::min<int>(selected.size(), n);
   selected.resize(n);
-  selected.emplace_back(sx, sy);
+  selected.push_back(ai.get_pos());
 
   std::reverse(selected.begin(), selected.end());
   ++n;
