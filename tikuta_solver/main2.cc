@@ -25,14 +25,15 @@ int main(int argc, char *argv[]) {
   AI ai;
 
   int divide = sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count());
-  const auto& order = tikutaOrder(ai, divide);
+  const auto& order = tikutaOrder(ai, std::max(200, divide));
 
   GridGraph gridg(ai.board);
 
   for (auto i = 1u; i < order.size(); ++i) {
     const auto s = ai.get_pos();
     const auto& g = order[i];
-    if (ai.filled[g.first][g.second]) {
+    if (ai.board[g.first][g.second] != 'B' &&
+	ai.filled[g.first][g.second]) {
       continue;
     }
 
@@ -41,10 +42,20 @@ int main(int argc, char *argv[]) {
 			g.first, g.second, path);
     auto actions = GridGraph::path_to_actions(path);
     for (auto action : actions) {
-      if (ai.filled[g.first][g.second]) {
+      if (ai.board[g.first][g.second] != 'B' &&
+	  ai.filled[g.first][g.second]) {
 	continue;
       }
       LOG_IF(FATAL, !ai.move(action)) << "invalid";
+
+      if (ai.get_count_extension()) {
+	for (int i = 0;; i++) {
+	  if (ai.use_extension(0, i + 2)) {
+	    break;
+	  }
+	}
+      }
+
     }
   }
 
