@@ -391,9 +391,19 @@ app.get('/solution/:id/validate', async (req, res, next) => {
         Key: key,
     };
     pullObjectS3ToTmp(s3, params).then((file) => {
-        return validateModel(target.task_id, target, file)
-            .then(() => res.json({solution: target}));
-    }).catch((e) => {
+        if (target.has_buy) {
+            console.log('pull buy file');
+            const buyParams = {
+                Bucket: defaultBucket,
+                Key: generateBuyKey(target),
+            };
+            return pullObjectS3ToTmp(s3, buyParams).then((buyFile) => ({ file, buyFile }));
+        }
+        return Promise.resolve({ file, buyFile: undefined });
+    }).then(({ file, buyFile }) => {
+            return validateModel(target.task_id, target, file, buyFile)
+                .then(() => res.json({solution: target}));
+    }) .catch((e) => {
         console.error('failed to download ' + e);
         next(e);
     });
