@@ -30,10 +30,14 @@ public:
       }
     }
 
-    LOG(INFO) << "Number of clones: " << count['C'];
-    LOG(INFO) << "Number of drills: " << count['L'];
-    LOG(INFO) << "Number of extensions: " << count['B'];
-    LOG(INFO) << "Number of teleports: " << count['R'];
+    DLOG(INFO) << "Number of clones: " << count['C'];
+    DLOG(INFO) << "Number of drills: " << count['L'];
+    DLOG(INFO) << "Number of extensions: " << count['B'];
+    DLOG(INFO) << "Number of teleports: " << count['R'];
+  }
+
+  void set_drill_threshold(int v) {
+    drill_threshold = v;
   }
 
   void pick_up_extensions();
@@ -75,6 +79,7 @@ private:
   std::vector<Position> greedyTSP(std::vector<Position> cells, int* cost);
 
   int used_extension = 0;
+  int drill_threshold = 7;
   GridGraph graph;
 };
 
@@ -177,7 +182,7 @@ void KonmariAI::try_to_use_fast_weel() {
 void KonmariAI::try_to_use_teleport(std::vector<std::pair<int,int>>* path) {
   if (get_count_teleport() > 0) {
     install_beacon();
-    LOG(INFO) << "Put " << beacon_pos.size() << "th beacon!!";
+    DLOG(INFO) << "Put " << beacon_pos.size() << "th beacon!!";
   }
   int cur_cost = path->size() - 1;
   int cost_without_beacon = cur_cost;
@@ -195,7 +200,7 @@ void KonmariAI::try_to_use_teleport(std::vector<std::pair<int,int>>* path) {
 
   if (cur_cost != cost_without_beacon) {
     jump_to_beacon(path->front());
-    LOG(INFO) << "Jump! Saved cost is " << cost_without_beacon - cur_cost;
+    DLOG(INFO) << "Jump! Saved cost is " << cost_without_beacon - cur_cost;
   }
 }
 
@@ -216,16 +221,16 @@ bool KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
     return false;
   const int cost_diff = cost_without_drill - cost_with_drill;
 
-  bool should_use_drill = cost_diff > 7;
+  bool should_use_drill = cost_diff > drill_threshold;
   if (!should_use_drill)
     return false;
 
   std::vector<std::pair<int,int>> new_path;
   new_path.push_back(s);
   // Use drill!
-  LOG(INFO) << "Use Drill!";
-  LOG(INFO) << s.first << "," << s.second << "->"  << g.first << "," << g.second;
-  LOG(INFO) << "cost diff=" << cost_diff;
+  DLOG(INFO) << "Use Drill!";
+  DLOG(INFO) << s.first << "," << s.second << "->"  << g.first << "," << g.second;
+  DLOG(INFO) << "cost diff=" << cost_diff;
   use_drill();
   for (int i = 0; g.first != s.first + i;) {
     i += g.first > s.first ? 1 : -1;
@@ -286,7 +291,7 @@ void KonmariAI::try_to_use_extensions() {
       LOG(FATAL) << "Failed to use extension";
       return;
     }
-    LOG(INFO) << "Use extension!";
+    DLOG(INFO) << "Use extension!";
     cur_pos_item = 0;
   }
 }
@@ -310,16 +315,16 @@ void KonmariAI::pick_up_extensions() {
     if (greedy_cost < best_cost) {
       LOG(FATAL) << "TSP computation is wrong....";
     }
-    LOG(INFO) << "DPTSP cost: " << best_cost;
-    LOG(INFO) << "Greedy cost: " << greedy_cost;
-    LOG(INFO) << "DPTSP path: " << path_to_string(best_path);
-    LOG(INFO) << "Greedy path: " << path_to_string(greedy_path);
+    DLOG(INFO) << "DPTSP cost: " << best_cost;
+    DLOG(INFO) << "Greedy cost: " << greedy_cost;
+    DLOG(INFO) << "DPTSP path: " << path_to_string(best_path);
+    DLOG(INFO) << "Greedy path: " << path_to_string(greedy_path);
   } else {
-    LOG(INFO) << "The number of extensions" << extensions.size() << " is too large. Do greedy TSP.";
+    DLOG(INFO) << "The number of extensions" << extensions.size() << " is too large. Do greedy TSP.";
     int greedy_cost = 0;
     best_path = greedyTSP(extensions, &greedy_cost);
-    LOG(INFO) << "Greedy cost: " << greedy_cost;
-    LOG(INFO) << "Greedy path: " << path_to_string(best_path);
+    DLOG(INFO) << "Greedy cost: " << greedy_cost;
+    DLOG(INFO) << "Greedy path: " << path_to_string(best_path);
   }
 
   for (const auto& dst : best_path) {
@@ -410,15 +415,24 @@ void KonmariAI::konmari_move() {
 }
 
 int main() {
-  std::unique_ptr<KonmariAI> ai(new KonmariAI());
+  KonmariAI original_ai;
   // First pick up all extensions.
-  ai->pick_up_extensions();
-  while (!ai->is_finished()) {
-    ai->konmari_move();
+  int best_score = (1<<29);
+  std::string best_str;
 
-    // std::cerr << "State-------" << std::endl;
-    // ai->dump_state();
+  for (int v = 1; v < 30; v++) {
+    KonmariAI ai = original_ai;
+    ai.set_drill_threshold(v);
+    ai.pick_up_extensions();
+    while (!ai.is_finished()) {
+      ai.konmari_move();
+    }
+    int score = ai.get_time();
+    std::cerr << "Score (v=" << v << "):" << score << std::endl;
+    if (best_score > score) {
+      best_score = score;
+      best_str = ai.commands2str();
+    }
   }
-  std::cerr << "Score:" << ai->get_time() << std::endl;
-  ai->print_commands();
+  std::cout << best_str;
 }
