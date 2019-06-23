@@ -8,7 +8,7 @@ EOM
 fi
 
 TASK_ID=$( printf "%03d" $1 )
-cargo run ../problems/prob-$TASK_ID.in
+cargo run --release ../problems/prob-$TASK_ID.in
 
 echo "Submitting /tmp/$TASK_ID.out"
 SUBMIT_ID=$(
