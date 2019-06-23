@@ -74,13 +74,13 @@ Worker::Worker(Position pos) {
   current_pos = pos;
 }
 
-bool AI::valid_pos(Position target) {
+bool AI::valid_pos(Position target) const {
   int x = target.first;
   int y = target.second;
   return 0 <= x && x < height && 0 <= y && y < width;
 }
 
-bool AI::reachable(Position target, const int id) {
+bool AI::reachable(Position target, const int id) const {
   int x = target.first;
   int y = target.second;
   if (!valid_pos(target))
@@ -286,6 +286,24 @@ std::vector<Position> AI::rotated_manipulator_positions(bool is_cw, const int id
     if(reachable(mani, id))
       ret.push_back(mani);
   }
+  return ret;
+}
+
+std::vector<Position> AI::moved_manipulator_positions(const Direction& d, const int id) const {
+  Position self = get_pos(id);
+  std::vector<Position> ret;
+
+  const auto v = dir2vec(d);
+
+  for (const Position &p : workers[id].manipulator_range) {
+    const Position mani = {self.first + p.first + v.first,
+			   self.second + p.second + v.second};
+    
+    if(reachable(mani, id)) {
+      ret.push_back(mani);
+    }
+  }
+
   return ret;
 }
 
@@ -564,9 +582,9 @@ bool AI::do_command(Command cmd, const int id) {
     return install_beacon(id);
   case CmdType::JumpToBeacon:
     return jump_to_beacon(Position(cmd.x, cmd.y), id);
-  default:
-    LOG(FATAL) << "BUG?: unknown command name: " << static_cast<int>(cmd.type);
   }
+
+  LOG(FATAL) << "BUG?: unknown command name: " << static_cast<int>(cmd.type);
 }
 
 bool AI::is_finished() {
