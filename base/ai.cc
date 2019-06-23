@@ -677,7 +677,7 @@ std::string cmd2str(struct Command cmd, int height) {
     s = "R";
     break;
   case CmdType::JumpToBeacon:
-    s = "T(" + std::to_string(cmd.y) + "," + std::to_string(height - cmd.x) + ")";
+    s = "T(" + std::to_string(cmd.y) + "," + std::to_string(height - cmd.x - 1) + ")";
     break;
   case CmdType::Nop:
     s = "Z";
