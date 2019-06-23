@@ -24,23 +24,30 @@ int main(int argc, char *argv[]) {
   // AI's constructor accepts a input file from stdin.
   AI ai;
 
-  const auto& order = tikutaOrder(ai, sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count()));
+  int divide = sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count());
+  const auto& order = tikutaOrder(ai, divide);
 
   GridGraph gridg(ai.board);
 
-  for (auto i = 0u; i + 1 < order.size(); ++i) {
-    const auto& s = order[i];
-    const auto& g = order[i+1];
+  for (auto i = 1u; i < order.size(); ++i) {
+    const auto s = ai.get_pos();
+    const auto& g = order[i];
+    if (ai.filled[g.first][g.second]) {
+      continue;
+    }
+
     std::vector<pos> path;
     gridg.shortest_path(s.first, s.second,
 			g.first, g.second, path);
     auto actions = GridGraph::path_to_actions(path);
-    std::string spath;
-    for (auto c : actions) {
-      spath +=  direction_to_char(c);
+    for (auto action : actions) {
+      if (ai.filled[g.first][g.second]) {
+	continue;
+      }
+      LOG_IF(FATAL, !ai.move(action)) << "invalid";
     }
-    // LOG(INFO) << s << " " << g << " " << spath;
-    std:: cout << spath;
   }
-  std::cout << std::endl;
+
+  LOG(INFO) << ai.get_time();
+  ai.print_commands();
 }

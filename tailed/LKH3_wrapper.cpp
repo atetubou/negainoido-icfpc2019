@@ -225,22 +225,24 @@ SolveShrinkedTSP(const AI& ai, int n, const std::vector<std::pair<int, int>>& wa
 
   const auto& ans = SolveTSPByLKH3(matrix, FLAGS_LKH3path.c_str());
 
-  LOG(INFO) << ans;
 
-  std::cerr << endl;
-  for (int i = 0; i < n; ++i) {
-    for (int j = 0; j < n; ++j) {
-      char buf[8];
-      sprintf(buf, "%4d", matrix[i][j]);
-      std::cerr << buf;
+  if (matrix.size() < 6) {
+    LOG(INFO) << ans;
+    std::cerr << endl;
+    for (int i = 0; i < n; ++i) {
+      for (int j = 0; j < n; ++j) {
+	char buf[8];
+	sprintf(buf, "%4d", matrix[i][j]);
+	std::cerr << buf;
+      }
+      std::cerr << endl;
     }
     std::cerr << endl;
   }
-  std::cerr << endl;
 
 
   // const auto& ans = SolveByOurselfs(matrix);
-  {
+  if (ans.size() < 100) {
     auto board = ai.board;
     for (auto i = 0u; i < ans.size(); ++i) {
       const auto& s = selected[ans[i]];
@@ -347,7 +349,7 @@ std::vector<std::pair<int, int>> tikutaOrder(const AI& ai, int n,
 
   auto groups = get_groups(ai, tsp_tours);
 
-  {
+  if (groups.size() < 100) {
     auto board = ai.board;
     auto p = ai.get_pos();
     board[p.first][p.second] = 'W';
