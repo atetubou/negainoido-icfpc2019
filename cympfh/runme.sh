@@ -1,5 +1,12 @@
 #!/bin/bash
 
+if [ $# -ne 1 ]; then
+    cat <<EOM
+Usage: ./runme.sh 39  # <= solve the problem #039
+EOM
+    exit
+fi
+
 TASK_ID=$( printf "%03d" $1 )
 cargo run ../problems/prob-$TASK_ID.in
 

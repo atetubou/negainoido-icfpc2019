@@ -4,7 +4,7 @@ use std::cmp::{min, max};
 
 use crate::geo::{Line, Point, intersect_ss, intersect_sp};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Direction {
   Right,
   Down,
@@ -12,7 +12,7 @@ pub enum Direction {
   Up,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Position(pub isize, pub isize);
 
 #[derive(Debug, Clone, Copy)]
@@ -22,7 +22,7 @@ pub enum Command {
   Boost
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Worker {
     pub current_dir: Direction,
     pub current_pos: Position,
