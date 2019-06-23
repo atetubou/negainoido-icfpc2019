@@ -24,7 +24,7 @@ public:
   absl::optional<Position> decide_extension_pos();
   void try_to_use_extensions();
   void try_to_use_fast_weel();
-  void try_to_use_drill(std::vector<std::pair<int,int>>* path);
+  bool try_to_use_drill(std::vector<std::pair<int,int>>* path);
   void konmari_move();
   Position get_nearest_unfilled(std::vector<std::pair<int,int>>* path);
 
@@ -54,12 +54,12 @@ void KonmariAI::try_to_use_fast_weel() {
     use_fast_wheel();
 }
 
-void KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
+bool KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
   // We only use drill for one move.
   if (get_duration_drill() > 0)
-    return;
+    return false;
   if (get_count_drill() == 0)
-    return;
+    return false;
 
   int cost_without_drill = path->size() - 1;
   // path.begin() -> path.back().
@@ -68,12 +68,12 @@ void KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
   const int cost_with_drill = std::abs(g.first - s.first) + std::abs(g.second - s.second);
   // Lazy assumption. We may not be able to g with drill.
   if (cost_with_drill > 30)
-    return;
+    return false;
   const int cost_diff = cost_without_drill - cost_with_drill;
 
   bool should_use_drill = cost_diff > 5;
   if (!should_use_drill)
-    return;
+    return false;
 
   std::vector<std::pair<int,int>> new_path;
   new_path.push_back(s);
@@ -92,6 +92,7 @@ void KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
   }
 
   *path = std::move(new_path);
+  return true;
 }
 
 absl::optional<Position> KonmariAI::decide_extension_pos() {
@@ -215,9 +216,15 @@ void KonmariAI::konmari_move() {
   // try_to_use_fast_weel();
   std::vector<std::pair<int,int>> path;
   get_nearest_unfilled(&path);
-  try_to_use_drill(&path);
+  bool used_drill = try_to_use_drill(&path);
   for (const Direction& dir : GridGraph::path_to_actions(path)) {
     move(dir);
+  }
+
+  if (used_drill) {
+    // If drill is used, some walls in map become path.
+    // Update grid graph to use the path to compute shortest path in the future.
+    graph = GridGraph(board);
   }
 }
 
