@@ -39,7 +39,7 @@ cc_library(
 
 cc_library(
     name = "ai",
-    srcs = ["ai.cc"],
+    srcs = ["ai.cc", "ai_util.cc"],
     hdrs = ["ai.h"],
     deps = [
         ":base",

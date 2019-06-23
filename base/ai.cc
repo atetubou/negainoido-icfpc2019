@@ -1,3 +1,7 @@
+/*
+ * This file contains fundamental logic for ai.h
+ */
+
 #include <iostream>
 #include <fstream>
 #include <cassert>
@@ -74,7 +78,7 @@ Worker::Worker(Position pos) {
   current_pos = pos;
 }
 
-bool AI::valid_pos(Position target) {
+bool AI::valid_pos(Position target) const {
   int x = target.first;
   int y = target.second;
   return 0 <= x && x < height && 0 <= y && y < width;
@@ -236,7 +240,7 @@ int AI::get_time() { return current_time; }
 
 Position AI::get_pos(const int id) const { return workers[id].current_pos; }
 
-Direction AI::get_dir(const int id) { return workers[id].current_dir; }
+Direction AI::get_dir(const int id) const { return workers[id].current_dir; }
 
 int AI::get_filled_count() { return filled_count; }
 
