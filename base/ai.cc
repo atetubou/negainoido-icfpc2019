@@ -413,6 +413,12 @@ bool AI::use_extension(const int dx, const int dy, const int id) {
   workers[id].manipulator_range.push_back( rotate_reverse({dx, dy}, get_dir(id)) );
   count_extension--;
 
+  // Fill a cell visited by a new manipulator.
+  // Update all manipulator's cell by get_absolute_manipulator_positions() because I'm lazy.
+  for(auto p: get_absolute_manipulator_positions(id)) {
+    fill_cell(p, id);
+  }
+
   Command cmd = {CmdType::UseExtension, Direction::Right /* dymmy */, dx, dy};
   push_command(cmd, id);
 
