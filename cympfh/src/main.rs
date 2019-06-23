@@ -20,6 +20,9 @@ enum EditorMode {
     CursorShortestPath,
 }
 
+const WINDOW_HEIGHT: usize = 40;
+// const WINDOW_WIDTH: usize = 100;
+
 fn dump(ai: &AI, &win: &*mut i8, message: &String, &cursor: &Position) {
 
     clear();
@@ -47,7 +50,19 @@ fn dump(ai: &AI, &win: &*mut i8, message: &String, &cursor: &Position) {
     let mybody = ai.get_absolute_manipulator_positions(0);
     let is_my_body = |p: &Position| { mybody.iter().any(|&q| *p == q) };
 
-    for i in 0..ai.height {
+    let window_height_range = if ai.height < WINDOW_HEIGHT {
+        0..ai.height
+    } else {
+        0..WINDOW_HEIGHT
+        // let left = if ai.workers[0].current_pos.0 as usize > WINDOW_HEIGHT / 2 {
+        //     ai.workers[0].current_pos.0 as usize - WINDOW_HEIGHT / 2
+        // } else {
+        //     0
+        // };
+        // left..left + WINDOW_HEIGHT
+    };
+
+    for i in window_height_range {
         for j in 0..ai.width {
 
             wmove(win, i as i32 + 4, j as i32);
@@ -85,7 +100,7 @@ fn dump(ai: &AI, &win: &*mut i8, message: &String, &cursor: &Position) {
     }
 
     // your command
-    wmove(win, ai.height as i32 + 5, 0);
+    wmove(win, WINDOW_HEIGHT as i32 + 4, 0);
     attrset(COLOR_PAIR(1));
     waddstr(win, &ai.print_commands());
 }
