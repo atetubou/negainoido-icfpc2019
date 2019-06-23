@@ -225,6 +225,14 @@ void KonmariAI::konmari_move() {
     // Update grid graph to use the path to compute shortest path in the future.
     graph = GridGraph(board);
   }
+
+  // If the next cell is drill, get it.
+  for (auto& p : get_neighbors(get_pos())) {
+    if (board[p.first][p.second] == 'L') {
+      move(GridGraph::move_to_action(get_pos(), p));
+      break;
+    }
+  }
 }
 
 int main() {
