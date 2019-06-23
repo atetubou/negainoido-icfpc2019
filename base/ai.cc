@@ -325,7 +325,7 @@ std::vector<Position> AI::moved_manipulator_positions(const Direction& d, const 
 
   for (const Position &p : workers[id].manipulator_range) {
     const Position mani = {self.first + p.first + v.first,
-			   self.second + p.second + v.second};
+                           self.second + p.second + v.second};
 
     if(reachable(mani, id)) {
       ret.push_back(mani);
@@ -422,7 +422,7 @@ bool AI::turn_CW(const int id) {
     static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 1 ) % 4 );
 
   for(auto p: get_absolute_manipulator_positions()) {
-    fill_cell(p);
+    fill_cell(p, id);
   }
 
   Command cmd = {CmdType::TurnCW};
@@ -441,7 +441,7 @@ bool AI::turn_CCW(const int id) {
     static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 3 ) % 4 );
 
   for(auto p: get_absolute_manipulator_positions()) {
-    fill_cell(p);
+    fill_cell(p, id);
   }
 
   Command cmd = {CmdType::TurnCCW};
