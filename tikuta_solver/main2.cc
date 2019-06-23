@@ -42,11 +42,14 @@ int main(int argc, char *argv[]) {
       q.pop_front();
       continue;
     }
+
     if (ai.board[g.first][g.second] != 'B' &&
 	ai.filled[g.first][g.second]) {
       q.pop_front();
       continue;
     }
+
+    ai.dump_state();
 
     std::vector<pos> path;
     gridg.shortest_path(s.first, s.second,
@@ -60,10 +63,14 @@ int main(int argc, char *argv[]) {
       }
       LOG_IF(FATAL, !ai.move(action)) << "invalid";
 
-      if (ai.get_count_extension()) {
-	for (int i = 0;; i++) {
-	  if (ai.use_extension(0, i + 2)) {
-	    break;
+      {
+	auto p = ai.get_pos();
+	if (ai.get_count_extension() || 
+	    ai.board[p.first][p.second] == 'B') {
+	  for (int i = 0;; i++) {
+	    if (ai.use_extension(0, i + 2)) {
+	      break;
+	    }
 	  }
 	}
       }
