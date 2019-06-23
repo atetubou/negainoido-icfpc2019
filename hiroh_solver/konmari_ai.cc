@@ -397,20 +397,22 @@ void KonmariAI::konmari_move() {
         break;
       }
     }
+    // If the next cell is drill, get it.
+    for (auto& p : get_neighbors(get_pos())) {
+      if (board[p.first][p.second] == 'L') {
+        Position cur_p = get_pos();
+        move(GridGraph::move_to_action(cur_p, p));
+        // Back to original position in order to not break shortest path move.
+        move(GridGraph::move_to_action(p, cur_p));
+        break;
+      }
+    }
   }
 
   if (used_drill) {
     // If drill is used, some walls in map become path.
     // Update grid graph to use the path to compute shortest path in the future.
     graph = GridGraph(board);
-  }
-
-  // If the next cell is drill, get it.
-  for (auto& p : get_neighbors(get_pos())) {
-    if (board[p.first][p.second] == 'L') {
-      move(GridGraph::move_to_action(get_pos(), p));
-      break;
-    }
   }
 }
 
@@ -419,7 +421,7 @@ int main() {
   // First pick up all extensions.
   int best_score = (1<<29);
   std::string best_str;
-
+  int best_v = -1;
   for (int v = 1; v < 30; v++) {
     KonmariAI ai = original_ai;
     ai.set_drill_threshold(v);
@@ -430,9 +432,12 @@ int main() {
     int score = ai.get_time();
     std::cerr << "Score (v=" << v << "):" << score << std::endl;
     if (best_score > score) {
+      best_v = v;
       best_score = score;
       best_str = ai.commands2str();
     }
   }
+
+  std::cerr << "Best Score (v=" << best_v << "):" << best_score << std::endl;
   std::cout << best_str;
 }
