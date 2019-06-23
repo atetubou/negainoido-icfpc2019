@@ -48,5 +48,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  ai.dump_state();
   ai.print_commands();
 }

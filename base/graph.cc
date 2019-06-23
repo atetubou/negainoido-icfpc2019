@@ -268,7 +268,6 @@ std::vector<Direction> GridGraph::shortest_paths(pos start, const std::vector<po
   while (!q.empty()) {
     auto cur = q.front();
     q.pop();
-    
     const int cx = cur.first;
     const int cy = cur.second;
 
@@ -304,7 +303,7 @@ std::vector<Direction> GridGraph::shortest_paths(pos start, const std::vector<po
     
     for (int i = 0; i < 4; ++i) {
       int nx = start.first + dx[i];
-      int ny = start.second + dx[i];
+      int ny = start.second + dy[i];
       if (can_visit(nx, ny) && costs[nx][ny] < costs[start.first][start.second]) {
 	start = {nx, ny};
 	break;
