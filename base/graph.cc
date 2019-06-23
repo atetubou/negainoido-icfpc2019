@@ -31,7 +31,7 @@ int GraphDistance::shortest_path(int src, int dst) {
   return shortest_path(src, dst, paths);
 }
 
-int GraphDistance::shortest_path(int src, int dst, std::vector<int> &paths) {
+int GraphDistance::shortest_path(int src, int dst, std::vector<int> &paths, int stop_value) {
   paths.clear();
 
   int res = -1;
@@ -53,7 +53,10 @@ int GraphDistance::shortest_path(int src, int dst, std::vector<int> &paths) {
       }
       break;
     }
-
+    if (d > stop_value) {
+      clear_updates(updated_vertices);
+      return (1<<29);
+    }
 
     for (const auto &e: graph[v]) {
       int w = e.dst;
@@ -125,7 +128,7 @@ void GraphDistance::shortest_path_tree(int src, std::vector<int> &dist, std::vec
     if (d > dist[v]) {
       continue;
     }
-    
+
     for (const auto &e: graph[v]) {
       int w = e.dst;
       int dw = dist[w];
@@ -192,12 +195,13 @@ int GridGraph::shortest_path(int sx, int sy, int gx, int gy) {
 }
 
 int GridGraph::shortest_path(int sx, int sy, int gx, int gy,
-			     std::vector<std::pair<int, int>> &path) {
+			     std::vector<std::pair<int, int>> &path,
+                             int stop_value) {
   std::vector<int> gpath;
   int src = to_graph_node(sx, sy);
   int dst = to_graph_node(gx, gy);
 
-  int ret = graph_.shortest_path(src, dst, gpath);
+  int ret = graph_.shortest_path(src, dst, gpath, stop_value);
 
   for (auto v : gpath) {
     path.push_back(to_grid_node(v));
@@ -241,7 +245,7 @@ std::vector<Direction> GridGraph::path_to_actions(const std::vector<pos>& path) 
 }
 
 bool GridGraph::can_visit(int x, int y) const {
-  return 
+  return
     0 <= x && x < static_cast<int>(board_.size()) &&
     0 <= y && y < static_cast<int>(board_[0].size()) &&
     board_[x][y] != '#';
@@ -300,11 +304,11 @@ std::vector<Direction> GridGraph::shortest_paths(pos start, const std::vector<po
     if (costs[start.first][start.second] == 0) {
       break;
     }
-    
+
     for (int i = 0; i < 4; ++i) {
       int nx = start.first + dx[i];
       int ny = start.second + dy[i];
-      if (can_visit(nx, ny) && costs[nx][ny] != -1 && 
+      if (can_visit(nx, ny) && costs[nx][ny] != -1 &&
 	  costs[nx][ny] < costs[start.first][start.second]) {
 	start = {nx, ny};
 	break;
