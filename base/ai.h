@@ -85,7 +85,7 @@ class AI {
   int filled_count = 0;
   int block_count = 0;
 
-  bool fill_cell(Position, const int id = 0);
+  bool fill_cell(Position, const int id);
 
   int count_fast = 0;
   int count_drill = 0;
@@ -99,7 +99,7 @@ class AI {
 
   void next_turn(const int id);
   bool valid_pos(Position) const;
-  bool move_body(const Direction &dir, const int id = 0);
+  bool move_body(const Direction &dir, const int id);
 
 
   void initialize();
@@ -185,7 +185,7 @@ public:
    */
 
   // Executes a command. This is a wrapper of 'move', 'use_extesion', etc.
-  bool do_command(Command cmd, const int id);
+  bool do_command(Command cmd, const int id = 0);
 
   // Executes a command and updates the internal state.
   // If it's a invalid move, it returns false without changing internal states.
@@ -196,12 +196,12 @@ public:
 
   bool use_fast_wheel(const int id = 0);
   bool use_drill(const int id = 0);
-  bool use_clone(const int id);
+  bool use_clone(const int id = 0);
 
-  bool install_beacon(const int id);
-  bool jump_to_beacon(Position dst, const int id);
+  bool install_beacon(const int id = 0);
+  bool jump_to_beacon(Position dst, const int id = 0);
 
-  bool nop(const int id);
+  bool nop(const int id = 0);
 
   // Checks if get_filled_count() == Height * Width
   bool is_finished();

@@ -12,19 +12,18 @@
 #include <glog/logging.h>
 
 std::ostream& operator<<(std::ostream& os, const Direction& d) {
-  std::string s;
   switch (d) {
   case Direction::Right:
-    s = "Right";
+    return os << "Right";
   case Direction::Left:
-    s = "Left";
+    return os << "Left";
   case Direction::Up:
-    s = "Up";
+    return os << "Up";
   case Direction::Down:
-    s = "Down";
+    return os << "Down";
   }
 
-  os << s;
+  LOG(FATAL) << "invalid direction: " << static_cast<int>(d);
   return os;
 }
 
@@ -326,7 +325,7 @@ std::vector<Position> AI::moved_manipulator_positions(const Direction& d, const 
 
   for (const Position &p : workers[id].manipulator_range) {
     const Position mani = {self.first + p.first + v.first,
-			   self.second + p.second + v.second};
+                           self.second + p.second + v.second};
 
     if(reachable(mani, id)) {
       ret.push_back(mani);
@@ -423,7 +422,7 @@ bool AI::turn_CW(const int id) {
     static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 1 ) % 4 );
 
   for(auto p: get_absolute_manipulator_positions()) {
-    fill_cell(p);
+    fill_cell(p, id);
   }
 
   Command cmd = {CmdType::TurnCW};
@@ -442,7 +441,7 @@ bool AI::turn_CCW(const int id) {
     static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 3 ) % 4 );
 
   for(auto p: get_absolute_manipulator_positions()) {
-    fill_cell(p);
+    fill_cell(p, id);
   }
 
   Command cmd = {CmdType::TurnCCW};
