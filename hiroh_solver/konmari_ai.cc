@@ -25,6 +25,7 @@ public:
   void try_to_use_extensions();
   void try_to_use_fast_weel();
   bool try_to_use_drill(std::vector<std::pair<int,int>>* path);
+  // void try_rotate(const Position& dst);
   void konmari_move();
   Position get_nearest_unfilled(std::vector<std::pair<int,int>>* path);
 
@@ -42,74 +43,108 @@ private:
     }
     return ret;
   }
-
-  std::set<Position> get_isolated_cells();
-  void clean_up_isolated_cells();
-  bool greedyTSP(std::set<Position>& cells,
-                 bool must_body);
-
+  std::string path_to_string(const std::vector<Position>& p) {
+    std::string ret;
+    for (size_t i = 0; i < p.size(); i++) {
+      if (i)
+        ret += "->";
+      ret += "(" + std::to_string(p[i].first) + "," + std::to_string(p[i].second) + ")";
+    }
+    return ret;
+  }
+  std::vector<Position> DPTSP(std::vector<Position> cells, int* cost);
+  std::vector<Position> greedyTSP(std::vector<Position> cells, int* cost);
   int used_extension = 0;
   GridGraph graph;
-  std::set<Position> isolated_cells_after_extensions;
 };
 
-bool KonmariAI::greedyTSP(std::set<Position>& cells,
-                          bool must_body) {
-  Position cur = get_pos();
-  int min_cost = (1<<29);
-  std::vector<std::pair<int,int>> shortest_path;
-  Position next = Position(-1, -1);
-  for (const auto& dst : cells) {
-    std::vector<std::pair<int,int>> path;
-    int cost = graph.shortest_path(cur.first, cur.second,
-                                   dst.first, dst.second,
-                                   path);
-    if (min_cost > cost) {
-      shortest_path = std::move(path);
-      min_cost = cost;
-      next = dst;
-    }
-  }
-  cells.erase(next);
+#define INF (1<<29)
 
-  for (const Direction& dir : GridGraph::path_to_actions(shortest_path)) {
-    // Finish if all cells are already filled (due to fill by body).
-    if (is_finished()) {
-      return true;
-    }
-    if (!must_body) {
-      if (filled[next.first][next.second])
-        return false;
-    }
+namespace dp {
 
-    move(dir);
-  }
-  return false;
-}
+int memo[18][1<<18];
+int memo2[18][1<<18];
+int dp_cost[20][20] = {};
 
-std::set<Position> KonmariAI::get_isolated_cells() {
-  int H = get_height();
-  int W = get_width();
-  std::set<Position> isolated_cells;
-  for (int x = 0; x < H; x++) {
-    for (int y = 0; y < W; y++) {
-      if (!filled[x][y] && board[x][y] != '#') {
-        // isolate means,
-        // 1.) the cell will ought to be filled.
-        // 2.) all its adjucent cells are either filled or wall.
-        bool is_isolated = true;
-        for (const auto& np : get_neighbors(Position(x,y))) {
-          if (!filled[np.first][np.second]) {
-            is_isolated = false;
-            break;
-          }
-        }
-        if (is_isolated)
-          isolated_cells.emplace(x, y);
+int dp_go(int cur, int passed, const int N) {
+    if (passed == (1<<N) - 1) {
+      return 0;
+    }
+    if (memo[cur][passed] > 0) {
+      return memo[cur][passed];
+    }
+    int cur_cost = INF;
+    int min_i = -1;
+    for (int i = 0; i < N; i++) {
+      if (passed & (1<<i))
+        continue;
+      int c = dp_cost[cur][i] + dp_go(i, passed ^ (1<<i), N);
+      if (cur_cost > c) {
+        cur_cost = c;
+        min_i = i;
       }
     }
+    memo[cur][passed] = cur_cost;
+    memo2[cur][passed] = min_i;
+    return cur_cost;
+  };
+}
+
+std::vector<Position> KonmariAI::DPTSP(std::vector<Position> cells, int* cost) {
+  cells.push_back(get_pos());
+  const int st = cells.size() - 1;
+  memset(dp::memo, -1, sizeof(dp::memo));
+  for (size_t i = 0; i < cells.size(); i++) {
+    for (size_t j = i + 1; j < cells.size(); j++) {
+      dp::dp_cost[i][j] = dp::dp_cost[j][i] = graph.shortest_path(cells[i].first, cells[i].second,
+  cells[j].first, cells[j].second);
+    }
   }
-  return isolated_cells;
+
+  int cost0 = dp::dp_go(st, (1<<st), cells.size());
+  std::vector<int> best_indices = {st};
+  std::vector<Position> best_path;
+  int passed = (1 << st);
+  *cost = 0;
+  while(best_indices.size() != cells.size()) {
+    int next = dp::memo2[best_indices.back()][passed];
+    *cost += dp::dp_cost[best_indices.back()][next];
+    best_indices.push_back(next);
+    passed ^= (1<<next);
+    best_path.push_back(cells[next]);
+  }
+
+  if (cost0 != *cost) {
+    LOG(FATAL) << "DPTSP is wrong...";
+  }
+
+  return best_path;
+}
+
+std::vector<Position> KonmariAI::greedyTSP(std::vector<Position> cells,
+                                           int* cost) {
+  std::vector<Position> best_path;
+  Position cur = get_pos();
+  std::set<Position> points(cells.begin(), cells.end());
+  *cost = 0;
+  while (!points.empty()) {
+    int min_cost = INF;
+    Position next = Position(-1, -1);
+    for (const auto& dst : points) {
+      int c = graph.shortest_path(cur.first, cur.second,
+                                  dst.first, dst.second);
+      if (min_cost > c) {
+        min_cost = c;
+        next = dst;
+      }
+    }
+    best_path.push_back(next);
+    cur = next;
+    *cost += min_cost;
+    points.erase(next);
+  }
+
+  return best_path;
 }
 
 void KonmariAI::try_to_use_fast_weel() {
@@ -212,36 +247,49 @@ void KonmariAI::try_to_use_extensions() {
 }
 
 void KonmariAI::pick_up_extensions() {
-  std::set<Position> extensions;
+  std::vector<Position> extensions;
   for (int x = 0; x < get_height(); x++) {
     for (int y = 0; y < get_width(); y++) {
       if (board[x][y] == 'B')
-        extensions.emplace(x, y);
+        extensions.emplace_back(x, y);
     }
   }
 
-  while(!extensions.empty()) {
-    if (greedyTSP(extensions, true))
-      return;
+  LOG(INFO) << "Number of extensions: " << extensions.size();
+  std::vector<Position> best_path;
+  if (extensions.size() <= 15) {
+    int greedy_cost = 0, best_cost = 0;
+    std::vector<Position> greedy_path;
+    best_path = DPTSP(extensions, &best_cost);
+    greedy_path = greedyTSP(extensions, &greedy_cost);
+    if (greedy_cost < best_cost) {
+      LOG(FATAL) << "TSP computation is wrong....";
+    }
+    LOG(INFO) << "DPTSP cost: " << best_cost;
+    LOG(INFO) << "Greedy cost: " << greedy_cost;
+    LOG(INFO) << "DPTSP path: " << path_to_string(best_path);
+    LOG(INFO) << "Greedy path: " << path_to_string(greedy_path);
+  } else {
+    LOG(INFO) << "The number of extensions" << extensions.size() << " is too large. Do greedy TSP.";
+    int greedy_cost = 0;
+    best_path = greedyTSP(extensions, &greedy_cost);
+    LOG(INFO) << "Greedy cost: " << greedy_cost;
+    LOG(INFO) << "Greedy path: " << path_to_string(best_path);
+  }
 
+  for (const auto& dst : best_path) {
+    Position cur = get_pos();
+    std::vector<std::pair<int,int>> path;
+    graph.shortest_path(cur.first, cur.second,
+                        dst.first, dst.second,
+                        path);
+    for (const Direction& dir : GridGraph::path_to_actions(path)) {
+      if (is_finished())
+        return;
+      move(dir);
+    }
     // use extension.
     try_to_use_extensions();
-  }
-
-  isolated_cells_after_extensions = get_isolated_cells();
-}
-
-void KonmariAI::clean_up_isolated_cells() {
-  std::set<Position> new_isolated_cells = get_isolated_cells();
-  for (const auto& ignored_p : isolated_cells_after_extensions) {
-    auto it = new_isolated_cells.find(ignored_p);
-    if (it != new_isolated_cells.end())
-      new_isolated_cells.erase(it);
-  }
-
-  while(!new_isolated_cells.empty()) {
-    if (greedyTSP(new_isolated_cells, false))
-      return;
   }
 }
 
@@ -271,6 +319,66 @@ Position KonmariAI::get_nearest_unfilled(std::vector<std::pair<int,int>>* path) 
   return Position(-1, -1);
 }
 
+/*
+void KonmariAI::try_rotate(const Position& dst) {
+  auto rotate_info = [dst=dst, &filled=filled](std::vector<Position>& rpos) -> std::pair<bool, int> {
+    bool dst_fill = false;
+    int filled_by_rotate_cnt = 0;
+    for (const auto& rp : rpos) {
+      if (rp == dst)
+        dst_fill = true;
+      if (!filled[rp.first][rp.second])
+        filled_by_rotate_cnt++;
+    }
+    return {dst_fill, filled_by_rotate_cnt};
+  };
+
+  auto cw_pos = rotated_manipulator_positions(false);
+  auto ccw_pos = rotated_manipulator_positions(true);
+  auto cw_info = rotate_info(cw_pos);
+  auto ccw_info = rotate_info(ccw_pos);
+
+  enum class Decision {
+    UNDECIDED,
+    DO_CW,
+    DO_CCW,
+  };
+
+  Decision d = Decision::UNDECIDED;
+  if (cw_info.first) {
+    if (!ccw_info.first) {
+      d = Decision::DO_CW;
+    } else {
+      d = cw_info.second > ccw_info.second ? Decision::DO_CW : Decision::DO_CCW;
+    }
+  } else if (ccw_info.first) {
+    d = Decision::DO_CCW;
+  }
+
+  if (d == Decision::UNDECIDED) {
+    // This means, dst will not be filled by rotation.
+    // We have to decide if we should rotate.
+    int filled_cnt = std::max(cw_info.second, ccw_info.second);
+    // TODO(hiroh): Optimize this heuristic.
+    bool should_rotate = filled_cnt > 3 + (used_extension / 2);
+    if (!should_rotate)
+      return;
+    d = cw_info.second > ccw_info.second ? Decision::DO_CW : Decision::DO_CCW;
+  }
+
+  switch (d) {
+  case Decision::UNDECIDED:
+    return;
+  case Decision::DO_CW:
+    turn_CW();
+    break;
+  case Decision::DO_CCW:
+    turn_CCW();
+    break;
+  }
+}
+*/
+
 void KonmariAI::konmari_move() {
   try_to_use_extensions();
   // Fast wheel is dangerous!!!
@@ -283,6 +391,8 @@ void KonmariAI::konmari_move() {
     if (is_finished()) {
       return;
     }
+    // try_rotate(dst);
+
     if (filled[dst.first][dst.second])
       break;
     move(dir);
@@ -301,9 +411,6 @@ void KonmariAI::konmari_move() {
       break;
     }
   }
-
-  // Clean up cells that are isolated due to this move.
-  // clean_up_isolated_cells();
 }
 
 int main() {
