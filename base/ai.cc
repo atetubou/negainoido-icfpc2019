@@ -188,23 +188,27 @@ void AI::pickup_booster(const int id) {
   switch(board[p.first][p.second]) {
   case 'B':
     count_extension += 1;
+    board[p.first][p.second] = '.';
     break;
   case 'F':
     count_fast += 1;
+    board[p.first][p.second] = '.';
     break;
   case 'L':
     count_drill += 1;
+    board[p.first][p.second] = '.';
     break;
   case 'C':
     count_clone += 1;
+    board[p.first][p.second] = '.';
     break;
   case 'R':
     count_teleport += 1;
+    board[p.first][p.second] = '.';
     break;
   default:
     break;
   }
-  board[p.first][p.second] = '.';
 
 }
 
