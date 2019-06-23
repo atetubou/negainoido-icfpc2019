@@ -23,8 +23,7 @@ std::ostream& operator<<(std::ostream& os, const Direction& d) {
     return os << "Down";
   }
 
-  LOG(FATAL) << "invalid direction: " << static_cast<int>(d);
-  return os;
+  LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
 }
 
 Position dir2vec(const Direction &dir) {
