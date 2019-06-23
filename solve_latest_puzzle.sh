@@ -69,7 +69,8 @@ if [ -n "$SUBMIT" ]; then
     cd lambda-client
     ./lambdad.py &
     sleep 1
-    ./lambda-cli.py submit $BLOCK $SUBMIT_DIR/task.sol $SUBMIT_DIR/puzzle.solution.desc
+    RES=$(./lambda-cli.py submit $BLOCK $SUBMIT_DIR/task.sol $SUBMIT_DIR/puzzle.solution.desc)
+    curl -X POST -H 'Content-type: application/json' --data "{\"text\":\"submit result: $RES\"}" https://hooks.slack.com/services/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
     kill $! || true
 
     echo "Submission $BLOCK complete"
