@@ -1,5 +1,6 @@
 #pragma once
 
+#include<iostream>
 #include<string>
 #include<vector>
 #include<map>
@@ -15,9 +16,13 @@ enum class Direction {
   Up,
 };
 
+std::ostream& operator<<(std::ostream& os, const Direction& d);
+
 typedef std::pair<int, int> Position;
 
 Position dir2vec(const Direction &dir);
+char direction_to_char(Direction d);
+absl::optional<Direction> char_to_direction(char c);
 
 Position rotate(Position p, Direction d);
 
@@ -44,9 +49,6 @@ struct Command {
   int x;
   int y;
 };
-
-char direction_to_char(Direction d);
-absl::optional<Direction> char_to_direction(char c);
 
 class Worker {
 
