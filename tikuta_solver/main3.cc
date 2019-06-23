@@ -52,7 +52,7 @@ int main(int argc, char *argv[]) {
     const int workers = ai.get_count_active_workers();
     ai.use_clone(0);
     for (int i = 1; i < workers; ++i) {
-      ai.turn_CW(i);
+      ai.nop(i);
     }
   }
 
@@ -95,7 +95,7 @@ int main(int argc, char *argv[]) {
       }
       
       if (directions[i].empty()) {
-	ai.turn_CW(i);
+	ai.nop(i);
 	continue;
       }
 
