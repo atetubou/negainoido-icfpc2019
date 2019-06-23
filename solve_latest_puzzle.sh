@@ -10,7 +10,7 @@ if [ -z "$BLOCK" ]; then
     pip3 install -r requirements.txt
     ./lambdad.py &
     sleep 1
-    ./lambda-cli.py getmininginfo | tr "'" '"' > ../tmp/miining.json
+    ./lambda-cli.py getmininginfo | tr "'" '"' > ../tmp/mining.json
     ./lambda-cli.py getblockchaininfo | tr "'" '"' > ../tmp/block.json
 
     cd -
@@ -27,19 +27,39 @@ if [ -z "$BLOCK" ]; then
         sleep 1
     done
     sleep 1
-    kill $!
+    kill $! || true
 fi
 
 echo "Block $BLOCK"
 
-
+SOLVER=${SOLVER:-"//flowlight/main:flowlight_solver"}
 TASK_DESC=lambda-client/blocks/$BLOCK/task.desc
+TASK_TXT=lambda-client/blocks/$BLOCK/task.in
 PUZZLE_COND=lambda-client/blocks/$BLOCK/puzzle.cond
 PUZZLE_TXT=$PUZZLE_COND.txt
-python3 ./problems/convert_readable.py lambda-client/blocks/$BLOCK/task.desc
+
+SUBMIT_DIR=$(pwd)/tmp/submit/$BLOCK
+mkdir -p $SUBMIT_DIR
+
+python3 ./problems/convert_readable.py $TASK_DESC
+bazel run $SOLVER < $TASK_TXT > task.sol
+python3 official_sim/main.py $TASK_DESC task.sol
+cp task.sol $SUBMIT_DIR
+echo "TASK $BLOCK was solved!"
+
 python3 ./puzzle_solver/input_formatter.py $PUZZLE_COND
 bazel run //puzzle_solver:flowlight_solver < $PUZZLE_TXT > puzzle_solution.txt
 bazel run //lambda-coin:reverse_convert < puzzle_solution.txt > puzzle.solution.desc
 python3 official_sim/puzzle_checker.py $PUZZLE_COND puzzle.solution.desc
-
+cp puzzle.solution.desc $SUBMIT_DIR
 echo "Puzzle $BLOCK was solved! Let's submit puzzle.solutiond.desc!"
+
+if [ -n "$SUBMIT" ]; then
+    cd lambda-client
+    ./lambdad.py &
+    sleep 1
+    ./lambda-cli.py submit $BLOCK $SUBMIT_DIR/task.sol $SUBMIT_DIR/puzzle.solution.desc
+    kill $! || true
+
+    echo "Submission $BLOCK complete"
+fi
