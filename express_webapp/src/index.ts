@@ -1,7 +1,29 @@
 import * as express from 'express';
 import * as path from 'path';
+import * as Path from 'path';
 import * as timeout from 'connect-timeout'
-import runSim from './runSim';
+import {Sequelize} from 'sequelize-typescript';
+import mysql2 from 'mysql2';
+import * as archiver from 'archiver';
+import {GetObjectOutput} from "aws-sdk/clients/s3";
+import {Readable} from "stream";
+import * as os from "os";
+import * as fs from "fs";
+import {formatNumber, makeRandomId, pullObjectS3ToTmp, putDataToS3} from "./utils";
+import {FindOptions, Op} from "sequelize";
+import {getTotalCost} from "./validateBuy";
+import {
+    AWS,
+    defaultBucket,
+    generateBuyKey,
+    generateKey,
+    getBestSolution,
+    getBestSolutionModel,
+    getSolutionById,
+    getWhereOption,
+    LSolution,
+    validateModel
+} from "./LSolution";
 
 const normalizePort = (val: string) => {
     var port = parseInt(val, 10);
@@ -29,31 +51,6 @@ app.use('/public', express.static(path.join(__dirname, './../web/dist')))
 
 app.listen(port);
 app.set('view engine', 'pug');
-
-import { Sequelize } from 'sequelize-typescript';
-import { Table, Column, Model, HasMany, DataType, CreatedAt, PrimaryKey } from 'sequelize-typescript';
-import mysql2 from 'mysql2';
-
-@Table({ timestamps: true, tableName: 'tbl_lsolutions'})
-class LSolution extends Model<LSolution> {
-    @Column
-    solver: string;
-    @Column(DataType.INTEGER)
-    task_id: number;
-    @Column(DataType.BIGINT)
-    score: number;
-    @Column(DataType.BOOLEAN)
-    valid: boolean;
-    @Column(DataType.BOOLEAN)
-    checked: boolean;
-    @Column(DataType.BOOLEAN)
-    has_buy: boolean;
-    @Column(DataType.BIGINT)
-    cost: number;
-    @CreatedAt
-    @Column
-    created: Date;
-}
 
 const sequelize = new Sequelize({
     database: process.env.DB_DB || 'garasubodb',
@@ -142,31 +139,11 @@ app.get('/stat', (req, res, next) => {
 
 
 import fileUpload = require('express-fileupload');
-import AWS = require('aws-sdk');
+
 AWS.config.loadFromPath(process.env.KEY_JSON || './aws_key.json');
 AWS.config.update({ region: 'us-east-2' });
-const defaultBucket = process.env.S3_BUCKET || 'negainoido-icfpc2019-dev';
 
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
-
-const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
-const generateBuyKey = (model: LSolution) => `buy_${model.solver}_${model.task_id}_${model.id}`;
-
-const validateModel = (taskId: number, model: LSolution, file: string, buyFile?: string) => {
-    return runSim(getDescFile(taskId), file, buyFile)
-        .then((s) => {
-            model.score = parseInt(s);
-            model.valid = true;
-            model.checked = true;
-            return model.save();
-        })
-        .catch((e) => {
-            console.log('Failed to run sim : ' + e);
-            model.valid = false;
-            model.checked = true;
-            return model.save().then(() => { throw e; });
-        });
-};
 
 // endpoint for submission
 app.post('/solution', async (req, res, next) => {
@@ -249,69 +226,6 @@ app.post('/solution', async (req, res, next) => {
         next(e);
     });
 });
-
-const getSolutionById = (id: number) => {
-    return LSolution.findOne({
-        attributes: ['id', 'solver', 'task_id', 'valid', 'score', 'has_buy', 'cost'],
-        where: { id },
-    });
-};
-
-const getWhereOption = (taskId: number, valid = false, solver?: string) => {
-    const option : WhereOptions = {};
-    if (taskId) {
-        option.task_id = taskId;
-    }
-    if (valid) {
-        option.valid = valid;
-    }
-    if (solver) {
-        option.solver = { [Op.like]: solver };
-    }
-    return option;
-};
-
-const getBestSolutionModel = (where: WhereOptions) => {
-    return LSolution.findOne({
-        attributes: ['id', 'solver', 'task_id', 'valid', 'score', 'has_buy', 'cost'],
-        where: { score: { [Op.gt]: 0 }, ...where },
-        order: [['score', 'ASC']]
-    });
-};
-
-const getBestSolution = (taskId: number, valid = false, solver?: string) => {
-    return getBestSolutionModel(getWhereOption(taskId, valid, solver)).then((model) => {
-        if (!model) {
-            return Promise.resolve();
-        }
-        const s3 = new AWS.S3();
-        const key = generateKey(model); 
-        
-        const params = {
-            Bucket: defaultBucket,
-            Key: key,
-        };
-        return new Promise((resolve, reject) => {
-            s3.getObject(params, (err, data) => {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(data);
-                }
-            });
-        });
-    });
-};
-
-import * as archiver from 'archiver';
-import {GetObjectOutput} from "aws-sdk/clients/s3";
-import {Readable} from "stream";
-import * as os from "os";
-import * as Path from "path";
-import * as fs from "fs";
-import {formatNumber, getDescFile, makeRandomId, pullObjectS3ToTmp, putDataToS3} from "./utils";
-import {FindOptions, Op, WhereOptions} from "sequelize";
-import {getTotalCost} from "./validateBuy";
 
 
 app.get('/solution/best/zip', async (req, res, next) => {
