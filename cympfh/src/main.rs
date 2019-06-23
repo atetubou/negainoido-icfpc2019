@@ -1,6 +1,7 @@
 #[allow(unused_imports)]
 use std::env;
 use std::fs::File;
+use std::io::prelude::*;
 use std::io::{BufReader, BufRead};
 use std::cmp::{max, min};
 
@@ -393,4 +394,10 @@ fn main() {
 
     endwin();
     println!("{}", ai.print_commands());
+
+    {
+        let mut file = File::create(format!("{}.hand.out", args[1])).unwrap();
+        let _ = file.write_all(ai.print_commands().as_bytes());
+    }
+
 }
