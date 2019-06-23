@@ -381,7 +381,7 @@ app.get('/solution/:id/validate', async (req, res, next) => {
                             console.log('Failed to run sim : ' + e);
                             target.valid = false;
                             target.checked = true;
-                            target.save().then(next(e)).catch(next);
+                            target.save().then(() => next(e)).catch(next);
                         });
                 }
             });
