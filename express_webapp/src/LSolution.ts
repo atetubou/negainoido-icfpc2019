@@ -30,7 +30,7 @@ export const getSolutionById = (id: number) => {
         where: {id},
     });
 };
-export const getWhereOption = (taskId: number, valid = false, solver?: string) => {
+export const getWhereOption = (taskId: number, valid = false, solver?: string, cost?: number) => {
     const option: WhereOptions = {};
     if (taskId) {
         option.task_id = taskId;
@@ -41,9 +41,13 @@ export const getWhereOption = (taskId: number, valid = false, solver?: string) =
     if (solver) {
         option.solver = {[Op.like]: solver};
     }
+    if (cost) {
+        option.solver = {[Op.lt] : cost };
+    }
     return option;
 };
 export import AWS = require('aws-sdk');
+import {taskNum} from "./consts";
 
 export const defaultBucket = process.env.S3_BUCKET || 'negainoido-icfpc2019-dev';
 export const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
@@ -65,6 +69,14 @@ export const validateModel = (taskId: number, model: LSolution, file: string, bu
             });
         });
 };
+
+export const getBestSolutionModels = (where: WhereOptions) => {
+    const promises: Promise<LSolution|null>[] = [];
+    for (let i = 0; i < taskNum; i++) {
+        promises.push(getBestSolutionModel({ ...where, task_id: i+1 }));
+    }
+    return Promise.all(promises);
+};
 export const getBestSolutionModel = (where: WhereOptions) => {
     return LSolution.findOne({
         attributes: ['id', 'solver', 'task_id', 'valid', 'score', 'has_buy', 'cost'],
@@ -72,6 +84,50 @@ export const getBestSolutionModel = (where: WhereOptions) => {
         order: [['score', 'ASC']]
     });
 };
+
+export const pullDataFromS3 = (model: LSolution): Promise<AWS.S3.GetObjectOutput> => {
+    const s3 = new AWS.S3();
+    const key = generateKey(model);
+
+    const params = {
+        Bucket: defaultBucket,
+        Key: key,
+    };
+
+    return new Promise((resolve, reject) => {
+        s3.getObject(params, (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
+        });
+    });
+};
+
+export const pullBuyDataFromS3 = (model: LSolution): Promise<AWS.S3.GetObjectOutput|null> => {
+    if (!model.has_buy) {
+        return Promise.resolve(null);
+    }
+    const s3 = new AWS.S3();
+    const key = generateBuyKey(model);
+
+    const params = {
+        Bucket: defaultBucket,
+        Key: key,
+    };
+
+    return new Promise((resolve, reject) => {
+        s3.getObject(params, (err, data) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(data);
+            }
+        });
+    });
+};
+
 export const getBestSolution = (taskId: number, valid = false, solver?: string) => {
     return getBestSolutionModel(getWhereOption(taskId, valid, solver)).then((model) => {
         if (!model) {

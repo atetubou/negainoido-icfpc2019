@@ -21,9 +21,10 @@ import {
     getBestSolutionModel,
     getSolutionById,
     getWhereOption,
-    LSolution,
+    LSolution, pullBuyDataFromS3, pullDataFromS3,
     validateModel
 } from "./LSolution";
+import {taskNum} from "./consts";
 
 const normalizePort = (val: string) => {
     var port = parseInt(val, 10);
@@ -38,7 +39,6 @@ const normalizePort = (val: string) => {
 
 const app = express();
 const port = normalizePort(process.env.PORT || '3000');
-const taskNum = 300;
 
 app.use(timeout('180s'));
 
@@ -139,6 +139,7 @@ app.get('/stat', (req, res, next) => {
 
 
 import fileUpload = require('express-fileupload');
+import {optimizeSolutions} from "./optimizeSolution";
 
 AWS.config.loadFromPath(process.env.KEY_JSON || './aws_key.json');
 AWS.config.update({ region: 'us-east-2' });
@@ -229,21 +230,40 @@ app.post('/solution', async (req, res, next) => {
 
 
 app.get('/solution/best/zip', async (req, res, next) => {
+    const budget = parseInt(req.query.budget || '0');
     const archive = archiver('zip');
     let promises: Promise<GetObjectOutput>[] = [];
     res.attachment('solutions.zip');
     archive.pipe(res);
-    for (let i = 1; i <= taskNum; i++) {
-        promises.push(getBestSolution(i, true));
-    }
-    await Promise.all(promises).then((solutions) => {
-        solutions.filter((solution) => solution).forEach((solution, i) => {
-            const name = `prob-${formatNumber(i+1)}.sol`;
-            archive.append(solution.Body as Readable, { name });
-        });
-    })
+    archive.on("error", next);
+    await optimizeSolutions(budget)
+        .then((solutions) => {
+            return solutions.map((solution) => {
+                if (solution) {
+                    return [pullDataFromS3(solution), pullBuyDataFromS3(solution)];
+                }
+                return [];
+            });
+        })
+        .then((dataArray) => {
+            return Promise.all(dataArray.map(async (data, i) => {
+                if (data.length >= 2) {
+                    console.log(data);
+                    const sol = await data[0];
+                    const buy = await data[1];
+                    if (sol) {
+                        const name = `prob-${formatNumber(i + 1)}.sol`;
+                        archive.append(sol.Body as Readable, {name});
+                    }
+                    if (buy) {
+                        const name = `prob-${formatNumber(i + 1)}.buy`;
+                        archive.append(buy.Body as Readable, {name});
+                    }
+                }
+            }));
+        })
         .then(() => {
-            return archive.finalize();
+            archive.finalize();
         })
         .catch((e) => {
             console.error(e);
