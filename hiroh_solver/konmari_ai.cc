@@ -175,6 +175,11 @@ void KonmariAI::pick_up_extensions() {
     // move cur -> next.
     // pick up extension.
     for (const Direction& dir : GridGraph::path_to_actions(shortest_path)) {
+      // Finish if all cells are already filled (due to fill by body).
+      if (is_finished()) {
+        return;
+      }
+
       move(dir);
     }
 
@@ -217,6 +222,10 @@ void KonmariAI::konmari_move() {
   get_nearest_unfilled(&path);
   bool used_drill = try_to_use_drill(&path);
   for (const Direction& dir : GridGraph::path_to_actions(path)) {
+    // Finish if all cells are already filled (due to fill by body).
+    if (is_finished()) {
+      return;
+    }
     move(dir);
   }
 
