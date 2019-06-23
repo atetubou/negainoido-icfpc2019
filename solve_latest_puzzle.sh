@@ -43,8 +43,19 @@ mkdir -p $SUBMIT_DIR
 
 python3 ./problems/convert_readable.py $TASK_DESC
 bazel run $SOLVER < $TASK_TXT > task.sol
-python3 official_sim/main.py $TASK_DESC task.sol
-cp task.sol $SUBMIT_DIR
+SCORE=$(python3 official_sim/main.py $TASK_DESC task.sol)
+if [ -e "$SUBMIT_DIR/task.sol" ]; then
+    CUR_SCORE=$(python3 official_sim/main.py $TASK_DESC $SUBMIT_DIR/task.sol)
+    if [ $SCORE -lt $CUR_SCORE ]; then
+        echo "new one is better"
+        cp task.sol $SUBMIT_DIR
+    else
+        echo "old one is better"
+        SCORE=$CUR_SCORE
+    fi
+else
+    cp task.sol $SUBMIT_DIR
+fi
 echo "TASK $BLOCK was solved!"
 
 python3 ./puzzle_solver/input_formatter.py $PUZZLE_COND
@@ -52,7 +63,7 @@ bazel run //puzzle_solver:flowlight_solver < $PUZZLE_TXT > puzzle_solution.txt
 bazel run //lambda-coin:reverse_convert < puzzle_solution.txt > puzzle.solution.desc
 python3 official_sim/puzzle_checker.py $PUZZLE_COND puzzle.solution.desc
 cp puzzle.solution.desc $SUBMIT_DIR
-echo "Puzzle $BLOCK was solved! Let's submit puzzle.solutiond.desc!"
+echo "Puzzle $BLOCK was solved! Let's submit puzzle.solutiond.desc! Task Score: $SCORE"
 
 if [ -n "$SUBMIT" ]; then
     cd lambda-client
