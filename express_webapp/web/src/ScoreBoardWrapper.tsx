@@ -26,12 +26,13 @@ interface Options {
     valid?: boolean;
 }
 
-const getSolution = (options: Options) => {
-    return fetch('./solution?' + optionToUrlParam(options)).then((response) => {
+const getSolution = (options: Options, onlyBest: boolean) => {
+    const uri = onlyBest ? './solution/best' : './solution';
+    return fetch(`${uri}?${optionToUrlParam(options)}`).then((response) => {
         return response.json();
     }).then((json) => {
         if (Array.isArray(json.solutions)) {
-            return json.solutions.map(fromJsonToSolution);
+            return json.solutions.filter((s:any) => s).map(fromJsonToSolution);
         }
         throw 'invalid response';
     });
@@ -82,6 +83,7 @@ interface State {
     filterByTask: boolean;
     taskId: number;
     onlyValid: boolean;
+    onlyBest: boolean;
     sortBy?: string;
 }
 
@@ -95,11 +97,12 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
             taskId: 0,
             onlyValid: false,
             sortBy: undefined,
+            onlyBest: false,
         }
     }
 
     componentDidMount(): void {
-        getSolution({}).then((solutions) => {
+        getSolution({}, false).then((solutions) => {
             this.setState({
                 solutions,
                 loading: false,
@@ -132,7 +135,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
 
     handleRefresh = () => {
         const option: Options = {};
-        const { filterByTask, taskId, onlyValid } = this.state;
+        const { filterByTask, taskId, onlyValid, onlyBest } = this.state;
         if (filterByTask && taskId > 0) {
             option['taskId'] = taskId;
         }
@@ -140,7 +143,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
             option.valid = true;
         }
         this.setState({ loading: false }, () => {
-            getSolution(option).then((solutions) => {
+            getSolution(option, onlyBest).then((solutions) => {
                 this.setState({
                     solutions,
                     loading: false,
@@ -151,17 +154,27 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
     };
 
     render(): React.ReactNode {
-        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy } = this.state;
+        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy, onlyBest } = this.state;
         if (!solutions) {
             return <div>loading</div>;
         }
         let sorted;
         switch(sortBy) {
             case 'task':
-                sorted = solutions.sort((a,b) => a.taskId - b.taskId);
+                sorted = solutions.sort((a,b) => {
+                    if(a.taskId - b.taskId != 0) {
+                        return a.taskId - b.taskId;
+                    }
+                    return a.score - b.score;
+                });
                 break;
             case 'score':
-                sorted = solutions.sort((a,b) => a.score - b.score);
+                sorted = solutions.sort((a,b) => {
+                    if (a.score - b.score != 0) {
+                        return a.score - b.score
+                    }
+                    return a.taskId - b.taskId;
+                });
                 break;
             case 'solver':
                 sorted = solutions.sort((a,b) => {
@@ -171,7 +184,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                     if (b.solver < a.solver) {
                         return 1;
                     }
-                    return 0;
+                    return a.score - b.score;
                 });
                 break;
             default:
@@ -195,6 +208,10 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                 <div>
                     <input name="onlyValid" type="checkbox" checked={onlyValid} onChange={(e) => this.setState({ onlyValid: e.currentTarget.checked })}/>
                     <label>Only Valid</label>
+                </div>
+                <div>
+                    <input name="onlyBest" type="checkbox" checked={onlyBest} onChange={(e) => this.setState({ onlyBest: e.currentTarget.checked })}/>
+                    <label>Only Best</label>
                 </div>
                 <div>
                     <select onChange={(e) => this.setState({ sortBy: e.currentTarget.value })}>

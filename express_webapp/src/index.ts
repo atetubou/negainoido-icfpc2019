@@ -244,14 +244,14 @@ app.post('/solution', async (req, res, next) => {
 
 const getSolutionById = (id: number) => {
     return LSolution.findOne({
-        attributes: ['id', 'solver', 'task_id', 'valid'],
+        attributes: ['id', 'solver', 'task_id', 'valid', 'score', 'has_buy', 'cost'],
         where: { id },
     });
 };
 
 const getBestSolutionModel = (taskId: number, valid = false) => {
     return LSolution.findOne({
-        attributes: ['id', 'solver', 'task_id', 'valid'],
+        attributes: ['id', 'solver', 'task_id', 'valid', 'score', 'has_buy', 'cost'],
         where: { task_id: taskId, valid, score: { [Op.gt]: 0 } },
         order: [['score', 'ASC']]
     });
@@ -316,12 +316,20 @@ app.get('/solution/best/zip', async (req, res, next) => {
 });
 
 app.get('/solution/best', async (req, res, next) => {
-    const valid = req.query.valid || false;
+    const valid = !!req.query.valid;
+    const taskId = parseInt(req.query.taskId || '0');
     let promises = [];
-    for (let i = 1; i <= taskNum; i++) {
-        promises.push(getBestSolutionModel(i, valid));
+    if (taskId === 0) {
+        for (let i = 1; i <= taskNum; i++) {
+            promises.push(getBestSolutionModel(i, valid));
+        }
+    } else {
+
+        promises.push(getBestSolutionModel(taskId, valid));
     }
     Promise.all(promises).then((solutions) => {
+        console.log("valid: " + valid);
+        console.log(solutions);
         res.json({ solutions });
     })
         .catch((e) => {
