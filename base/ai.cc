@@ -190,14 +190,31 @@ AI::AI() {
   initialize();
 }
 
-AI::AI(const std::string filename) {
-  std::ifstream in(filename.c_str());
-  LOG_IF(FATAL, !in) <<
-    "failed to open " << filename;
-
-  std::cin.rdbuf(in.rdbuf());
-
+AI::AI(const std::string buystring) {
   initialize();
+
+  for (auto c : buystring) {
+    switch(c) {
+    case 'B':
+      count_extension++;
+      break;
+    case 'F':
+      count_fast++;
+      break;
+    case 'L':
+      count_drill++;
+      break;
+    case 'C':
+      count_clone++;
+      break;
+    case 'R':
+      count_teleport++;
+      break;
+    default:
+      LOG(FATAL) << "Unknown character '" << c << "' in buy string";
+      break;
+    }
+  }
 }
 
 void AI::pickup_booster(const int id) {
