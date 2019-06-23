@@ -46,6 +46,8 @@ do
     fi
     solver_name=$1-@$(git rev-list -n1 HEAD)
     curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@ans -F solver="${solver_name}" -F task=$task
+    ## if you want to use buy file, please replace "buy" with your buy file name.
+    # curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@ans -F buyFile=@buy -F solver="${solver_name}" -F task=$task
 done
 
 rm ans
