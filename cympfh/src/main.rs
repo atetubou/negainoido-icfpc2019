@@ -9,7 +9,7 @@ mod ai;
 mod geo;
 mod graph;
 
-use ai::{AI, Direction, Position};
+use ai::{AI, Direction, Position, Command};
 use graph::{shortest, paint};
 
 extern crate ncurses;
@@ -325,11 +325,25 @@ fn main() {
 
                         loop {
                             let Position(wx, wy) = ai.workers[0].current_pos;
-                            if let Some(route) = paint(&ai.board, &ai.filled, wx, wy, min_x, min_y, max_x, max_y) {
-                                for dir in route {
-                                    if !ai.mv(0, dir) {
-                                        break;
-                                    }
+                            if let Some((q, commands)) = paint(&ai, 0, wx, wy, min_x, min_y, max_x, max_y) {
+                                for cmd in commands {
+                                    if ai.filled[q.0 as usize][q.1 as usize] { break }
+                                    let success = match cmd {
+                                        Command::Move(dir) => {
+                                            ai.mv(0, dir)
+                                        },
+                                        Command::Rotate(cw) => {
+                                            if cw {
+                                                ai.turn_cw(0)
+                                            } else {
+                                                ai.turn_ccw(0)
+                                            }
+                                        },
+                                        _ => {
+                                            false
+                                        }
+                                    };
+                                    if !success { break }
                                 }
                             } else {
                                 break;
