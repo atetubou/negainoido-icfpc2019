@@ -347,9 +347,15 @@ bool AI::use_extension(const int dx, const int dy) {
   if (worker.count_extension == 0)
     return false;
 
+  for (auto m: worker.manipulator_range) {
+    if (Position(dx, dy) == m) {
+      return false;
+    }
+  }
+
   bool can_use = false;
   for(auto m: worker.manipulator_range) {
-    if (std::abs(m.first - dx) + std::abs(m.second - dy)) {
+    if (std::abs(m.first - dx) + std::abs(m.second - dy) == 1) {
       can_use = true;
     }
   }
