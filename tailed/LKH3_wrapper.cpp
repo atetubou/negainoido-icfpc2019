@@ -313,7 +313,17 @@ std::vector<std::vector<pos>> get_groups(const AI& ai,
 }
 
 std::vector<std::pair<int, int>> tikutaOrder(const AI& ai, int n,
-					     const std::vector<std::pair<int, int>>& want_visit) {
+					     std::vector<std::pair<int, int>> want_visit) {
+  if (want_visit.empty()) {
+    for (auto i = 0u; i< ai.board.size(); ++i) {
+      for (auto j = 0u; j < ai.board[i].size(); ++j){
+	if (ai.board[i][j] != '#') {
+	  want_visit.emplace_back(i, j);
+	}
+      }
+    }
+  }
+  
   {
     auto board = ai.board;
     auto p = ai.get_pos();
