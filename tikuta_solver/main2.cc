@@ -3,6 +3,7 @@
 #include <random>
 #include <set>
 #include <vector>
+#include <deque>
 
 #include <glog/logging.h>
 #include <glog/stl_logging.h>
@@ -25,15 +26,21 @@ int main(int argc, char *argv[]) {
   AI ai;
 
   int divide = sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count());
-  const auto& order = tikutaOrder(ai, std::max(200, divide));
-
+  
+  std::deque<std::pair<pos, bool>> q;
+  for (auto p : tikutaOrder(ai, std::max(200, divide))) {
+    q.push_back({p, true});
+  }
+  
   GridGraph gridg(ai.board);
 
-  for (auto i = 1u; i < order.size(); ++i) {
+  while (!q.empty()) {
     const auto s = ai.get_pos();
-    const auto& g = order[i];
+    const auto g = q.front().first;
+    const bool deferable = q.front().second;
     if (ai.board[g.first][g.second] != 'B' &&
 	ai.filled[g.first][g.second]) {
+      q.pop_front();
       continue;
     }
 
@@ -44,6 +51,7 @@ int main(int argc, char *argv[]) {
     for (auto action : actions) {
       if (ai.board[g.first][g.second] != 'B' &&
 	  ai.filled[g.first][g.second]) {
+	q.pop_front();
 	continue;
       }
       LOG_IF(FATAL, !ai.move(action)) << "invalid";
@@ -56,6 +64,63 @@ int main(int argc, char *argv[]) {
 	}
       }
 
+      auto manips = ai.get_absolute_manipulator_positions();
+      int dx[] = {0, 0, 1, -1};
+      int dy[] = {1, -1, 0, 0};
+      for (const auto& manip : manips) {
+	for (int i = 0; i < 4; ++i) {
+	  int nx = manip.first + dx[i];
+	  int ny = manip.second + dy[i];
+	  if (nx < 0 || ny < 0 || 
+	      nx >= ai.get_height() || ny >= ai.get_width() ||
+	      ai.board[nx][ny] == '#' || ai.filled[nx][ny]) {
+	    continue;
+	  }
+
+	  bool visit_next = true;
+
+	  for (int j = 0; j < 4; ++j) {
+	    int nnx = nx + dx[j];
+	    int nny = ny + dy[j];
+	    if (nnx < 0 || nny < 0 || 
+		nnx >= ai.get_height() || nny >= ai.get_width() ||
+		ai.board[nnx][nny] == '#') {
+	      continue;
+	    }
+
+	    if (!ai.filled[nnx][nny]) {
+	      visit_next = false;
+	      break;
+	    }
+	  }	  
+	  
+	  if (visit_next) {
+	    for (int j = 0; j < 4; ++j) {
+	      int nnx = nx + dx[j];
+	      int nny = ny + dy[j];
+	      if (nnx < 0 || nny < 0 || 
+		  nnx >= ai.get_height() || nny >= ai.get_width() ||
+		  ai.board[nnx][nny] == '#') {
+		continue;
+	      }
+	      LOG(INFO) << nnx << " " << nny;
+	      if (!ai.filled[nnx][nny]) {
+		visit_next = false;
+		break;
+	      }
+	    }	  
+	  
+	    q.push_front({{nx, ny}, false});
+	  }
+	}
+      }
+
+      if (!q.empty() && q.front().first != g && deferable) {
+	LOG(INFO) << "visit this " << q.front();
+	ai.dump_state();
+	// exit(0);
+	break;
+      }
     }
   }
 

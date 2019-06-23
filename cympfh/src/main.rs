@@ -9,7 +9,7 @@ mod geo;
 mod graph;
 
 use ai::{AI, Direction, Position};
-use graph::{shortest};
+use graph::{shortest, paint};
 
 extern crate ncurses;
 use ncurses::*;
@@ -18,6 +18,8 @@ enum EditorMode {
     Normal,
     CursorExtension,
     CursorShortestPath,
+    CursorRectPaintFirst,
+    CursorRectPaintSecond(Position),
 }
 
 const WINDOW_HEIGHT: usize = 40;
@@ -151,13 +153,11 @@ fn main() {
     const CHAR_D: i32 = 'd' as i32;
     const CHAR_E: i32 = 'e' as i32;
     const CHAR_F: i32 = 'f' as i32;
-    // const CHAR_H: i32 = 'h' as i32;
-    // const CHAR_J: i32 = 'j' as i32;
-    // const CHAR_K: i32 = 'k' as i32;
     const CHAR_L: i32 = 'l' as i32;
     const CHAR_Q: i32 = 'q' as i32;
     const CHAR_S: i32 = 's' as i32;
     const CHAR_U: i32 = 'u' as i32;
+    const CHAR_V: i32 = 'v' as i32;
     const CHAR_W: i32 = 'w' as i32;
     const CHAR_X: i32 = 'x' as i32;
     const CHAR_RET: i32 = 10;
@@ -254,24 +254,30 @@ fn main() {
                 cursor = ai.workers[0].current_pos;
                 changed = false;
             },
+            CHAR_V => {
+                message = format!("Rect Paint: Choose one of corner");
+                mode = EditorMode::CursorRectPaintFirst;
+                cursor = ai.workers[0].current_pos;
+                changed = false;
+            },
             // cursor move
             CHAR_UP => {
-                cursor.0 = max(0, cursor.0 - 1);
+                cursor.0 -= 1;
                 message = format!("Cursor at {:?}", cursor);
                 changed = false;
             },
             CHAR_RIGHT => {
-                cursor.1 = min(ai.width as isize - 1, cursor.1 + 1);
+                cursor.1 += 1;
                 message = format!("Cursor at {:?}", cursor);
                 changed = false;
             },
             CHAR_DOWN => {
-                cursor.0 = min(ai.height as isize - 1, cursor.0 + 1);
+                cursor.0 += 1;
                 message = format!("Cursor at {:?}", cursor);
                 changed = false;
             },
             CHAR_LEFT => {
-                cursor.1 = max(0, cursor.1 - 1);
+                cursor.1 -= 1;
                 message = format!("Cursor at {:?}", cursor);
                 changed = false;
             },
@@ -305,6 +311,41 @@ fn main() {
                                 break;
                             }
                         }
+                        changed = true;
+                        cursor = Position(-1, -1);
+                        mode = EditorMode::Normal;
+                    },
+                    EditorMode::CursorRectPaintFirst => {
+                        message = format!("Rect Paint: You choose {:?} as a corner. Choose another corner", cursor);
+                        mode = EditorMode::CursorRectPaintSecond(cursor.clone());
+                        changed = false;
+                    },
+                    EditorMode::CursorRectPaintSecond(p) => {
+                        message = format!("Rect Painting: {:?} to {:?}", &p, &cursor);
+                        let min_x = min(p.0, cursor.0);
+                        let max_x = max(p.0, cursor.0);
+                        let min_y = min(p.1, cursor.1);
+                        let max_y = max(p.1, cursor.1);
+
+                        loop {
+                            let Position(wx, wy) = ai.workers[0].current_pos;
+                            if let Some(route) = paint(&ai.board, &ai.filled, wx, wy, min_x, min_y, max_x, max_y) {
+                                for c in route {
+                                    let dir = match c {
+                                        'A' => Direction::Left,
+                                        'S' => Direction::Down,
+                                        'D' => Direction::Right,
+                                        _ => Direction::Up,
+                                    };
+                                    if !ai.mv(0, dir) {
+                                        break;
+                                    }
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+
                         changed = true;
                         cursor = Position(-1, -1);
                         mode = EditorMode::Normal;
