@@ -88,7 +88,8 @@ class AI {
   int count_clone = 0;
   int count_teleport = 0;
 
-  int expect_worker_id = 0;   // Rotate from 0 to (workers.size()-1)
+  int next_worker_id = 0;
+  int count_active_workers = 1;
   std::vector<Worker> workers;
 
   void next_turn(const int id);
@@ -141,7 +142,11 @@ public:
   int get_count_clone();
   int get_count_teleport();
 
-  int get_count_workers();
+  // Gets number of workers in this turn.
+  // i.e. workers.size() - |workers cloned in this turn|
+  int get_count_active_workers() const;
+
+  int get_next_worker_id() const;
 
   // Gets the unit time until each tool is consumed.
   // Returns 0 if the tool is not used now.

@@ -132,9 +132,9 @@ void AI::initialize() {
       } else if (board[i][j] == '#') {
         block_count++;
       } else if (board[i][j] == 'X') {
-	spawn_points.emplace_back(i, j);
+        spawn_points.emplace_back(i, j);
       } else if (board[i][j] == 'C') {
-	cloning_points.emplace_back(i, j);
+        cloning_points.emplace_back(i, j);
       }
     }
   }
@@ -156,8 +156,8 @@ void AI::initialize() {
 }
 
 bool AI::init_turn(const int id) {
-  LOG_IF(FATAL, expect_worker_id != id)
-    << "command for the worker " << expect_worker_id
+  LOG_IF(FATAL, next_worker_id != id)
+    << "command for the worker " << next_worker_id
     << "must be called but the ID was" << id;
 
   // Pick up a booster.
@@ -242,7 +242,8 @@ int AI::get_count_extension() { return count_extension; }
 int AI::get_count_clone() { return count_clone; }
 int AI::get_count_teleport() { return count_teleport; }
 
-int AI::get_count_workers() { return workers.size(); }
+int AI::get_count_active_workers() const { return count_active_workers; }
+int AI::get_next_worker_id() const { return next_worker_id; }
 
 int AI::get_duration_fast(const int id) { return workers[id].duration_fast; }
 int AI::get_duration_drill(const int id) { return workers[id].duration_drill; }
@@ -291,16 +292,18 @@ std::vector<Position> AI::rotated_manipulator_positions(const int id, bool is_cc
 }
 
 void AI::next_turn(const int id) {
-  if (id == (int)workers.size()-1)
-    current_time++;
-
-  expect_worker_id += 1;
-  expect_worker_id %= workers.size();
+  next_worker_id += 1;
+  next_worker_id %= count_active_workers;
 
   if (workers[id].duration_drill > 0)
     workers[id].duration_drill--;
   if (workers[id].duration_fast > 0)
     workers[id].duration_fast--;
+
+  if (id == count_active_workers - 1) {
+    current_time++;
+    count_active_workers = workers.size();
+  }
 }
 
 void AI::push_command(Command cmd, const int id) {
