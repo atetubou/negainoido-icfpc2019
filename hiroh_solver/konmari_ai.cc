@@ -43,9 +43,74 @@ private:
     return ret;
   }
 
+  std::set<Position> get_isolated_cells();
+  void clean_up_isolated_cells();
+  bool greedyTSP(std::set<Position>& cells,
+                 bool must_body);
+
   int used_extension = 0;
   GridGraph graph;
+  std::set<Position> isolated_cells_after_extensions;
 };
+
+bool KonmariAI::greedyTSP(std::set<Position>& cells,
+                          bool must_body) {
+  Position cur = get_pos();
+  int min_cost = (1<<29);
+  std::vector<std::pair<int,int>> shortest_path;
+  Position next = Position(-1, -1);
+  for (const auto& dst : cells) {
+    std::vector<std::pair<int,int>> path;
+    int cost = graph.shortest_path(cur.first, cur.second,
+                                   dst.first, dst.second,
+                                   path);
+    if (min_cost > cost) {
+      shortest_path = std::move(path);
+      min_cost = cost;
+      next = dst;
+    }
+  }
+  cells.erase(next);
+
+  for (const Direction& dir : GridGraph::path_to_actions(shortest_path)) {
+    // Finish if all cells are already filled (due to fill by body).
+    if (is_finished()) {
+      return true;
+    }
+    if (!must_body) {
+      if (filled[next.first][next.second])
+        return false;
+    }
+
+    move(dir);
+  }
+  return false;
+}
+
+std::set<Position> KonmariAI::get_isolated_cells() {
+  int H = get_height();
+  int W = get_width();
+  std::set<Position> isolated_cells;
+  for (int x = 0; x < H; x++) {
+    for (int y = 0; y < W; y++) {
+      if (!filled[x][y] && board[x][y] != '#') {
+        // isolate means,
+        // 1.) the cell will ought to be filled.
+        // 2.) all its adjucent cells are either filled or wall.
+        bool is_isolated = true;
+        for (const auto& np : get_neighbors(Position(x,y))) {
+          if (!filled[np.first][np.second]) {
+            is_isolated = false;
+            break;
+          }
+        }
+        if (is_isolated)
+          isolated_cells.emplace(x, y);
+      }
+    }
+  }
+  return isolated_cells;
+}
 
 void KonmariAI::try_to_use_fast_weel() {
   if (get_duration_fast() > 0)
@@ -156,35 +221,27 @@ void KonmariAI::pick_up_extensions() {
   }
 
   while(!extensions.empty()) {
-    Position cur = get_pos();
-    int min_cost = (1<<29);
-    std::vector<std::pair<int,int>> shortest_path;
-    Position next = Position(-1, -1);
-    for (const auto& dst : extensions) {
-      std::vector<std::pair<int,int>> path;
-      int cost = graph.shortest_path(cur.first, cur.second,
-                                     dst.first, dst.second,
-                                     path);
-      if (min_cost > cost) {
-        shortest_path = std::move(path);
-        min_cost = cost;
-        next = dst;
-      }
-    }
-    extensions.erase(next);
-    // move cur -> next.
-    // pick up extension.
-    for (const Direction& dir : GridGraph::path_to_actions(shortest_path)) {
-      // Finish if all cells are already filled (due to fill by body).
-      if (is_finished()) {
-        return;
-      }
-
-      move(dir);
-    }
+    if (greedyTSP(extensions, true))
+      return;
 
     // use extension.
     try_to_use_extensions();
+  }
+
+  isolated_cells_after_extensions = get_isolated_cells();
+}
+
+void KonmariAI::clean_up_isolated_cells() {
+  std::set<Position> new_isolated_cells = get_isolated_cells();
+  for (const auto& ignored_p : isolated_cells_after_extensions) {
+    auto it = new_isolated_cells.find(ignored_p);
+    if (it != new_isolated_cells.end())
+      new_isolated_cells.erase(it);
+  }
+
+  while(!new_isolated_cells.empty()) {
+    if (greedyTSP(new_isolated_cells, false))
+      return;
   }
 }
 
@@ -219,13 +276,15 @@ void KonmariAI::konmari_move() {
   // Fast wheel is dangerous!!!
   // try_to_use_fast_weel();
   std::vector<std::pair<int,int>> path;
-  get_nearest_unfilled(&path);
+  auto dst = get_nearest_unfilled(&path);
   bool used_drill = try_to_use_drill(&path);
   for (const Direction& dir : GridGraph::path_to_actions(path)) {
     // Finish if all cells are already filled (due to fill by body).
     if (is_finished()) {
       return;
     }
+    if (filled[dst.first][dst.second])
+      break;
     move(dir);
   }
 
@@ -242,6 +301,9 @@ void KonmariAI::konmari_move() {
       break;
     }
   }
+
+  // Clean up cells that are isolated due to this move.
+  clean_up_isolated_cells();
 }
 
 int main() {
