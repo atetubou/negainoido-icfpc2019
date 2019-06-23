@@ -157,7 +157,7 @@ public:
 
   // Gets the all manipulators' positions after one rotation.
   // Unreachable/invalid positions are skipped.
-  std::vector<Position> rotated_manipulator_positions(const int id, bool is_ccw);
+  std::vector<Position> rotated_manipulator_positions(bool is_cw, const int id = 0);
 
   // Checks if pos is 'reachable' from the current position.
   bool reachable(Position pos, const int id = 0);
