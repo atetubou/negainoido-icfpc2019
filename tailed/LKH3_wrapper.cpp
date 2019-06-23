@@ -73,7 +73,7 @@ vector<int> SolveTSPByLKH3(const dist_matrix_t &d, const char *path_to_LKH3) {
 	file_par << "MOVE_TYPE = 5" << endl;
 	file_par << "PATCHING_C = 3" << endl;
 	file_par << "PATCHING_A = 2" << endl;
-	// file_par << "RUNS = 1" << endl;
+	file_par << "RUNS = 1" << endl;
 	file_par << "OUTPUT_TOUR_FILE = " << file_output_name << endl;
 	file_par.close();
 
