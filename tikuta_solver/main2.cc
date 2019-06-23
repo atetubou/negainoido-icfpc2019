@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
   AI ai;
 
   int divide = sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count());
-  const auto& order = tikutaOrder(ai, divide);
+  const auto& order = tikutaOrder(ai, std::max(200, divide));
 
   GridGraph gridg(ai.board);
 
