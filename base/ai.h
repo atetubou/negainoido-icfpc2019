@@ -3,6 +3,7 @@
 #include<string>
 #include<vector>
 #include<map>
+#include<set>
 
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
@@ -14,7 +15,7 @@ enum class Direction {
   Up,
 };
 
-typedef std::pair<int32_t, int32_t> Position;
+typedef std::pair<int, int> Position;
 
 Position dir2vec(const Direction &dir);
 
@@ -26,6 +27,8 @@ enum class CmdType {
   UseFastWheel,
   UseDrill,
   UseClone,
+  InstallBeacon,
+  JumpToBeacon,
 };
 
 struct Command {
@@ -34,9 +37,9 @@ struct Command {
   // valid if type == "Move"
   Direction dir;
 
-  // valid if type == "UseExtension"
-  int dx;
-  int dy;
+  // valid if type == UseExtension || type == JumpToBeacon
+  int x;
+  int y;
 };
 
 char direction_to_char(Direction d);
@@ -83,6 +86,7 @@ class AI {
   int count_drill = 0;
   int count_extension = 0;
   int count_clone = 0;
+  int count_teleport = 0;
 
   int expect_worker_id = 0;   // Rotate from 0 to (workers.size()-1)
   std::vector<Worker> workers;
@@ -108,6 +112,8 @@ public:
   std::vector<std::vector<bool>> filled;
   std::vector<std::vector<Command>> executed_cmds;
 
+  std::set<Position> beacon_pos;
+
   int get_height();
   int get_width();
 
@@ -120,7 +126,7 @@ public:
 
   // Gets the current direction
   Direction get_dir(const int id = 0);
-  // Gets the current direction
+  // Gets the number of filled cells
   int get_filled_count();
 
   // Gets the number of available boosters
@@ -128,6 +134,9 @@ public:
   int get_count_drill();
   int get_count_extension();
   int get_count_clone();
+  int get_count_teleport();
+
+  int get_count_workers();
 
   // Gets the unit time until each tool is consumed.
   // Returns 0 if the tool is not used now.
@@ -158,6 +167,9 @@ public:
   bool use_fast_wheel(const int id = 0);
   bool use_drill(const int id = 0);
   bool use_clone(const int id);
+
+  bool install_beacon(const int id);
+  bool jump_to_beacon(Position dst, const int id);
 
   // Checks if get_filled_count() == Height * Width
   bool is_finished();
