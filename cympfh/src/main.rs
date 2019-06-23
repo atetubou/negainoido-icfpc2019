@@ -6,8 +6,10 @@ use std::cmp::{max, min};
 
 mod ai;
 mod geo;
+mod graph;
 
 use ai::{AI, Direction, Position};
+use graph::{shortest};
 
 extern crate ncurses;
 use ncurses::*;
@@ -15,6 +17,7 @@ use ncurses::*;
 enum EditorMode {
     Normal,
     CursorExtension,
+    CursorShortestPath,
 }
 
 fn dump(ai: &AI, &win: &*mut i8, message: &String, &cursor: &Position) {
@@ -141,6 +144,7 @@ fn main() {
     const CHAR_S: i32 = 's' as i32;
     const CHAR_U: i32 = 'u' as i32;
     const CHAR_W: i32 = 'w' as i32;
+    const CHAR_X: i32 = 'x' as i32;
     const CHAR_RET: i32 = 10;
     const CHAR_UP: i32 = 65;
     const CHAR_DOWN: i32 = 66;
@@ -210,7 +214,7 @@ fn main() {
                 } else {
                     mode = EditorMode::CursorExtension;
                     changed = false;
-                    message = String::from("Choose a cell (move cursor and hit Enter)");
+                    message = String::from("Using B: Choose a cell (move cursor and hit Enter)");
                     cursor = ai.workers[0].current_pos;
                 }
             },
@@ -228,22 +232,33 @@ fn main() {
                     message = format!("Cannot Use FastWheel (F)");
                 }
             },
+            // hyper methods
+            CHAR_X => {
+                message = format!("Shortest Path Mode: Choose a cell");
+                mode = EditorMode::CursorShortestPath;
+                cursor = ai.workers[0].current_pos;
+                changed = false;
+            },
             // cursor move
             CHAR_UP => {
                 cursor.0 = max(0, cursor.0 - 1);
                 message = format!("Cursor at {:?}", cursor);
+                changed = false;
             },
             CHAR_RIGHT => {
                 cursor.1 = min(ai.width as isize - 1, cursor.1 + 1);
                 message = format!("Cursor at {:?}", cursor);
+                changed = false;
             },
             CHAR_DOWN => {
                 cursor.0 = min(ai.height as isize - 1, cursor.0 + 1);
                 message = format!("Cursor at {:?}", cursor);
+                changed = false;
             },
             CHAR_LEFT => {
                 cursor.1 = max(0, cursor.1 - 1);
                 message = format!("Cursor at {:?}", cursor);
+                changed = false;
             },
             CHAR_RET => {
                 match mode {
@@ -256,6 +271,26 @@ fn main() {
                             message = format!("Cannot Apply Extension (B) at {:?}", p);
                             changed = false;
                         }
+                        cursor = Position(-1, -1);
+                        mode = EditorMode::Normal;
+                    },
+                    EditorMode::CursorShortestPath => {
+                        let route = shortest(&ai.board,
+                                             &ai.workers[0].current_pos,
+                                             &cursor);
+                        message = format!("Suggest: {:?}", route);
+                        for c in route {
+                            let dir = match c {
+                                'A' => Direction::Left,
+                                'S' => Direction::Down,
+                                'D' => Direction::Right,
+                                _ => Direction::Up,
+                            };
+                            if !ai.mv(0, dir) {
+                                break;
+                            }
+                        }
+                        changed = true;
                         cursor = Position(-1, -1);
                         mode = EditorMode::Normal;
                     },
