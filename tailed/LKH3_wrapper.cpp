@@ -156,7 +156,7 @@ std::vector<int> SolveByOurselfs(const std::vector<std::vector<int>>& matrix) {
 }
 
 std::vector<std::pair<int, int>>
-SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
+SolveShrinkedTSP(const AI& ai, int n, const std::vector<std::pair<int, int>>& want_visit) {
   int sx = 0, sy = 0;
   std::vector<std::pair<int, int>> selected;
   const auto& board = ai.board;
@@ -228,7 +228,7 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
     matrix[0][sidx] = 0;
   }
 
-  const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
+  const auto& ans = SolveTSPByLKH3(matrix, FLAGS_LKH3path.c_str());
   // const auto& ans = SolveByOurselfs(matrix);
   {
     auto board = ai.board;
@@ -333,7 +333,7 @@ std::vector<std::pair<int, int>> tikutaOrder(const AI& ai, int n,
     }
   }
 
-  auto tsp_tours = SolveShrinkedTSP(ai, n, FLAGS_LKH3path);
+  auto tsp_tours = SolveShrinkedTSP(ai, n, want_visit);
 
   auto groups = get_groups(ai, tsp_tours, want_visit);
 
