@@ -69,13 +69,18 @@ int main(int argc, char *argv[]) {
     std::mt19937 get_rand_mt;
     absl::c_shuffle(selected, get_rand_mt);
     
-    selected.resize(ai.get_count_active_workers());		       
-    return get_groups(ai, selected);
+    if (static_cast<int>(selected.size()) > ai.get_count_active_workers()) {
+      selected.resize(ai.get_count_active_workers());		       
+    }
+    auto g = get_groups(ai, selected);
+    g.resize(ai.get_count_active_workers());
+    return g;
   };
 
   auto groups = calc_groups();
 
   std::vector<std::deque<Direction>> directions(ai.get_count_active_workers());
+  int get_filled_count = ai.get_filled_count();
 
   while (!ai.is_finished()) {
     for (int i = 0; i < ai.get_count_active_workers(); ++i) {
@@ -96,9 +101,12 @@ int main(int argc, char *argv[]) {
       
       if (directions[i].empty()) {
 	ai.nop(i);
-	groups = calc_groups();
-	directions.clear();
-	directions.resize(ai.get_count_active_workers());
+	if (get_filled_count != ai.get_filled_count()) {
+	  get_filled_count = ai.get_filled_count();
+	  groups = calc_groups();
+	  directions.clear();
+	  directions.resize(ai.get_count_active_workers());
+	}
 	continue;
       }
 
