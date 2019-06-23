@@ -140,7 +140,7 @@ app.get('/stat', (req, res, next) => {
 
 
 import fileUpload = require('express-fileupload');
-import {optimizeSolutions} from "./optimizeSolution";
+import {optimizeSolutions, optimizeSolutions2} from "./optimizeSolution";
 
 AWS.config.loadFromPath(process.env.KEY_JSON || './aws_key.json');
 AWS.config.update({ region: 'us-east-2' });
@@ -237,7 +237,7 @@ app.get('/solution/best/zip', async (req, res, next) => {
     res.attachment('solutions.zip');
     archive.pipe(res);
     archive.on("error", next);
-    await optimizeSolutions(budget)
+    await optimizeSolutions2(budget)
         .then((solutions) => {
             return solutions.map((solution) => {
                 if (solution) {

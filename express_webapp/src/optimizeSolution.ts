@@ -1,4 +1,4 @@
-import {getBestSolutionModel, getBestSolutionModels, getWhereOption} from "./LSolution";
+import {getBestSolutionModels, getWhereOption, LSolution} from "./LSolution";
 import {problems} from "./data";
 import {taskNum} from "./consts";
 
@@ -10,7 +10,7 @@ const estimateScore = (taskId: number, baseScore: number, score: number) => {
 export const optimizeSolutions = async (budget: number) => {
     const baseSolutions = await getBestSolutionModels(getWhereOption(0, true, undefined, 0));
     const baseScores = baseSolutions.map((solution) => solution ? solution.score : -1);
-    let solutions = baseSolutions;
+    let solutions = baseSolutions.concat([]);
 
     let tmpBudget = budget;
     let currentTarget = Math.min(2000, budget);
@@ -24,7 +24,6 @@ export const optimizeSolutions = async (budget: number) => {
 
            return { id: i, score: -1 };
         }).sort((a, b) => b.score - a.score);
-        console.log(improves);
         let idx = 0;
         while (tmpBudget > 0 && idx < improves.length && improves[idx].score > 0) {
             const newSol = solutionsWith[improves[idx].id];
@@ -43,6 +42,49 @@ export const optimizeSolutions = async (budget: number) => {
             currentTarget *= 2;
         }
     }
+
+    return solutions;
+};
+
+export const optimizeSolutions2 = async (budget: number) => {
+    const baseSolutions = await getBestSolutionModels(getWhereOption(0, true, undefined, 0));
+    const baseScores = baseSolutions.map((solution) => solution ? solution.score : -1);
+    let solutions = baseSolutions.concat([]);
+
+    const unit = 500;
+    let targetBudget = unit;
+    const improves: { score: number, solution: LSolution }[] = [];
+    while (targetBudget <= budget) {
+        const solutionsWith = await getBestSolutionModels(getWhereOption(0, true, undefined, targetBudget));
+        solutionsWith.filter((s) => !!s).forEach((solution, i) => {
+            if (improves.findIndex((s) => s.solution.id === solution.id) >= 0) return;
+
+            if (baseScores[i] > 0) {
+                const score = estimateScore(solution.task_id, baseScores[i], solution.score) - solution.cost;
+                if (score > 0) {
+                    improves.push({ score, solution });
+                }
+            }
+        });
+        targetBudget += unit;
+    }
+    let tmpBudget = budget;
+    const improved = Array(taskNum).fill(0);
+    improves.sort((a, b) => b.score - a.score).forEach((improve) => {
+        const newSol = improve.solution;
+        const taskId = newSol.task_id;
+        const oldSol = solutions[taskId - 1];
+        if (newSol.cost - oldSol.cost >= tmpBudget) {
+            return;
+        }
+        if (improved[taskId - 1] >= improve.score) {
+            return;
+        }
+
+        tmpBudget -= newSol.cost - oldSol.cost;
+        solutions[taskId - 1] = newSol;
+        improved[taskId - 1] = improve.score;
+    });
 
     return solutions;
 };
