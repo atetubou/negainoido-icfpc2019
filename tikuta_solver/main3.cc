@@ -56,11 +56,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  auto selected = [&](){
+  auto calc_groups = [&](){
     std::vector<pos> selected;
     for (auto i = 0u; i < ai.board.size(); ++i) {
       for (auto j = 0u; j < ai.board[i].size(); ++j) {
-	if (ai.board[i][j] != '#') {
+	if (ai.board[i][j] != '#' && !ai.filled[i][j]) {
 	  selected.emplace_back(i, j);
 	}
       }
@@ -69,11 +69,11 @@ int main(int argc, char *argv[]) {
     std::mt19937 get_rand_mt;
     absl::c_shuffle(selected, get_rand_mt);
     
-    selected.resize(ai.get_count_active_workers());
-    return selected;
-  }();
+    selected.resize(ai.get_count_active_workers());		       
+    return get_groups(ai, selected);
+  };
 
-  auto groups = get_groups(ai, selected);
+  auto groups = calc_groups();
 
   std::vector<std::deque<Direction>> directions(ai.get_count_active_workers());
 
@@ -96,6 +96,9 @@ int main(int argc, char *argv[]) {
       
       if (directions[i].empty()) {
 	ai.nop(i);
+	groups = calc_groups();
+	directions.clear();
+	directions.resize(ai.get_count_active_workers());
 	continue;
       }
 
