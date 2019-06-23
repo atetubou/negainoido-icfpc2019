@@ -12,19 +12,18 @@
 #include <glog/logging.h>
 
 std::ostream& operator<<(std::ostream& os, const Direction& d) {
-  std::string s;
   switch (d) {
   case Direction::Right:
-    s = "Right";
+    return os << "Right";
   case Direction::Left:
-    s = "Left";
+    return os << "Left";
   case Direction::Up:
-    s = "Up";
+    return os << "Up";
   case Direction::Down:
-    s = "Down";
+    return os << "Down";
   }
 
-  os << s;
+  LOG(FATAL) << "invalid direction: " << static_cast<int>(d);
   return os;
 }
 
