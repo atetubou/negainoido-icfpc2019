@@ -39,9 +39,6 @@ int main(int argc, char *argv[]) {
     const auto g = q.front().first;
     const bool deferable = q.front().second;
 
-    bool debug = g.first >=47 && g.second == 25;
-    LOG_IF(INFO, debug) << "g " << q.front() << " " << s;
-
     if (s == g){
       q.pop_front();
       continue;
@@ -49,7 +46,6 @@ int main(int argc, char *argv[]) {
 
     if (ai.board[g.first][g.second] != 'B' &&
 	ai.filled[g.first][g.second]) {
-      LOG_IF(INFO, debug) << "g " << q.front() << " " << s;
       q.pop_front();
       continue;
     }
@@ -61,15 +57,10 @@ int main(int argc, char *argv[]) {
 			g.first, g.second, path);
     auto actions = GridGraph::path_to_actions(path);
     for (auto action : actions) {
-      if (debug) {
-	ai.dump_state();
-      }
-
       if (ai.board[g.first][g.second] != 'B' &&
 	  ai.filled[g.first][g.second]) {
-	LOG_IF(INFO, debug) << "filled";
 	q.pop_front();
-	continue;
+	break;
       }
       LOG_IF(FATAL, !ai.move(action)) << "invalid";
 
@@ -116,14 +107,12 @@ int main(int argc, char *argv[]) {
 	  }	  
 	  
 	  if (visit_next) {
-	    LOG_IF(INFO, debug) << ai.get_pos() << " " << nx << " " << ny;
 	    q.push_front({{nx, ny}, false});
 	  }
 	}
       }
 
       if (!q.empty() && q.front().first != g && deferable) {
-	LOG_IF(INFO, debug) << "filled "  << q.front();
 	break;
       }
     }
