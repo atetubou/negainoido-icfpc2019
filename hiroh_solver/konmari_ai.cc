@@ -79,6 +79,7 @@ void KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
   // Use drill!
   LOG(INFO) << "Use Drill!";
   LOG(INFO) << s.first << "," << s.second << "->"  << g.first << "," << g.second;
+  LOG(INFO) << "cost diff=" << cost_diff;
   use_drill();
   for (int i = 0; g.first != s.first + i;) {
     i += g.first > s.first ? 1 : -1;
@@ -201,7 +202,7 @@ void KonmariAI::konmari_move() {
   // try_to_use_fast_weel();
   std::vector<std::pair<int,int>> path;
   get_nearest_unfilled(&path);
-  // try_to_use_drill(&path);
+  try_to_use_drill(&path);
   for (const Direction& dir : GridGraph::path_to_actions(path)) {
     move(dir);
   }

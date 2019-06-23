@@ -278,6 +278,7 @@ bool AI::move_body(const Direction &dir) {
   if (board[pos.first][pos.second] == '#' &&
       0 < worker.duration_drill) {
     board[pos.first][pos.second] = '.';
+    block_count--;
   }
 
   // Pick up items
