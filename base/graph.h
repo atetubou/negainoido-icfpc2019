@@ -44,6 +44,10 @@ public:
   int shortest_path(int sx, int sy, int gx, int gy,
 		    std::vector<pos> &path);
 
+  std::vector<Direction> shortest_paths(pos start, const std::vector<pos>& goals);
+
+  bool can_visit(int x, int y) const;
+
   int to_graph_node(int x, int y);
 
   // returns (x, y) in grid from graph node.
