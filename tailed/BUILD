@@ -6,6 +6,7 @@ cc_library(
     hdrs = ["LKH3_wrapper.h"],
     deps = [
         "//base:ai",
+        "//base:graph",
         "@com_google_glog//:glog",
     ],
 )

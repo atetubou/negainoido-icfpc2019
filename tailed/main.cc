@@ -8,7 +8,6 @@
 
 #define rep(i, n) for(int i=0; i<int(n); ++i)
 
-DEFINE_string(LKH3path, "","");
 const int K = 300; // threshold
 
 #include "LKH3_wrapper.h"
