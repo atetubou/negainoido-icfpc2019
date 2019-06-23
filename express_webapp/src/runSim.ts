@@ -8,7 +8,7 @@ const sleep = (ms: number) => {
     });
 };
 
-const runSimulator = async (discPath: string, solPath: string) => {
+const runSimulator = async (discPath: string, solPath: string, buyPath?: string) => {
     const driver = await new webdriver.Builder()
         .forBrowser('chrome')
         .setChromeOptions(new chrome.Options().headless()
@@ -21,6 +21,7 @@ const runSimulator = async (discPath: string, solPath: string) => {
     return await driver.get(url).then(() => {
         const task_input = driver.findElement({ id: "submit_task" });
         const solution_input = driver.findElement({ id: "submit_solution" });
+        const booster_input = driver.findElement({ id: "submit_boosters" });
         const button_input = driver.findElement({ id: "execute_solution" });
 
         return task_input.sendKeys(discPath).then(async () => {
@@ -42,6 +43,10 @@ const runSimulator = async (discPath: string, solPath: string) => {
             }
             throw 'error';
         }).then(async () => {
+            if (buyPath) {
+                await booster_input.sendKeys(buyPath);
+                await sleep(10);
+            }
             await button_input.click();
             for (let count = 0; count < 600; count++) {
                 const output = await driver.findElement({id: "output"}).getText().catch(() => '');

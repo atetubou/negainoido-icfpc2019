@@ -44,6 +44,10 @@ class LSolution extends Model<LSolution> {
     score: number;
     @Column(DataType.BOOLEAN)
     valid: boolean;
+    @Column(DataType.BOOLEAN)
+    checked: boolean;
+    @Column(DataType.BOOLEAN)
+    has_buy: boolean;
     @CreatedAt
     @Column
     created: Date;
@@ -142,12 +146,9 @@ app.post('/solution', async (req, res, next) => {
     const solver = req.body['solver'] || 'unknown';
     const task_id = parseInt(req.body['task']) || 0;
     const data = (req.files!.file as fileUpload.UploadedFile).data;
+    // const buyData = req.files!.buyFile ? (req.files!.buyFile as fileUpload.UploadedFile).data : undefined;
     let valid = false;
     const score = parseInt(req.body['score']) || -1;
-    if (!req.body['score']) {
-        const desc = '';
-        const sol = '';
-    }
 
     const solution = new LSolution({solver, task_id, score, valid});
 
@@ -175,7 +176,7 @@ app.post('/solution', async (req, res, next) => {
             }
         });
         const tmp = os.tmpdir();
-        const key = makeRandomId(`${solver}_${task_id}_`);
+        const key = encodeURIComponent(makeRandomId(`${solver}_${task_id}_`));
         const file = Path.join(tmp, key);
 
         await new Promise((resolve, reject) => {
@@ -188,11 +189,14 @@ app.post('/solution', async (req, res, next) => {
                         .then((s) => {
                             model.score = parseInt(s);
                             model.valid = true;
+                            model.checked = true;
                             model.save().then(resolve).catch(reject);
                         })
                         .catch((e) => {
                             console.log('Failed to run sim : ' + e);
-                            reject(e);
+                            model.valid = false;
+                            model.checked = true;
+                            model.save().then(() => reject(e)).catch(reject);
                         });
                 }
             });
@@ -368,13 +372,16 @@ app.get('/solution/:id/validate', async (req, res, next) => {
                         .then((score) => {
                             target.score = parseInt(score);
                             target.valid = true;
+                            target.checked = true;
                             return target.save().then(() => {
                                 res.json({solution: target});
                             });
                         })
                         .catch((e) => {
                             console.log('Failed to run sim : ' + e);
-                            next(e);
+                            target.valid = false;
+                            target.checked = true;
+                            target.save().then(next(e)).catch(next);
                         });
                 }
             });
