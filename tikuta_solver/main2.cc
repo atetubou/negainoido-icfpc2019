@@ -81,11 +81,32 @@ int main(int argc, char *argv[]) {
 				    sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count()),
 				    FLAGS_LKH3path);
 
-  // return 0;
-
-  LOG(INFO) << tsp_tours;
-
   auto groups = get_groups(ai, tsp_tours);
+
+  {
+    auto board = ai.board;
+    auto p = ai.get_pos();
+    board[p.first][p.second] = 'W';
+    for (auto i = 0u; i < groups.size(); ++i) {
+      for (const auto& g : groups[i]) {
+	auto& b = board[g.first][g.second];
+	if (b == '.') b = 128 + i;
+      }
+    }
+
+    for (const auto& row : board) {
+      for (const auto& g : row) {
+	if (g >= 0) {
+	  std::cerr << g << g;
+	} else {
+	  char buf[8];
+	  sprintf(buf, "%2d", static_cast<unsigned char>(g)-128);
+	  std::cerr << buf;
+	}
+      }
+      std::cerr << std::endl;
+    }    
+  }
 
   GridGraph gridg(ai.board);
 
@@ -136,7 +157,7 @@ int main(int argc, char *argv[]) {
     for (auto c : actions) {
       spath +=  direction_to_char(c);
     }
-    LOG(INFO) << s << " " << g << " " << spath;
+    // LOG(INFO) << s << " " << g << " " << spath;
     std:: cout << spath;
   }
   std::cout << std::endl;

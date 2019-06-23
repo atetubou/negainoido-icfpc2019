@@ -221,13 +221,14 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
       const auto& g = selected[gidx];
       matrix[sidx][gidx] = cost[g.first][g.second];
     }
+    matrix[sidx][0] = 0;
   }
 
   const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
   // const auto& ans = SolveByOurselfs(matrix);
   {
     auto board = ai.board;
-    for (auto i = 1u; i < ans.size(); ++i) {
+    for (auto i = 0u; i < ans.size(); ++i) {
       const auto& s = selected[ans[i]];
       board[s.first][s.second] = i + 128;
     }
@@ -245,8 +246,6 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
       std::cerr << std::endl;
     }
   }
-  exit(0);
-  
 
   CHECK_EQ(ans.size(), selected.size());
   {
@@ -260,19 +259,10 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
   }
 
   std::vector<std::pair<int, int>> ret;
-  // find 0 (start position)
-  int start = 0;
-  for (auto j = 0u; j < ans.size(); ++j) {
-    if (ans[j] == 0) {
-      start = j;
-      break;
-    }
-  }
 
-  for (auto i = 0u; i < ans.size(); ++i) {
-    ret.push_back(selected[(start + i) % ans.size()]);
+  for (const auto &a : ans) {
+    ret.push_back(selected[a]);
   }
-
 
   return ret;
 }
