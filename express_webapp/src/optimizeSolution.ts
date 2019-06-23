@@ -88,3 +88,46 @@ export const optimizeSolutions2 = async (budget: number) => {
 
     return solutions;
 };
+
+export const optimizeSolutions3 = async (budget: number) => {
+    const baseSolutions = await getBestSolutionModels(getWhereOption(0, true, undefined, 0));
+    const baseScores = baseSolutions.map((solution) => solution ? solution.score : -1);
+    let solutions = baseSolutions.concat([]);
+
+    const unit = 500;
+    let targetBudget = unit;
+    const improves: { score: number, solution: LSolution }[] = [];
+    while (targetBudget <= budget) {
+        const solutionsWith = await getBestSolutionModels(getWhereOption(0, true, undefined, targetBudget));
+        solutionsWith.filter((s) => !!s).forEach((solution, i) => {
+            if (improves.findIndex((s) => s.solution.id === solution.id) >= 0) return;
+
+            if (baseScores[i] > 0) {
+                const score = (estimateScore(solution.task_id, baseScores[i], solution.score) - solution.cost)/solution.cost;
+                if (score > 0) {
+                    improves.push({ score, solution });
+                }
+            }
+        });
+        targetBudget += unit;
+    }
+    let tmpBudget = budget;
+    const improved = Array(taskNum).fill(0);
+    improves.sort((a, b) => b.score - a.score).forEach((improve) => {
+        const newSol = improve.solution;
+        const taskId = newSol.task_id;
+        const oldSol = solutions[taskId - 1];
+        if (newSol.cost - oldSol.cost >= tmpBudget) {
+            return;
+        }
+        if (improved[taskId - 1] >= improve.score * newSol.cost) {
+            return;
+        }
+
+        tmpBudget -= newSol.cost - oldSol.cost;
+        solutions[taskId - 1] = newSol;
+        improved[taskId - 1] = improve.score * newSol.cost;
+    });
+
+    return solutions;
+};
