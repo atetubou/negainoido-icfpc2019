@@ -151,7 +151,7 @@ public:
   int get_duration_drill(const int id = 0);
 
   // Returns the position that is next to the current position.
-  Position get_neighbor(const Direction &dir, const int id = 0);
+  Position get_neighbor(const Direction &dir, const int id = 0) const;
 
   // Gets the all (possible) positions of manipulators.
   // It may be in invalid postion. (e.g. out of the map, unreachable postion)
@@ -170,7 +170,7 @@ public:
 
   // Checks if the robot can move to the direction.
   // This doesn't change any internal state.
-  bool try_move(const Direction &dir, const int id = 0);
+  bool try_move(const Direction &dir, const int id = 0) const;
 
   // Executes a command. This is a wrapper of 'move', 'use_extesion', etc.
   bool do_command(Command cmd, const int id);
