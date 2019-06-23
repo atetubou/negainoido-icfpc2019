@@ -1,5 +1,7 @@
 set -e
 
+cd $(dirname $0)
+
 mkdir -p tmp
 
 if [ -z "$BLOCK" ]; then
