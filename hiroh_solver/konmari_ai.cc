@@ -43,6 +43,7 @@ private:
     return ret;
   }
 
+  int used_extension = 0;
   GridGraph graph;
 };
 
@@ -94,6 +95,10 @@ void KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
 }
 
 absl::optional<Position> KonmariAI::decide_extension_pos() {
+  auto ret = absl::make_optional<Position>(get_pos().first, get_pos().second+2+used_extension);
+  used_extension++;
+  return ret;
+  /*
   std::set<Position> unfilled_cands;
   std::set<Position> manus;
   for (const auto& p : get_absolute_manipulator_positions()) {
@@ -117,7 +122,9 @@ absl::optional<Position> KonmariAI::decide_extension_pos() {
   // TODO: optimize more here.
   if (unfilled_cands.size() > 0)
     return *unfilled_cands.begin();
+
   return absl::nullopt;
+  */
 }
 
 void KonmariAI::try_to_use_extensions() {
@@ -224,5 +231,6 @@ int main() {
     // std::cerr << "State-------" << std::endl;
     // ai->dump_state();
   }
+  std::cerr << "Score:" << ai->get_time() << std::endl;
   ai->print_commands();
 }
