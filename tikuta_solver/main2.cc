@@ -24,7 +24,7 @@ int main(int argc, char *argv[]) {
   // AI's constructor accepts a input file from stdin.
   AI ai;
 
-  const auto& order = tikutaOrder(ai, sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count()), std::vector<pos>());
+  const auto& order = tikutaOrder(ai, sqrt(ai.board.size() * ai.board[0].size() - ai.get_block_count()));
 
   GridGraph gridg(ai.board);
 
