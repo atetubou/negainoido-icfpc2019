@@ -186,7 +186,7 @@ void KonmariAI::try_to_use_teleport(std::vector<std::pair<int,int>>* path) {
     std::vector<std::pair<int,int>> new_path;
     int c = graph.shortest_path(beacon.first, beacon.second,
                                 dst.first, dst.second,
-                                new_path);
+                                new_path, cur_cost);
     if (cur_cost > c + 1) {
       cur_cost = c + 1;
       *path = std::move(new_path);

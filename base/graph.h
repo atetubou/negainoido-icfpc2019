@@ -26,7 +26,7 @@ class GraphDistance {
   GraphDistance(uint32_t V);
   void add_edge(int src, int dst, int weight);
   int shortest_path(int src, int dst);
-  int shortest_path(int src, int dst, std::vector<int> &paths);
+  int shortest_path(int src, int dst, std::vector<int> &paths, int stop_value = (1<<29));
   std::set<int> enumerate_neighbors(int src, int limit);
   void shortest_path_tree(int src, std::vector<int> &dist, std::vector<int> &parent);
  private:
@@ -42,7 +42,8 @@ public:
 
   int shortest_path(int sx, int sy, int gx, int gy);
   int shortest_path(int sx, int sy, int gx, int gy,
-		    std::vector<pos> &path);
+		    std::vector<pos> &path,
+                    int stop_value = (1<<29));
 
   std::vector<Direction> shortest_paths(pos start, const std::vector<pos>& goals) const;
 
