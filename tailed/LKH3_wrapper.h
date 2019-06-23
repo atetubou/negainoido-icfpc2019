@@ -27,4 +27,4 @@ std::vector<std::pair<int, int>>
 SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3);
 
 std::vector<std::pair<int, int>> tikutaOrder(const AI& ai, int n,
-					     const std::vector<std::pair<int, int>>& want_visit);
+					     std::vector<std::pair<int, int>> want_visit=std::vector<std::pair<int, int>>());
