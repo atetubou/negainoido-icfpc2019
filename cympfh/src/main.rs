@@ -3,8 +3,6 @@ use std::env;
 use std::fs::File;
 use std::io::{BufReader, BufRead};
 
-use rand::prelude::*;
-
 mod ai;
 mod geo;
 
@@ -53,7 +51,7 @@ fn dump(ai: &AI, w: &*mut i8, message: &String) {
                 waddch(*w, me as u32);
             } else if ai.filled[i][j] && is_my_body(&Position(i as isize, j as isize)) {
                 attrset(COLOR_PAIR(3));
-                waddch(*w, '.' as u32);
+                waddch(*w, ai.board[i][j] as u32);
             } else if ai.filled[i][j] {
                 attrset(COLOR_PAIR(2));
                 waddch(*w, ai.board[i][j] as u32);
@@ -80,29 +78,6 @@ fn dump(ai: &AI, w: &*mut i8, message: &String) {
     wmove(*w, ai.height as i32 + 5, 0);
     attrset(COLOR_PAIR(1));
     waddstr(*w, &ai.print_commands());
-}
-
-fn extension_positions(ai: &AI, idx: usize) -> Vec<Position> {
-    let Position(x, y) = ai.workers[idx].current_pos;
-    let mut ret = vec![];
-    for i in x-10..=x+10 {
-        for j in y-10..=y+10 {
-            let mut can_use = false;
-            for &Position(x, y) in ai.workers[idx].manipulator_range.iter() {
-                let dist = (i - x).abs() + (j - y).abs();
-                if dist == 0 {
-                    can_use = false;
-                    break;
-                } else if dist == 1 {
-                    can_use = true;
-                }
-            }
-            if can_use {
-                ret.push(Position(i, j))
-            }
-        }
-    }
-    ret
 }
 
 fn main() {
@@ -150,14 +125,18 @@ fn main() {
     const CHAR_B: i32 = 'b' as i32;
     const CHAR_D: i32 = 'd' as i32;
     const CHAR_E: i32 = 'e' as i32;
-    const CHAR_H: i32 = 'h' as i32;
-    const CHAR_J: i32 = 'j' as i32;
-    const CHAR_K: i32 = 'k' as i32;
+    // const CHAR_H: i32 = 'h' as i32;
+    // const CHAR_J: i32 = 'j' as i32;
+    // const CHAR_K: i32 = 'k' as i32;
     const CHAR_L: i32 = 'l' as i32;
     const CHAR_Q: i32 = 'q' as i32;
     const CHAR_S: i32 = 's' as i32;
     const CHAR_U: i32 = 'u' as i32;
     const CHAR_W: i32 = 'w' as i32;
+    const CHAR_UP: i32 = 65;
+    const CHAR_DOWN: i32 = 66;
+    const CHAR_RIGHT: i32 = 67;
+    const CHAR_LEFT: i32 = 68;
     const CHAR_HELP: i32 = '?' as i32;
     const CHAR_QUIT: i32 = '<' as i32;
 
@@ -168,10 +147,10 @@ fn main() {
     loop {
 
         let mut changed = true;
-        let mut message = String::new();
+        let message;
 
         match getch() {
-            CHAR_A => {
+            CHAR_A | CHAR_LEFT => {
                 if ai.mv(0, Direction::Left) {
                     message = String::from("Left");
                 } else {
@@ -179,7 +158,7 @@ fn main() {
                     changed = false;
                 }
             },
-            CHAR_D => {
+            CHAR_D | CHAR_RIGHT => {
                 if ai.mv(0, Direction::Right) {
                     message = String::from("Right");
                 } else {
@@ -187,7 +166,7 @@ fn main() {
                     changed = false;
                 }
             },
-            CHAR_S => {
+            CHAR_S | CHAR_DOWN => {
                 if ai.mv(0, Direction::Down) {
                     message = String::from("Down");
                 } else {
@@ -195,7 +174,7 @@ fn main() {
                     changed = false;
                 }
             },
-            CHAR_W => {
+            CHAR_W | CHAR_UP => {
                 if ai.mv(0, Direction::Up) {
                     message = String::from("Up");
                 } else {
@@ -248,8 +227,8 @@ fn main() {
             CHAR_HELP => {
                 message = String::from("Move: a/s/d/w, Rotate: q/e, Boost: b/l/f/c");
             }
-            _ => {
-                message = String::from("Unknown??");
+            unknown => {
+                message = format!("Unknown keycode: {}", unknown);
                 changed = false;
             }
         }
