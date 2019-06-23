@@ -219,6 +219,8 @@ void AI::turn_CW() {
   for(auto p: get_absolute_manipulator_positions()) {
     fill_cell(p);
   }
+
+  next_turn();
 }
 
 void AI::turn_CCW() {
@@ -228,6 +230,8 @@ void AI::turn_CCW() {
   for(auto p: get_absolute_manipulator_positions()) {
     fill_cell(p);
   }
+
+  next_turn();
 }
 
 std::vector<Position> AI::get_absolute_manipulator_positions() {
@@ -329,6 +333,7 @@ bool AI::use_fast_wheel() {
   worker.count_fast--;
   executed_cmds.push_back("F");
 
+  next_turn();
   return true;
 }
 
@@ -340,6 +345,7 @@ bool AI::use_drill() {
   worker.count_drill--;
   executed_cmds.push_back("L");
 
+  next_turn();
   return true;
 }
 
@@ -370,6 +376,7 @@ bool AI::use_extension(const int dx, const int dy) {
   auto cmd = "B(" + std::to_string(dy) + "," + std::to_string(-dx) + ")";
   executed_cmds.push_back(cmd);
 
+  next_turn();
   return true;
 }
 
