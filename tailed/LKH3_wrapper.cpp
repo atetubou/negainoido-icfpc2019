@@ -221,7 +221,7 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
       const auto& g = selected[gidx];
       matrix[sidx][gidx] = cost[g.first][g.second];
     }
-    matrix[sidx][0] = 0;
+    matrix[0][sidx] = 0;
   }
 
   const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
