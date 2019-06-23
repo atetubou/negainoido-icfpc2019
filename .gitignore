@@ -8,7 +8,6 @@
 /user.bazelrc
 
 *.swp
-ans
 *.sol
 
 /lambda-client/blocks

@@ -52,22 +52,22 @@ fn dump(ai: &AI, &win: &*mut i8, message: &String, &cursor: &Position) {
     let mybody = ai.get_absolute_manipulator_positions(0);
     let is_my_body = |p: &Position| { mybody.iter().any(|&q| *p == q) };
 
-    let window_height_range = if ai.height < WINDOW_HEIGHT {
+    let window_height_range = if ai.height <= WINDOW_HEIGHT {
         0..ai.height
     } else {
-        0..WINDOW_HEIGHT
-        // let left = if ai.workers[0].current_pos.0 as usize > WINDOW_HEIGHT / 2 {
-        //     ai.workers[0].current_pos.0 as usize - WINDOW_HEIGHT / 2
-        // } else {
-        //     0
-        // };
-        // left..left + WINDOW_HEIGHT
+        let left = if ai.workers[0].current_pos.0 as usize > WINDOW_HEIGHT / 2 {
+            ai.workers[0].current_pos.0 as usize - WINDOW_HEIGHT / 2
+        } else {
+            0
+        };
+        left..min(left + WINDOW_HEIGHT, ai.height)
     };
+    let i_offset = window_height_range.start as i32;
 
     for i in window_height_range {
         for j in 0..ai.width {
 
-            wmove(win, i as i32 + 4, j as i32);
+            wmove(win, i as i32 + 4 - i_offset, j as i32);
 
             let color = if Position(i as isize, j as isize) == cursor {
                 5

@@ -7,6 +7,14 @@
 #include "absl/strings/str_split.h"
 #include <glog/logging.h>
 
+ Position dir2vec(const Direction &dir) {
+  static const int dx[] = {0, 1, 0, -1};
+  static const int dy[] = {1, 0, -1, 0};
+  int idx = static_cast<int>(dir);
+
+  return Position(dx[idx], dy[idx]);
+}
+
 char direction_to_char(Direction d) {
   switch (d) {
   case Direction::Right:
@@ -36,6 +44,7 @@ Position rotate(Position p, Direction d) {
     return { p.second, -p.first };
   }
   LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
+  return Position(-1000000, -1000000);
 }
 
 // relative p when dir => ??? when Right
@@ -183,6 +192,9 @@ void AI::pickup_booster(const int id) {
   case 'C':
     count_clone += 1;
     break;
+  case 'R':
+    count_teleport += 1;
+    break;
   default:
     break;
   }
@@ -222,6 +234,9 @@ int AI::get_count_fast() { return count_fast; }
 int AI::get_count_drill() { return count_drill; }
 int AI::get_count_extension() { return count_extension; }
 int AI::get_count_clone() { return count_clone; }
+int AI::get_count_teleport() { return count_teleport; }
+
+int AI::get_count_workers() { return workers.size(); }
 
 int AI::get_duration_fast(const int id) { return workers[id].duration_fast; }
 int AI::get_duration_drill(const int id) { return workers[id].duration_drill; }
@@ -343,7 +358,7 @@ void AI::turn_CW(const int id) {
 void AI::turn_CCW(const int id) {
   init_turn(id);
   workers[id].current_dir =
-    static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) - 1 ) % 4 );
+    static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 3 ) % 4 );
 
   for(auto p: get_absolute_manipulator_positions()) {
     fill_cell(p);
@@ -451,11 +466,49 @@ bool AI::use_clone(const int id) {
   return true;
 }
 
+bool AI::install_beacon(const int id) {
+  init_turn(id);
+
+  auto p = get_pos(id);
+  if (board[p.first][p.second] == 'X' ||
+      board[p.first][p.second] == 'b') {
+    return false;
+  }
+
+  if (count_teleport == 0)
+    return false;
+
+  count_teleport--;
+  board[p.first][p.second] = 'b';
+  beacon_pos.insert(p);
+
+  push_command({CmdType::InstallBeacon}, id);
+
+  next_turn(id);
+  return true;
+}
+
+bool AI::jump_to_beacon(Position dst, const int id) {
+  init_turn(id);
+
+  if (beacon_pos.find(dst) == beacon_pos.end()) {
+    return false;
+  }
+
+  workers[id].current_pos = dst;
+
+  Command com = {CmdType::JumpToBeacon, Direction::Right /* dummy*/, dst.first, dst.second};
+  push_command(com, id);
+
+  next_turn(id);
+  return true;
+}
+
 bool AI::is_finished() {
   return get_filled_count() + block_count == height * width;
 }
 
-void print_command(struct Command cmd) {
+void print_command(struct Command cmd, int height) {
   std::string s = "";
 
   switch (cmd.type) {
@@ -483,7 +536,7 @@ void print_command(struct Command cmd) {
     break;
   case CmdType::UseExtension:
     // Convert coordinate: (dx, dy) -> (dy, -dx)
-    s = "B(" + std::to_string(cmd.dy) + "," + std::to_string(-cmd.dx) + ")";
+    s = "B(" + std::to_string(cmd.y) + "," + std::to_string(-cmd.x) + ")";
     break;
   case CmdType::UseFastWheel:
     s = "F";
@@ -493,6 +546,13 @@ void print_command(struct Command cmd) {
     break;
   case CmdType::UseClone:
     s = "C";
+    break;
+  case CmdType::InstallBeacon:
+    // Convert coordinate: (dx, dy) -> (dy, -dx)
+    s = "R";
+    break;
+  case CmdType::JumpToBeacon:
+    s = "T(" + std::to_string(cmd.y) + "," + std::to_string(height - cmd.x) + ")";
     break;
   default:
     LOG(FATAL) << "BUG?: unknown command name: " << static_cast<int>(cmd.type);
@@ -509,7 +569,7 @@ void AI::print_commands() {
       std::cout << "#";
 
     for (auto cmd: executed_cmds[i]) {
-      print_command(cmd);
+      print_command(cmd, height);
     }
   }
   std::cout << std::endl;

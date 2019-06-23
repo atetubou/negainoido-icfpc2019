@@ -38,11 +38,19 @@ int main(int argc, char *argv[]) {
     const auto s = ai.get_pos();
     const auto g = q.front().first;
     const bool deferable = q.front().second;
+
+    if (s == g){
+      q.pop_front();
+      continue;
+    }
+
     if (ai.board[g.first][g.second] != 'B' &&
 	ai.filled[g.first][g.second]) {
       q.pop_front();
       continue;
     }
+
+    // ai.dump_state();
 
     std::vector<pos> path;
     gridg.shortest_path(s.first, s.second,
@@ -52,14 +60,18 @@ int main(int argc, char *argv[]) {
       if (ai.board[g.first][g.second] != 'B' &&
 	  ai.filled[g.first][g.second]) {
 	q.pop_front();
-	continue;
+	break;
       }
       LOG_IF(FATAL, !ai.move(action)) << "invalid";
 
-      if (ai.get_count_extension()) {
-	for (int i = 0;; i++) {
-	  if (ai.use_extension(0, i + 2)) {
-	    break;
+      {
+	auto p = ai.get_pos();
+	if (ai.get_count_extension() || 
+	    ai.board[p.first][p.second] == 'B') {
+	  for (int i = 0;; i++) {
+	    if (ai.use_extension(0, i + 2)) {
+	      break;
+	    }
 	  }
 	}
       }
@@ -95,30 +107,12 @@ int main(int argc, char *argv[]) {
 	  }	  
 	  
 	  if (visit_next) {
-	    for (int j = 0; j < 4; ++j) {
-	      int nnx = nx + dx[j];
-	      int nny = ny + dy[j];
-	      if (nnx < 0 || nny < 0 || 
-		  nnx >= ai.get_height() || nny >= ai.get_width() ||
-		  ai.board[nnx][nny] == '#') {
-		continue;
-	      }
-	      LOG(INFO) << nnx << " " << nny;
-	      if (!ai.filled[nnx][nny]) {
-		visit_next = false;
-		break;
-	      }
-	    }	  
-	  
 	    q.push_front({{nx, ny}, false});
 	  }
 	}
       }
 
       if (!q.empty() && q.front().first != g && deferable) {
-	LOG(INFO) << "visit this " << q.front();
-	ai.dump_state();
-	// exit(0);
 	break;
       }
     }
@@ -126,4 +120,5 @@ int main(int argc, char *argv[]) {
 
   LOG(INFO) << ai.get_time();
   ai.print_commands();
+  LOG_IF(FATAL, !ai.is_finished());
 }
