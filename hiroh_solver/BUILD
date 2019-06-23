@@ -9,6 +9,7 @@ cc_binary(
 cc_binary(
     name = "konmari_ai",
     srcs = ["konmari_ai.cc"],
+    copts = ["-std=c++14"],
     deps = [
         "//base:ai",
         "//base:graph",
