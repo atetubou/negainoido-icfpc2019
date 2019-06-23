@@ -189,6 +189,7 @@ impl AI {
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
+        self.next_turn();
     }
 
     pub fn turn_ccw(&mut self, idx: usize) {
@@ -202,6 +203,7 @@ impl AI {
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
+        self.next_turn();
     }
 
     pub fn get_absolute_manipulator_positions(&self, idx: usize) -> Vec<Position> {
