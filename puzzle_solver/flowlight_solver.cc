@@ -59,41 +59,63 @@ int main() {
     board[exclude_squares[i].second][exclude_squares[i].first] = '#';
   }
 
-  GraphDistance gd(V);
-  const int dh[] = {0, 1, 0, -1};
-  const int dw[] = {1, 0, -1, 0};
-  REP(h, L) REP(w, L) {
-    REP(k, 4) {
-      int nh = h + dh[k];
-      int nw = w + dw[k];
-      if (nh < 0 || L <= nh) continue;
-      if (nw < 0 || L <= nw) continue;
-      if (board[h][w] == '.' && board[nh][nw] == '.') {
-        gd.add_edge(h * L + w, nh * L + w, 1);
-      } else if (board[h][w] == '.' && board[nh][nw] == '#') {
-        gd.add_edge(h * L + w, nh * L + nw, 1);
-      } else if (board[h][w] == '#' && board[nh][nw] == '.') {
-        gd.add_edge(h * L + w, nh * L + nw, 1);
-      } else if (board[h][w] == '#' && board[nh][nw] == '#') {
-        gd.add_edge(h * L + w, nh * L + nw, 0);
+  REP(i, L){
+    cerr << board[L - i - 1] << endl;
+  }
+
+  set<pair<int, int>> finished_squares;
+  REP(ee, exclude_squares.size()) {
+    GraphDistance gd(V);
+    const int dh[] = {0, 1, 0, -1};
+    const int dw[] = {1, 0, -1, 0};
+    REP(h, L) REP(w, L) {
+      REP(k, 4) {
+        int nh = h + dh[k];
+        int nw = w + dw[k];
+        if (nh < 0 || L <= nh) continue;
+        if (nw < 0 || L <= nw) continue;
+        if (board[h][w] == '.' && board[nh][nw] == '.') {
+          gd.add_edge(h * L + w, nh * L + nw, 1);
+        } else if (board[h][w] == '.' && board[nh][nw] == '#') {
+          gd.add_edge(h * L + w, nh * L + nw, 1);
+        } else if (board[h][w] == '#' && board[nh][nw] == '.') {
+          gd.add_edge(h * L + w, nh * L + nw, 1);
+        } else if (board[h][w] == '#' && board[nh][nw] == '#') {
+          gd.add_edge(h * L + w, nh * L + nw, 0);
+        }
       }
     }
-  }
-  
-  vector<int> dist;
-  vector<int> parents;
-  gd.shortest_path_tree(0, dist, parents);
+    
+    vector<int> dist;
+    vector<int> parents;
+    gd.shortest_path_tree(0, dist, parents);
+    cerr << dist << endl;
 
+    P best_sq;
+    int best_d = 1e9;
+    for (const auto &p: exclude_squares) {
+      if (finished_squares.count(p))continue;
+      int h = p.second;
+      int w = p.first;
+      LOG_IF(FATAL, dist[h * L + w] < 0);
+      if (dist[h * L + w] < best_d) {
+        best_d = dist[h * L + w];
+        best_sq = p;
+      }
+    }
+    cerr << best_sq << endl;
+    finished_squares.insert(best_sq);
 
-  for (const auto &p: exclude_squares) {
-    int h = p.second;
-    int w = p.first;
-    LOG_IF(FATAL, dist[h * L + w] < 0);
+    int h = best_sq.second;
+    int w = best_sq.first;
     while(h != 0 || w != 0) {
       int next = parents[h * L + w];
       h = next / L;
       w = next % L;
       board[h][w] = '#';
+    }
+    if (finished_squares.size() == exclude_squares.size()) {
+      break;
     }
   }
 
