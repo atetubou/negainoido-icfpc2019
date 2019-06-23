@@ -11,6 +11,23 @@
 #include "absl/strings/str_split.h"
 #include <glog/logging.h>
 
+std::ostream& operator<<(std::ostream& os, const Direction& d) {
+  std::string s;
+  switch (d) {
+  case Direction::Right:
+    s = "Right";
+  case Direction::Left:
+    s = "Left";
+  case Direction::Up:
+    s = "Up";
+  case Direction::Down:
+    s = "Down";
+  }
+
+  os << s;
+  return os;
+}
+
 Position dir2vec(const Direction &dir) {
   static const int dx[] = {0, 1, 0, -1};
   static const int dy[] = {1, 0, -1, 0};
