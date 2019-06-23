@@ -24,8 +24,8 @@ const ScoreBoard = (props: Props) => {
             {props.loading && <div> Loading </div>}
             <button onClick={props.onRefresh} disabled={props.loading}>Refresh</button>
             <a href="./solution/best/zip" target="_blank">Download Zip</a>
-            <table className="table">
-                <thead>
+            <table className="table table-striped">
+                <thead className="thead-dark">
                     <tr>
                         <th>Task ID</th>
                         <th>Solution ID</th>

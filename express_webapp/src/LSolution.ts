@@ -30,8 +30,8 @@ export const getSolutionById = (id: number) => {
         where: {id},
     });
 };
-export const getWhereOption = (taskId: number, valid = false, solver?: string, cost?: number) => {
-    const option: WhereOptions = {};
+export const getWhereOption = (taskId: number, valid = false, solver?: string, cost?: number, removeFailed?: boolean) => {
+    let option: WhereOptions = {};
     if (taskId) {
         option.task_id = taskId;
     }
@@ -43,6 +43,9 @@ export const getWhereOption = (taskId: number, valid = false, solver?: string, c
     }
     if (cost >= 0) {
         option.cost = {[Op.lte] : cost };
+    }
+    if (removeFailed) {
+        option = { [Op.and]: [ option, { [Op.or]: [ {valid: true}, {checked: false}] } ] };
     }
     return option;
 };

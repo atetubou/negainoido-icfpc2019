@@ -78,7 +78,7 @@ app.get('/', (req, res, next) => {
 
 app.get('/solution', async (req, res, next) => {
     const valid = req.query.valid || false;
-    const checked = req.query.checked || false;
+    const removeFailed = req.query.removeFailed || false;
     const limit = req.query.limit;
     const taskId = parseInt(req.query.taskId || '0');
     const page = parseInt(req.query.page || '1');
@@ -87,19 +87,7 @@ app.get('/solution', async (req, res, next) => {
     const options: FindOptions = {
         attributes: ['id', 'solver', 'task_id', 'score', 'valid', 'has_buy', 'cost'],
     };
-    const where = getWhereOption(taskId, valid, solver, cost);
-    if (valid) {
-        where.valid = true;
-    }
-    if (checked) {
-        where.checked = true;
-    }
-    if (solver) {
-        where.solver = { [Op.like]: solver };
-    }
-    if (taskId > 0) {
-        where.task_id = taskId;
-    }
+    const where = getWhereOption(taskId, valid, solver, cost, removeFailed);
     if (where) {
         options.where = where;
     }
@@ -276,13 +264,15 @@ app.get('/solution/best', async (req, res, next) => {
     const valid = !!req.query.valid;
     const taskId = parseInt(req.query.taskId || '0');
     const solver = req.query.solver;
+    const cost = parseInt(req.query.cost || '-1');
+    const removeFailed = !!req.query.removeFailed;
     let promises = [];
     if (taskId === 0) {
         for (let i = 1; i <= taskNum; i++) {
-            promises.push(getBestSolutionModel(getWhereOption(i, valid, solver)));
+            promises.push(getBestSolutionModel(getWhereOption(i, valid, solver, cost, removeFailed)));
         }
     } else {
-        promises.push(getBestSolutionModel(getWhereOption(taskId, valid, solver)));
+        promises.push(getBestSolutionModel(getWhereOption(taskId, valid, solver, cost, removeFailed)));
     }
     Promise.all(promises).then((solutions) => {
         res.json({ solutions });
@@ -377,8 +367,10 @@ app.get('/solution/best/:id', async (req, res, next) => {
     const id = parseInt(req.params['id']);
     const valid = req.query.valid || false;
     const solver = req.query.solver;
+    const cost = parseInt(req.query.cost || '-1');
+    const removeFailed = !!req.query.removeFailed;
 
-    const best = await getBestSolutionModel(getWhereOption(id, valid, solver)).catch((e) => {
+    const best = await getBestSolutionModel(getWhereOption(id, valid, solver, cost, removeFailed)).catch((e) => {
         console.error("DB error" + e);
         res.status(500);
         res.json({ error: e });

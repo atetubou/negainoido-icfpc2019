@@ -28,6 +28,7 @@ interface Options {
     valid?: boolean;
     solver?: string;
     cost?: number;
+    removeFailed?: boolean;
 }
 
 const getSolution  = (options: Options, onlyBest: boolean): Promise<Solution[]> => {
@@ -93,6 +94,7 @@ interface State {
     withBest: boolean;
     withCost: boolean;
     cost: number;
+    removeFailed: boolean;
 }
 
 class ScoreBoardWrapper extends React.Component<Props, State> {
@@ -109,6 +111,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
             withBest: false,
             withCost: false,
             cost: 0,
+            removeFailed: false,
         }
     }
 
@@ -146,7 +149,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
 
     handleRefresh = () => {
         const option: Options = {};
-        const { filterByTask, taskId, onlyValid, onlyBest, solver, withBest, withCost, cost } = this.state;
+        const { filterByTask, taskId, onlyValid, onlyBest, solver, withBest, withCost, cost, removeFailed } = this.state;
         if (filterByTask && taskId > 0) {
             option['taskId'] = taskId;
         }
@@ -158,6 +161,9 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
         }
         if (withCost) {
             option.cost = cost;
+        }
+        if (removeFailed) {
+            option.removeFailed = true;
         }
         this.setState({ loading: false }, () => {
             getSolution(option, onlyBest).then(async (sol) => {
@@ -177,7 +183,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
     };
 
     render(): React.ReactNode {
-        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy, onlyBest, solver, withBest, withCost, cost } = this.state;
+        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy, onlyBest, solver, withBest, withCost, cost, removeFailed } = this.state;
         if (!solutions) {
             return <div>loading</div>;
         }
@@ -235,6 +241,10 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                 <div>
                     <input name="onlyValid" type="checkbox" checked={onlyValid} onChange={(e) => this.setState({ onlyValid: e.currentTarget.checked })}/>
                     <label>Only Valid</label>
+                </div>
+                <div>
+                    <input name="removeFailed" type="checkbox" checked={removeFailed} onChange={(e) => this.setState({ removeFailed: e.currentTarget.checked })}/>
+                    <label>Remove Failed in Validation</label>
                 </div>
                 <div>
                     <input name="onlyBest" type="checkbox" checked={onlyBest} onChange={(e) => this.setState({ onlyBest: e.currentTarget.checked })}/>
