@@ -304,7 +304,8 @@ std::vector<Direction> GridGraph::shortest_paths(pos start, const std::vector<po
     for (int i = 0; i < 4; ++i) {
       int nx = start.first + dx[i];
       int ny = start.second + dy[i];
-      if (can_visit(nx, ny) && costs[nx][ny] < costs[start.first][start.second]) {
+      if (can_visit(nx, ny) && costs[nx][ny] != -1 && 
+	  costs[nx][ny] < costs[start.first][start.second]) {
 	start = {nx, ny};
 	break;
       }
