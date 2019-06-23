@@ -266,6 +266,26 @@ std::vector<Position> AI::get_absolute_manipulator_positions(const int id) {
   return ret;
 }
 
+std::vector<Position> AI::rotated_manipulator_positions(const int id, bool is_ccw) {
+
+  Position self = get_pos(id);
+  std::vector<Position> ret;
+
+  for (Position&p : workers[id].manipulator_range) {
+    Direction cur_dir = get_dir(id);
+    int ndir = (static_cast<int>(cur_dir) + (is_ccw ? 1 : 3)) % 4;
+    Direction next_dir = static_cast<Direction>(ndir);
+
+    Position mani = rotate(p, next_dir);
+    mani.first += self.first;
+    mani.second += self.second;
+
+    if(reachable(mani, id))
+      ret.push_back(mani);
+  }
+  return ret;
+}
+
 void AI::next_turn(const int id) {
   if (id == (int)workers.size()-1)
     current_time++;
