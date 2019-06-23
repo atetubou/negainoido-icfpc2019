@@ -14,6 +14,10 @@ enum class Direction {
   Up,
 };
 
+typedef std::pair<int32_t, int32_t> Position;
+
+Position dir2vec(const Direction &dir);
+
 enum class CmdType {
   Move = 0,
   TurnCW,
@@ -37,8 +41,6 @@ struct Command {
 
 char direction_to_char(Direction d);
 absl::optional<Direction> char_to_direction(char c);
-
-typedef std::pair<int32_t, int32_t> Position;
 
 class Worker {
 
