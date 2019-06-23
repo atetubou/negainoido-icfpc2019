@@ -1,5 +1,6 @@
 import React from 'react';
 import ScoreBoard, {Solution} from "./components/ScoreBoard";
+import {number} from "prop-types";
 
 const fromJsonToSolution = (s: any) =>
     ({
@@ -8,6 +9,7 @@ const fromJsonToSolution = (s: any) =>
         solver: s.solver,
         valid: s.valid,
         score: s.score,
+        cost: s.cost,
     } as Solution);
 
 const optionToUrlParam = (options: any) => {
@@ -25,6 +27,7 @@ interface Options {
     taskId?: number;
     valid?: boolean;
     solver?: string;
+    cost?: number;
 }
 
 const getSolution  = (options: Options, onlyBest: boolean): Promise<Solution[]> => {
@@ -88,6 +91,8 @@ interface State {
     sortBy?: string;
     solver?: string;
     withBest: boolean;
+    withCost: boolean;
+    cost: number;
 }
 
 class ScoreBoardWrapper extends React.Component<Props, State> {
@@ -102,6 +107,8 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
             sortBy: undefined,
             onlyBest: false,
             withBest: false,
+            withCost: false,
+            cost: 0,
         }
     }
 
@@ -139,7 +146,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
 
     handleRefresh = () => {
         const option: Options = {};
-        const { filterByTask, taskId, onlyValid, onlyBest, solver, withBest } = this.state;
+        const { filterByTask, taskId, onlyValid, onlyBest, solver, withBest, withCost, cost } = this.state;
         if (filterByTask && taskId > 0) {
             option['taskId'] = taskId;
         }
@@ -148,6 +155,9 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
         }
         if (solver) {
             option.solver = solver;
+        }
+        if (withCost) {
+            option.cost = cost;
         }
         this.setState({ loading: false }, () => {
             getSolution(option, onlyBest).then(async (sol) => {
@@ -167,7 +177,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
     };
 
     render(): React.ReactNode {
-        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy, onlyBest, solver, withBest } = this.state;
+        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy, onlyBest, solver, withBest, withCost, cost } = this.state;
         if (!solutions) {
             return <div>loading</div>;
         }
@@ -207,13 +217,14 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
 
 
         return (
-            <div>
+            <div className="scoreBoard">
                 {alert &&
                     <div className="alert alert-danger" role="alert">
                         {alert}
                     </div>
                 }
                 <div>
+                    <label>Solver:</label>
                     <input type="text" value={solver} onChange={(e) => { this.setState({ solver: e.target.value })}} />
                 </div>
                 <div>
@@ -232,6 +243,11 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                 <div>
                     <input name="withBest" type="checkbox" checked={withBest} onChange={(e) => this.setState({ withBest: e.currentTarget.checked })}/>
                     <label>With Best</label>
+                </div>
+                <div>
+                    <input name="withCost" type="checkbox" checked={withCost} onChange={(e) => this.setState({ withCost: e.currentTarget.checked })}/>
+                    <label>Cost less than</label>
+                    <input type="number" disabled={!withCost} value={cost} onChange={(e) => { this.setState({ cost: parseInt(e.target.value) })}} />
                 </div>
                 <div>
                     <select onChange={(e) => this.setState({ sortBy: e.currentTarget.value })}>

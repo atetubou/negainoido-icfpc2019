@@ -4,6 +4,7 @@ export interface Solution {
     taskId: number;
     solver: string;
     score: number;
+    cost: number;
     solutionId: number;
     valid: boolean;
 }
@@ -19,20 +20,23 @@ interface Props {
 
 const ScoreBoard = (props: Props) => {
     return (
-        <div className="scoreBoard">
+        <div>
             {props.loading && <div> Loading </div>}
             <button onClick={props.onRefresh} disabled={props.loading}>Refresh</button>
             <a href="./solution/best/zip" target="_blank">Download Zip</a>
-            <table>
-                <tr>
-                    <th>Task ID</th>
-                    <th>Solution ID</th>
-                    <th>Solver</th>
-                    <th>Score</th>
-                    <th>isValid</th>
-                    <th>Validate</th>
-                    <th>Download</th>
-                </tr>
+            <table className="table">
+                <thead>
+                    <tr>
+                        <th>Task ID</th>
+                        <th>Solution ID</th>
+                        <th>Solver</th>
+                        <th>Score</th>
+                        <th>Cost</th>
+                        <th>isValid</th>
+                        <th>Validate</th>
+                        <th>Download</th>
+                    </tr>
+                </thead>
                 <tbody>
                     {props.solutions.map((task) => {
                         return (
@@ -41,6 +45,7 @@ const ScoreBoard = (props: Props) => {
                                 <td>{task.solutionId}</td>
                                 <td>{task.solver}</td>
                                 <td>{task.score}</td>
+                                <td>{task.cost}</td>
                                 <td>{task.valid ?
                                     <span className="scoreBoard-valid">Valid</span> :
                                     <span className="scoreBoard-invalid">Not Valid</span>}

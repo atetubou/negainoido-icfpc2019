@@ -83,10 +83,11 @@ app.get('/solution', async (req, res, next) => {
     const taskId = parseInt(req.query.taskId || '0');
     const page = parseInt(req.query.page || '1');
     const solver = req.query.solver;
+    const cost = parseInt(req.query.cost || '-1');
     const options: FindOptions = {
         attributes: ['id', 'solver', 'task_id', 'score', 'valid', 'has_buy', 'cost'],
     };
-    const where: any = {};
+    const where = getWhereOption(taskId, valid, solver, cost);
     if (valid) {
         where.valid = true;
     }

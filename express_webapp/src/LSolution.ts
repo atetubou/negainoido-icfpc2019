@@ -41,8 +41,8 @@ export const getWhereOption = (taskId: number, valid = false, solver?: string, c
     if (solver) {
         option.solver = {[Op.like]: solver};
     }
-    if (cost) {
-        option.solver = {[Op.lt] : cost };
+    if (cost >= 0) {
+        option.cost = {[Op.lte] : cost };
     }
     return option;
 };
