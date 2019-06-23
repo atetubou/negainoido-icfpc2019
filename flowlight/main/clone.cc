@@ -156,7 +156,7 @@ set<int> collect_required_vertices(const vector<string> &board) {
   const int W = board[0].size();
   set<int> covered_vertices;
   set<int> required_vertices;
-  REP(h, H) REP(w, W - 1) {
+  REP(w, W - 1) REP(h, H) {
     if (h % 3 == 1 && board[h][w] != '#') {
       required_vertices.insert(to_index(h, w));
       covered_vertices.insert(to_index(h, w));
@@ -164,7 +164,7 @@ set<int> collect_required_vertices(const vector<string> &board) {
     }
   }
 
-  REP(h, H) REP(w, W) {
+  REP(w, W) REP(h, H) {
     int index = to_index(h, w);
     if (board[h][w] != '#' && covered_vertices.count(index) == 0) {
       required_vertices.insert(index);
@@ -177,7 +177,7 @@ set<int> collect_required_vertices(const vector<string> &board) {
 vector<pair<int, int>> collect_clone_greedy(int start_index, GraphDistance &gd, const vector<int> &clone_vertices) {
   vector<pair<int, int>> res;
   set<int> used;
-  
+
   while (used.size() < clone_vertices.size()) {
     int best_v = -1;
     int best_d = 1e9;
@@ -196,23 +196,32 @@ vector<pair<int, int>> collect_clone_greedy(int start_index, GraphDistance &gd, 
   return res;
 }
 
-vector<Edge> compute_traversal(const int v, const vector<vector<Edge>> &G, vector<int> &visited) {
+vector<int> compute_traversal(const int v, const vector<vector<Edge>> &G, vector<int> &visited) {
+  vector<int> vs;
+  vs.push_back(v);
   visited[v] = 1;
-  vector<Edge> es;
+  vector<vector<int> > sub_vs_list;
   for (const auto &e: G[v]) {
     if (!visited[e.dst_index]) {
-      es.push_back(e);
-      vector<Edge> sub_es = compute_traversal(e.dst_index, G, visited);
-      for (const auto &sub_e: sub_es) {
-        es.push_back(sub_e);
-      }
-      es.push_back(e.reverse());
+      vector<int> sub_vs = compute_traversal(e.dst_index, G, visited);
+      sub_vs_list.push_back(sub_vs);
+      // es.push_back(e.reverse());
     }
   }
-  return es;
+
+  sort(sub_vs_list.begin(), sub_vs_list.end(), [](const vector<int> &vs1, const vector<int> &vs2) {
+      return vs1.size() < vs2.size();
+    });
+
+  for (const vector<int> &sub_vs: sub_vs_list) {
+    for (int v: sub_vs) {
+      vs.push_back(v);
+    }
+  }
+  return vs;
 }
 
-vector<Edge> compute_traversal(const int start_index, const vector<vector<Edge>> &G) {
+vector<int> compute_traversal(const int start_index, const vector<vector<Edge>> &G) {
   vector<int> visited(G.size());
   return compute_traversal(start_index, G, visited);
 }
@@ -246,16 +255,7 @@ vector<int> compute_tour(const int start_index, const set<int> &visit_vertices, 
     G[e.dst_index].push_back(e.reverse());
   }
 
-  vector<Edge> edge_order = compute_traversal(start_index, G);
-  // cerr << edge_order.size() << endl;
-
-  vector<int> res;
-  res.push_back(start_index);
-  for (const auto &e: edge_order) {
-    res.push_back(e.dst_index);
-  }
-  // cerr << res.size() << endl;
-  return res;
+  return compute_traversal(start_index, G);
 }
 
 string move(int src_index, int dst_index, set<int> &visited_vertices, set<int> &wrapped_vertices, const vector<string> &board, GraphDistance &gd) {
