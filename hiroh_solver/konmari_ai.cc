@@ -19,7 +19,23 @@ class KonmariAI : public AI {
 public:
   KonmariAI() :
     AI(),
-    graph(board) {}
+    graph(board) {
+
+    std::map<char, int> count;
+    for (int x = 0; x < get_height(); x++) {
+      for (int y = 0; y < get_width(); y++) {
+        if (board[x][y] != '#' && board[x][y]) {
+          count[board[x][y]]++;
+        }
+      }
+    }
+
+    LOG(INFO) << "Number of clones: " << count['C'];
+    LOG(INFO) << "Number of drills: " << count['L'];
+    LOG(INFO) << "Number of extensions: " << count['B'];
+    LOG(INFO) << "Number of teleports: " << count['R'];
+  }
+
   void pick_up_extensions();
   absl::optional<Position> decide_extension_pos();
   void try_to_use_extensions();
@@ -57,6 +73,7 @@ private:
 
   std::vector<Position> DPTSP(std::vector<Position> cells, int* cost);
   std::vector<Position> greedyTSP(std::vector<Position> cells, int* cost);
+
   int used_extension = 0;
   GridGraph graph;
 };
@@ -159,7 +176,8 @@ void KonmariAI::try_to_use_fast_weel() {
 
 void KonmariAI::try_to_use_teleport(std::vector<std::pair<int,int>>* path) {
   if (get_count_teleport() > 0) {
-    install_beacon(0);
+    install_beacon();
+    LOG(INFO) << "Put " << beacon_pos.size() << "th beacon!!";
   }
   int cur_cost = path->size() - 1;
   int cost_without_beacon = cur_cost;
@@ -176,7 +194,7 @@ void KonmariAI::try_to_use_teleport(std::vector<std::pair<int,int>>* path) {
   }
 
   if (cur_cost != cost_without_beacon) {
-    jump_to_beacon(path->front(), 0);
+    jump_to_beacon(path->front());
     LOG(INFO) << "Jump! Saved cost is " << cost_without_beacon - cur_cost;
   }
 }
@@ -282,7 +300,7 @@ void KonmariAI::pick_up_extensions() {
     }
   }
 
-  LOG(INFO) << "Number of extensions: " << extensions.size();
+
   std::vector<Position> best_path;
   if (extensions.size() <= 15) {
     int greedy_cost = 0, best_cost = 0;
@@ -363,6 +381,17 @@ void KonmariAI::konmari_move() {
     if (filled[dst.first][dst.second])
       break;
     move(dir);
+
+    // If the next cell is teleport, get it.
+    for (auto& p : get_neighbors(get_pos())) {
+      if (board[p.first][p.second] == 'R') {
+        Position cur_p = get_pos();
+        move(GridGraph::move_to_action(cur_p, p));
+        // Back to original position in order to not break shortest path move.
+        move(GridGraph::move_to_action(p, cur_p));
+        break;
+      }
+    }
   }
 
   if (used_drill) {
