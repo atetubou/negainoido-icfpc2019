@@ -119,6 +119,38 @@ EOF
 
 }
 
+std::vector<int> SolveByOurselfs(const std::vector<std::vector<int>>& matrix) {
+  std::vector<int> bestans;
+  for (auto i = 0u; i < matrix.size(); ++i) {
+    bestans.push_back(i);
+  }
+
+  auto cost = [&](const std::vector<int>& ans) -> int {
+		int sum = 0;
+		for (auto i = 0u; i + 1 < ans.size(); ++i) {
+		  sum += matrix[ans[i]][ans[i+1]];
+		}
+		return sum;
+	      };
+
+  int cur_cost = cost(bestans);
+
+  std::mt19937 engine;
+
+  for (int i = 0; i < 100; ++i) {
+    auto tans = bestans;
+    std::shuffle(tans.begin() + 1, tans.end(), engine);
+
+    int tcost = cost(tans);
+    if (tcost < cur_cost) {
+      bestans = tans;
+      cur_cost = tcost;
+    }
+  }
+
+  return bestans;
+}
+
 std::vector<std::pair<int, int>>
 SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
   int sx = 0, sy = 0;
@@ -140,8 +172,7 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
     }
   }
 
-  std::random_device seed_gen;
-  std::mt19937 engine(seed_gen());
+  std::mt19937 engine;
   std::shuffle(selected.begin(), selected.end(), engine);
 
   n = std::min<int>(selected.size(), n);
@@ -190,9 +221,31 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
       const auto& g = selected[gidx];
       matrix[sidx][gidx] = cost[g.first][g.second];
     }
+    matrix[0][sidx] = 0;
   }
 
   const auto& ans = SolveTSPByLKH3(matrix, path_to_LKH3.c_str());
+  // const auto& ans = SolveByOurselfs(matrix);
+  {
+    auto board = ai.board;
+    for (auto i = 0u; i < ans.size(); ++i) {
+      const auto& s = selected[ans[i]];
+      board[s.first][s.second] = i + 128;
+    }
+
+    for (const auto& row : board) {
+      for (const auto& g : row) {
+	if (g >= 0) {
+	  std::cerr << g << g;
+	} else {
+	  char buf[8];
+	  sprintf(buf, "%2d", static_cast<unsigned char>(g)-128);
+	  std::cerr << buf;
+	}
+      }
+      std::cerr << std::endl;
+    }
+  }
 
   CHECK_EQ(ans.size(), selected.size());
   {
@@ -206,19 +259,10 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
   }
 
   std::vector<std::pair<int, int>> ret;
-  // find 0 (start position)
-  int start = 0;
-  for (auto j = 0u; j < ans.size(); ++j) {
-    if (ans[j] == 0) {
-      start = j;
-      break;
-    }
-  }
 
-  for (auto i = 0u; i < ans.size(); ++i) {
-    ret.push_back(selected[(start + i) % ans.size()]);
+  for (const auto &a : ans) {
+    ret.push_back(selected[a]);
   }
-
 
   return ret;
 }
