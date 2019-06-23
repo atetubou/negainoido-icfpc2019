@@ -283,7 +283,7 @@ app.get('/solution/best', async (req, res, next) => {
         });
 });
 
-app.get('/solution/:id', async (req, res, next) => {
+app.get('/solution/:id/sol', async (req, res, next) => {
     const id = parseInt(req.params['id']);
 
     const model = await getSolutionById(id).catch((e) => {
@@ -311,10 +311,37 @@ app.get('/solution/:id', async (req, res, next) => {
             next(err);
         } else {
             res.set('Content-Type', data.ContentType);
-            res.set('Content-Disposition', 'attachment; filename='+key);
+            res.set('Content-Disposition', `attachment; filename=prob-${formatNumber(model.task_id)}-${id}.sol`);
             res.set('Content-Length', data.ContentLength.toString());
             res.end(data.Body, 'binary');
         }
+    });
+});
+
+app.get('/solution/:id/buy', async (req, res, next) => {
+    const id = parseInt(req.params['id']);
+
+    const model = await getSolutionById(id).catch((e) => {
+        console.error("DB error" + e);
+        res.status(500);
+        res.json({ error: e });
+    });
+
+    if (!model || !model.has_buy) {
+        console.error("error");
+        res.status(404);
+        res.render('not found solution');
+        return;
+    }
+
+    pullBuyDataFromS3(model).then((data) => {
+        res.set('Content-Type', data.ContentType);
+        res.set('Content-Disposition', `attachment; filename=prob-${formatNumber(model.task_id)}-${id}.buy`);
+        res.set('Content-Length', data.ContentLength.toString());
+        res.end(data.Body, 'binary');
+    }).catch((e) => {
+        console.error('failed to download: ' + e);
+        next(e);
     });
 });
 

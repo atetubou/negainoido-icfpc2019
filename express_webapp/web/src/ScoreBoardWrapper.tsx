@@ -50,7 +50,21 @@ const validateSolution = (id: number) => {
 };
 
 const downloadSolution = (id: number) => {
-    return fetch(`./solution/${id}`).then((response) => {
+    return fetch(`./solution/${id}/sol`).then((response) => {
+        return response.blob();
+    })
+        .then((blob) => {
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            document.body.appendChild(link);
+            link.click();
+            link.parentNode.removeChild(link);
+        });
+};
+
+const downloadBuy = (id: number) => {
+    return fetch(`./solution/${id}/buy`).then((response) => {
         return response.blob();
     })
         .then((blob) => {

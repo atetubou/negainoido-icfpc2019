@@ -34,7 +34,8 @@ const ScoreBoard = (props: Props) => {
                         <th>Cost</th>
                         <th>isValid</th>
                         <th>Validate</th>
-                        <th>Download</th>
+                        <th>Download Solution</th>
+                        <th>Download Buy</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -54,7 +55,13 @@ const ScoreBoard = (props: Props) => {
                                     <button onClick={() => props.onValidate(task.solutionId)}>Validate</button>
                                 </td>
                                 <td>
-                                    <button onClick={() => props.onDownload(task.solutionId)}>Download</button>
+                                    <a href={`./solution/${task.solutionId}/sol`}>Download .sol</a>
+                                </td>
+                                <td>
+                                    {task.cost > 0 ?
+                                        <a href={`./solution/${task.solutionId}/buy`}>Download .buy</a> :
+                                        <span>-</span>
+                                    }
                                 </td>
                             </tr>
                         );
