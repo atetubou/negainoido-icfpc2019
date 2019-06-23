@@ -24,8 +24,9 @@ public:
   absl::optional<Position> decide_extension_pos();
   void try_to_use_extensions();
   void try_to_use_fast_weel();
+  void try_to_use_teleport(std::vector<std::pair<int,int>>* path);
   bool try_to_use_drill(std::vector<std::pair<int,int>>* path);
-  // void try_rotate(const Position& dst);
+
   void konmari_move();
   Position get_nearest_unfilled(std::vector<std::pair<int,int>>* path);
 
@@ -43,6 +44,7 @@ private:
     }
     return ret;
   }
+
   std::string path_to_string(const std::vector<Position>& p) {
     std::string ret;
     for (size_t i = 0; i < p.size(); i++) {
@@ -52,6 +54,7 @@ private:
     }
     return ret;
   }
+
   std::vector<Position> DPTSP(std::vector<Position> cells, int* cost);
   std::vector<Position> greedyTSP(std::vector<Position> cells, int* cost);
   int used_extension = 0;
@@ -152,6 +155,30 @@ void KonmariAI::try_to_use_fast_weel() {
     return;
   if (get_count_fast() > 0)
     use_fast_wheel();
+}
+
+void KonmariAI::try_to_use_teleport(std::vector<std::pair<int,int>>* path) {
+  if (get_count_teleport() > 0) {
+    install_beacon(0);
+  }
+  int cur_cost = path->size() - 1;
+  int cost_without_beacon = cur_cost;
+  Position dst = path->back();
+  for (const auto& beacon : beacon_pos) {
+    std::vector<std::pair<int,int>> new_path;
+    int c = graph.shortest_path(beacon.first, beacon.second,
+                                dst.first, dst.second,
+                                new_path);
+    if (cur_cost > c + 1) {
+      cur_cost = c + 1;
+      *path = std::move(new_path);
+    }
+  }
+
+  if (cur_cost != cost_without_beacon) {
+    jump_to_beacon(path->front(), 0);
+    LOG(INFO) << "Jump! Saved cost is " << cost_without_beacon - cur_cost;
+  }
 }
 
 bool KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
@@ -319,79 +346,19 @@ Position KonmariAI::get_nearest_unfilled(std::vector<std::pair<int,int>>* path) 
   return Position(-1, -1);
 }
 
-/*
-void KonmariAI::try_rotate(const Position& dst) {
-  auto rotate_info = [dst=dst, &filled=filled](std::vector<Position>& rpos) -> std::pair<bool, int> {
-    bool dst_fill = false;
-    int filled_by_rotate_cnt = 0;
-    for (const auto& rp : rpos) {
-      if (rp == dst)
-        dst_fill = true;
-      if (!filled[rp.first][rp.second])
-        filled_by_rotate_cnt++;
-    }
-    return {dst_fill, filled_by_rotate_cnt};
-  };
-
-  auto cw_pos = rotated_manipulator_positions(false);
-  auto ccw_pos = rotated_manipulator_positions(true);
-  auto cw_info = rotate_info(cw_pos);
-  auto ccw_info = rotate_info(ccw_pos);
-
-  enum class Decision {
-    UNDECIDED,
-    DO_CW,
-    DO_CCW,
-  };
-
-  Decision d = Decision::UNDECIDED;
-  if (cw_info.first) {
-    if (!ccw_info.first) {
-      d = Decision::DO_CW;
-    } else {
-      d = cw_info.second > ccw_info.second ? Decision::DO_CW : Decision::DO_CCW;
-    }
-  } else if (ccw_info.first) {
-    d = Decision::DO_CCW;
-  }
-
-  if (d == Decision::UNDECIDED) {
-    // This means, dst will not be filled by rotation.
-    // We have to decide if we should rotate.
-    int filled_cnt = std::max(cw_info.second, ccw_info.second);
-    // TODO(hiroh): Optimize this heuristic.
-    bool should_rotate = filled_cnt > 3 + (used_extension / 2);
-    if (!should_rotate)
-      return;
-    d = cw_info.second > ccw_info.second ? Decision::DO_CW : Decision::DO_CCW;
-  }
-
-  switch (d) {
-  case Decision::UNDECIDED:
-    return;
-  case Decision::DO_CW:
-    turn_CW();
-    break;
-  case Decision::DO_CCW:
-    turn_CCW();
-    break;
-  }
-}
-*/
-
 void KonmariAI::konmari_move() {
   try_to_use_extensions();
   // Fast wheel is dangerous!!!
   // try_to_use_fast_weel();
   std::vector<std::pair<int,int>> path;
   auto dst = get_nearest_unfilled(&path);
+  try_to_use_teleport(&path);
   bool used_drill = try_to_use_drill(&path);
   for (const Direction& dir : GridGraph::path_to_actions(path)) {
     // Finish if all cells are already filled (due to fill by body).
     if (is_finished()) {
       return;
     }
-    // try_rotate(dst);
 
     if (filled[dst.first][dst.second])
       break;
