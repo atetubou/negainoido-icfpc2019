@@ -71,7 +71,7 @@ bool KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
     return false;
   const int cost_diff = cost_without_drill - cost_with_drill;
 
-  bool should_use_drill = cost_diff > 5;
+  bool should_use_drill = cost_diff > 7;
   if (!should_use_drill)
     return false;
 
