@@ -112,6 +112,8 @@ class AI {
 public:
 
   AI();
+  // accepts a string representing buyfile's content
+  AI(const std::string buystring);
 
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
