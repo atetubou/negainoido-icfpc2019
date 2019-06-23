@@ -19,6 +19,8 @@ typedef std::pair<int, int> Position;
 
 Position dir2vec(const Direction &dir);
 
+Position rotate(Position p, Direction d);
+
 enum class CmdType {
   Move = 0,
   TurnCW,
@@ -130,7 +132,7 @@ public:
   Position get_pos(const int id = 0) const;
 
   // Gets the current direction
-  Direction get_dir(const int id = 0);
+  Direction get_dir(const int id = 0) const;
   // Gets the number of filled cells
   int get_filled_count();
 
@@ -195,4 +197,13 @@ public:
 
   // Prints AI's state for debugging.
   void dump_state();
+
+
+  /*
+   * Utility
+   */
+
+  // Returns a shortest command sequence which fills dst.
+  // The returned sequence only conistents of Move. TurnCW and TurnCCW.
+  std::vector<Command> shortest_filling_commands(Position dst, const int id = 0) const;
 };
