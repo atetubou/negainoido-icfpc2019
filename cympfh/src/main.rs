@@ -173,7 +173,7 @@ fn main() {
     const CHAR_RIGHT: i32 = 67;
     const CHAR_LEFT: i32 = 68;
     const CHAR_HELP: i32 = '?' as i32;
-    const CHAR_QUIT: i32 = '<' as i32;
+    const CHAR_RESET: i32 = '<' as i32;
 
     clear();
     let mut history = vec![ai.clone()];
@@ -472,8 +472,11 @@ fn main() {
                 let mut file = File::create(format!("{}.hand.out", args[1])).unwrap();
                 let _ = file.write_all(ai.print_commands().as_bytes());
             },
-            CHAR_QUIT => {
-                break;
+            CHAR_RESET => {
+                message = format!("New Game");
+                ai = history[0].clone();
+                history = vec![ai.clone()];
+                changed = false;
             },
             CHAR_HELP => {
                 message = String::from("Move: a/s/d/w, Rotate: q/e, Boost: b/l/f/c");
