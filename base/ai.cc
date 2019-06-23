@@ -131,6 +131,10 @@ void AI::initialize() {
         worker_pos = std::make_pair(i, j);
       } else if (board[i][j] == '#') {
         block_count++;
+      } else if (board[i][j] == 'X') {
+	spawn_points.emplace_back(i, j);
+      } else if (board[i][j] == 'C') {
+	cloning_points.emplace_back(i, j);
       }
     }
   }

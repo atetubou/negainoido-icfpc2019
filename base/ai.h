@@ -112,6 +112,11 @@ public:
   std::vector<std::vector<bool>> filled;
   std::vector<std::vector<Command>> executed_cmds;
 
+  // Positions of 'X'.
+  std::vector<Position> spawn_points;
+  // Positions of 'C'.
+  std::vector<Position> cloning_points;
+
   std::set<Position> beacon_pos;
 
   int get_height();
