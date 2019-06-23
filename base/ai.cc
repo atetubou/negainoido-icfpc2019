@@ -374,7 +374,7 @@ bool AI::move_body(const Direction &dir, const int id) {
   if(!try_move(dir, id))
     return false;
 
-  auto pos = get_neighbor(dir);
+  auto pos = get_neighbor(dir, id);
   // Move
   workers[id].current_pos = pos;
 
