@@ -131,6 +131,8 @@ void AI::initialize() {
   workers.clear();
   workers.push_back(Worker(worker_pos));
 
+  executed_cmds.resize(1);
+
   for (auto &p : workers[0].manipulator_range) {
     auto x = workers[0].current_pos.first + p.first;
     auto y = workers[0].current_pos.second + p.second;
@@ -144,9 +146,6 @@ void AI::init_turn(const int id) {
   LOG_IF(FATAL, expect_worker_id != id)
     << "command for the worker " << expect_worker_id
     << "must be called but the ID was" << id;
-
-  expect_worker_id += 1;
-  expect_worker_id %= workers.size();
 
   // Pick up a booster.
   // See Appendix in clone document
@@ -180,6 +179,9 @@ void AI::pickup_booster(const int id) {
     break;
   case 'L':
     count_drill += 1;
+    break;
+  case 'C':
+    count_clone += 1;
     break;
   default:
     break;
@@ -219,6 +221,7 @@ int AI::get_filled_count() { return filled_count; }
 int AI::get_count_fast() { return count_fast; }
 int AI::get_count_drill() { return count_drill; }
 int AI::get_count_extension() { return count_extension; }
+int AI::get_count_clone() { return count_clone; }
 
 int AI::get_duration_fast(const int id) { return workers[id].duration_fast; }
 int AI::get_duration_drill(const int id) { return workers[id].duration_drill; }
@@ -250,10 +253,19 @@ void AI::next_turn(const int id) {
   if (id == (int)workers.size()-1)
     current_time++;
 
+  expect_worker_id += 1;
+  expect_worker_id %= workers.size();
+
   if (workers[id].duration_drill > 0)
     workers[id].duration_drill--;
   if (workers[id].duration_fast > 0)
     workers[id].duration_fast--;
+}
+
+void AI::push_command(Command cmd, const int id) {
+  LOG_IF(FATAL, id >= (int)executed_cmds.size()) << id << " is out of range " << workers.size();
+
+  executed_cmds[id].push_back(cmd);
 }
 
 bool AI::try_move(const Direction &dir, const int id) {
@@ -303,11 +315,8 @@ bool AI::move(const Direction &dir, const int id) {
     move_body(dir, id);
   }
 
-  // Push commandx
-  const std::string dir2cmd[4] = {
-    "D", "S", "A", "W"
-  };
-  executed_cmds.push_back(dir2cmd[static_cast<int>(dir)]);
+  Command cmd = {CmdType::Move, dir};
+  push_command(cmd, id);
 
   // Update time
   next_turn(id);
@@ -319,10 +328,14 @@ void AI::turn_CW(const int id) {
   init_turn(id);
   workers[id].current_dir =
     static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 1 ) % 4 );
-  executed_cmds.push_back("E");
+
   for(auto p: get_absolute_manipulator_positions()) {
     fill_cell(p);
   }
+
+  Command cmd = {CmdType::TurnCW};
+  push_command(cmd, id);
+
   next_turn(id);
 }
 
@@ -330,10 +343,14 @@ void AI::turn_CCW(const int id) {
   init_turn(id);
   workers[id].current_dir =
     static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) - 1 ) % 4 );
-  executed_cmds.push_back("Q");
+
   for(auto p: get_absolute_manipulator_positions()) {
     fill_cell(p);
   }
+
+  Command cmd = {CmdType::TurnCCW};
+  push_command(cmd, id);
+
   next_turn(id);
 }
 
@@ -345,7 +362,9 @@ bool AI::use_fast_wheel(const int id) {
 
   workers[id].duration_fast = Worker::DURATION_FAST_MAX;
   count_fast--;
-  executed_cmds.push_back("F");
+
+  Command cmd = {CmdType::UseFastWheel};
+  push_command(cmd, id);
 
   next_turn(id);
 
@@ -359,7 +378,9 @@ bool AI::use_drill(const int id) {
 
   workers[id].duration_drill = Worker::DURATION_DRILL_MAX;
   count_drill--;
-  executed_cmds.push_back("L");
+
+  Command cmd = {CmdType::UseDrill};
+  push_command(cmd, id);
 
   next_turn(id);
 
@@ -374,7 +395,7 @@ bool AI::use_extension(const int dx, const int dy, const int id) {
 
   bool can_use = false;
   for(auto m: workers[id].manipulator_range) {
-    if (std::abs(m.first - dx) + std::abs(m.second - dy)) {
+    if (std::abs(m.first - dx) + std::abs(m.second - dy) == 1) {
       can_use = true;
     }
   }
@@ -385,12 +406,35 @@ bool AI::use_extension(const int dx, const int dy, const int id) {
   workers[id].manipulator_range.push_back( rotate_reverse({dx, dy}, get_dir(id)) );
   count_extension--;
 
-  // Convert coordinate: (dx, dy) -> (dy, -dx)
-  auto cmd = "B(" + std::to_string(dy) + "," + std::to_string(-dx) + ")";
-  executed_cmds.push_back(cmd);
+  Command cmd = {CmdType::UseExtension, Direction::Right /* dymmy */, dx, dy};
+  push_command(cmd, id);
 
   next_turn(id);
 
+  return true;
+}
+
+bool AI::use_clone(const int id) {
+  init_turn(id);
+  if (count_clone == 0)
+    return false;
+
+  auto p = get_pos(id);
+  if (board[p.first][p.second] != 'X')
+    return false;
+
+  count_clone--;
+
+  // Create a child worker
+  Worker child(p);
+  workers.push_back(child);
+
+  executed_cmds.push_back(std::vector<Command>());
+
+  Command cmd = {CmdType::UseClone};
+  push_command(cmd, id);
+
+  next_turn(id);
   return true;
 }
 
@@ -398,9 +442,62 @@ bool AI::is_finished() {
   return get_filled_count() + block_count == height * width;
 }
 
+void print_command(struct Command cmd) {
+  std::string s = "";
+
+  switch (cmd.type) {
+  case CmdType::Move:
+    switch (cmd.dir) {
+    case Direction::Right:
+      s = "D";
+      break;
+    case Direction::Down:
+      s = "S";
+      break;
+    case Direction::Left:
+      s = "A";
+      break;
+    case Direction::Up:
+      s = "W";
+      break;
+    }
+    break;
+  case CmdType::TurnCW:
+    s = "E";
+    break;
+  case CmdType::TurnCCW:
+    s = "Q";
+    break;
+  case CmdType::UseExtension:
+    // Convert coordinate: (dx, dy) -> (dy, -dx)
+    s = "B(" + std::to_string(cmd.dy) + "," + std::to_string(-cmd.dx) + ")";
+    break;
+  case CmdType::UseFastWheel:
+    s = "F";
+    break;
+  case CmdType::UseDrill:
+    s = "L";
+    break;
+  case CmdType::UseClone:
+    s = "C";
+    break;
+  default:
+    LOG(FATAL) << "BUG?: unknown command name: " << static_cast<int>(cmd.type);
+  }
+
+  LOG_IF(FATAL, s.size() == 0) << "BUG: empty command: " << static_cast<int>(cmd.type);
+
+  std::cout << s;
+}
+
 void AI::print_commands() {
-  for(auto c: executed_cmds) {
-    std::cout << c;
+  for(int i = 0; i < (int) executed_cmds.size(); ++i) {
+    if (i != 0)
+      std::cout << "#";
+
+    for (auto cmd: executed_cmds[i]) {
+      print_command(cmd);
+    }
   }
   std::cout << std::endl;
 }

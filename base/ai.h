@@ -14,6 +14,27 @@ enum class Direction {
   Up,
 };
 
+enum class CmdType {
+  Move = 0,
+  TurnCW,
+  TurnCCW,
+  UseExtension,
+  UseFastWheel,
+  UseDrill,
+  UseClone,
+};
+
+struct Command {
+  CmdType type;
+
+  // valid if type == "Move"
+  Direction dir;
+
+  // valid if type == "UseExtension"
+  int dx;
+  int dy;
+};
+
 char direction_to_char(Direction d);
 absl::optional<Direction> char_to_direction(char c);
 
@@ -59,6 +80,7 @@ class AI {
   int count_fast = 0;
   int count_drill = 0;
   int count_extension = 0;
+  int count_clone = 0;
 
   int expect_worker_id = 0;   // Rotate from 0 to (workers.size()-1)
   std::vector<Worker> workers;
@@ -72,6 +94,9 @@ class AI {
 
   void init_turn(const int id);
   void pickup_booster(const int id);
+
+  void push_command(struct Command cmd, const int id);
+
 public:
 
   AI();
@@ -79,7 +104,7 @@ public:
 
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
-  std::vector<std::string> executed_cmds;
+  std::vector<std::vector<Command>> executed_cmds;
 
   int get_height();
   int get_width();
@@ -100,6 +125,7 @@ public:
   int get_count_fast();
   int get_count_drill();
   int get_count_extension();
+  int get_count_clone();
 
   // Gets the unit time until each tool is consumed.
   // Returns 0 if the tool is not used now.
@@ -124,10 +150,12 @@ public:
   // If it's a invalid move, it returns false without changing internal states.
   bool move(const Direction &dir, const int id = 0);
   bool use_extension(const int dx, const int dy, const int id = 0);
-  bool use_fast_wheel(const int id = 0);
-  bool use_drill(const int id = 0);
   void turn_CW(const int id = 0);  // Turn commands always succeed
   void turn_CCW(const int id = 0);
+
+  bool use_fast_wheel(const int id = 0);
+  bool use_drill(const int id = 0);
+  bool use_clone(const int id);
 
   // Checks if get_filled_count() == Height * Width
   bool is_finished();
