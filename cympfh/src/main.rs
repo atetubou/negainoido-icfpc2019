@@ -125,6 +125,7 @@ fn main() {
     const CHAR_B: i32 = 'b' as i32;
     const CHAR_D: i32 = 'd' as i32;
     const CHAR_E: i32 = 'e' as i32;
+    const CHAR_F: i32 = 'f' as i32;
     // const CHAR_H: i32 = 'h' as i32;
     // const CHAR_J: i32 = 'j' as i32;
     // const CHAR_K: i32 = 'k' as i32;
@@ -210,7 +211,14 @@ fn main() {
                 } else {
                     message = format!("Cannot Use Drill (L)");
                 }
-            }
+            },
+            CHAR_F => {
+                if ai.use_fast_wheel(0) {
+                    message = format!("Using FastWheel (F)");
+                } else {
+                    message = format!("Cannot Use FastWheel (F)");
+                }
+            },
             CHAR_U => {
                 if history.len() == 1 {
                     ai = history[0].clone();
