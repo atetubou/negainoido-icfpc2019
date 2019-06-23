@@ -22,5 +22,8 @@ std::string tempfile_name();
 
 std::vector<int> SolveTSPByLKH3(const dist_matrix_t &d, const char *path_to_LKH3);
 
+std::vector<std::vector<pos>> get_groups(const AI& ai,
+					 const std::vector<pos>& tsp_tours);
+
 std::vector<std::pair<int, int>> tikutaOrder(const AI& ai, int n,
 					     std::vector<std::pair<int, int>> want_visit=std::vector<std::pair<int, int>>());
