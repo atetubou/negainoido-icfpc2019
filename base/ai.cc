@@ -358,7 +358,7 @@ void AI::turn_CW(const int id) {
 void AI::turn_CCW(const int id) {
   init_turn(id);
   workers[id].current_dir =
-    static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) - 1 ) % 4 );
+    static_cast<Direction>( ( static_cast<int>(workers[id].current_dir) + 3 ) % 4 );
 
   for(auto p: get_absolute_manipulator_positions()) {
     fill_cell(p);
