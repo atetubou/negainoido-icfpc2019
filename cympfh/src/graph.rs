@@ -135,6 +135,11 @@ pub fn paint(board: &Vec<Vec<char>>, filled: &Vec<Vec<bool>>,
 
     let (_, end) = cands.iter().map(|p| (memo[p.0 as usize][p.1 as usize], p)).min().unwrap();
 
+    // fail
+    if memo[end.0 as usize][end.1 as usize] == inf {
+        return None;
+    }
+
     let mut route: Vec<Direction> = vec![];
 
     {
