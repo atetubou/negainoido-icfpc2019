@@ -47,6 +47,7 @@ public:
   void try_to_use_teleport(std::vector<std::pair<int,int>>* path);
   bool try_to_use_drill(std::vector<std::pair<int,int>>* path);
 
+  void get_next_item_if_exist();
   void konmari_move();
   Position get_nearest_unfilled(std::vector<std::pair<int,int>>* path);
 
@@ -369,6 +370,19 @@ Position KonmariAI::get_nearest_unfilled(std::vector<std::pair<int,int>>* path) 
   return Position(-1, -1);
 }
 
+void KonmariAI::get_next_item_if_exist() {
+  // If the next cell is teleport or drill, get it.
+  for (auto& p : get_neighbors(get_pos())) {
+    if (board[p.first][p.second] == 'R' ||
+        board[p.first][p.second] == 'L') {
+      Position cur_p = get_pos();
+      move(GridGraph::move_to_action(cur_p, p));
+      // Back to original position in order to not break shortest path move.
+      move(GridGraph::move_to_action(p, cur_p));
+    }
+  }
+}
+
 void KonmariAI::konmari_move() {
   try_to_use_extensions();
   // Fast wheel is dangerous!!!
@@ -377,35 +391,26 @@ void KonmariAI::konmari_move() {
   auto dst = get_nearest_unfilled(&path);
   try_to_use_teleport(&path);
   bool used_drill = try_to_use_drill(&path);
-  for (const Direction& dir : GridGraph::path_to_actions(path)) {
-    // Finish if all cells are already filled (due to fill by body).
-    if (is_finished()) {
-      return;
-    }
-
-    if (filled[dst.first][dst.second])
-      break;
-    move(dir);
-
-    // If the next cell is teleport, get it.
-    for (auto& p : get_neighbors(get_pos())) {
-      if (board[p.first][p.second] == 'R') {
-        Position cur_p = get_pos();
-        move(GridGraph::move_to_action(cur_p, p));
-        // Back to original position in order to not break shortest path move.
-        move(GridGraph::move_to_action(p, cur_p));
+  if (!used_drill) {
+    // If drill is not used, the path is usual. We can use shortest_filling_commands.
+    auto commands = shortest_filling_commands(dst);
+    for (const Command& cmd : commands) {
+      if (is_finished())
+        return;
+      if (filled[dst.first][dst.second])
         break;
-      }
+      do_command(cmd);
+      get_next_item_if_exist();
     }
-    // If the next cell is drill, get it.
-    for (auto& p : get_neighbors(get_pos())) {
-      if (board[p.first][p.second] == 'L') {
-        Position cur_p = get_pos();
-        move(GridGraph::move_to_action(cur_p, p));
-        // Back to original position in order to not break shortest path move.
-        move(GridGraph::move_to_action(p, cur_p));
+  } else {
+    for (const Direction& dir : GridGraph::path_to_actions(path)) {
+      // Finish if all cells are already filled (due to fill by body).
+      if (is_finished())
+        return;
+      if (filled[dst.first][dst.second])
         break;
-      }
+      move(dir);
+      get_next_item_if_exist();
     }
   }
 
