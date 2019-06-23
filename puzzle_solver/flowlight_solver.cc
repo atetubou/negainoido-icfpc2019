@@ -31,7 +31,6 @@ int main() {
   int exclude_num;
   cin >> b_num >> e_num >> t_size >> v_min >> v_max >> m_num >>  f_num >>  d_num >>  r_num >>  c_num >> x_num;
   cin >> include_num >> exclude_num;
-  cerr << t_size << endl;
 
   vector<P> include_squares(include_num);
   vector<P> exclude_squares(exclude_num);
@@ -59,9 +58,9 @@ int main() {
     board[exclude_squares[i].second][exclude_squares[i].first] = '#';
   }
 
-  REP(i, L){
-    cerr << board[L - i - 1] << endl;
-  }
+  // REP(i, L){
+  //   cerr << board[L - i - 1] << endl;
+  // }
 
   set<pair<int, int>> finished_squares;
   REP(ee, exclude_squares.size()) {
@@ -89,7 +88,6 @@ int main() {
     vector<int> dist;
     vector<int> parents;
     gd.shortest_path_tree(0, dist, parents);
-    cerr << dist << endl;
 
     P best_sq;
     int best_d = 1e9;
@@ -103,7 +101,7 @@ int main() {
         best_sq = p;
       }
     }
-    cerr << best_sq << endl;
+    // cerr << best_sq << endl;
     finished_squares.insert(best_sq);
 
     int h = best_sq.second;
