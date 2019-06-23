@@ -81,15 +81,23 @@ app.get('/', (req, res, next) => {
 
 app.get('/solution', async (req, res, next) => {
     const valid = req.query.valid || false;
+    const checked = req.query.checked || false;
     const limit = req.query.limit;
     const taskId = parseInt(req.query.taskId || '0');
     const page = parseInt(req.query.page || '1');
+    const solver = req.query.solver;
     const options: FindOptions = {
-        attributes: ['id', 'solver', 'task_id', 'score', 'valid'],
+        attributes: ['id', 'solver', 'task_id', 'score', 'valid', 'has_buy', 'cost'],
     };
     const where: any = {};
     if (valid) {
         where.valid = true;
+    }
+    if (checked) {
+        where.checked = true;
+    }
+    if (solver) {
+        where.solver = { [Op.like]: solver };
     }
     if (taskId > 0) {
         where.task_id = taskId;
@@ -174,7 +182,7 @@ app.post('/solution', async (req, res, next) => {
     let valid = false;
     const score = parseInt(req.body['score']) || -1;
 
-    const solution = new LSolution({solver, task_id, score, valid, cost, has_buy: buyData ? true : false });
+    const solution = new LSolution({solver, task_id, score, valid, cost, has_buy: !!buyData });
 
     solution.save().then(async (model) => {
         console.log('created object ' + model);
@@ -249,16 +257,30 @@ const getSolutionById = (id: number) => {
     });
 };
 
-const getBestSolutionModel = (taskId: number, valid = false) => {
+const getWhereOption = (taskId: number, valid = false, solver?: string) => {
+    const option : WhereOptions = {};
+    if (taskId) {
+        option.task_id = taskId;
+    }
+    if (valid) {
+        option.valid = valid;
+    }
+    if (solver) {
+        option.solver = { [Op.like]: solver };
+    }
+    return option;
+};
+
+const getBestSolutionModel = (where: WhereOptions) => {
     return LSolution.findOne({
         attributes: ['id', 'solver', 'task_id', 'valid', 'score', 'has_buy', 'cost'],
-        where: { task_id: taskId, valid, score: { [Op.gt]: 0 } },
+        where: { score: { [Op.gt]: 0 }, ...where },
         order: [['score', 'ASC']]
     });
 };
 
-const getBestSolution = (taskId: number, valid = false) => {
-    return getBestSolutionModel(taskId, valid).then((model) => {
+const getBestSolution = (taskId: number, valid = false, solver?: string) => {
+    return getBestSolutionModel(getWhereOption(taskId, valid, solver)).then((model) => {
         if (!model) {
             return Promise.resolve();
         }
@@ -288,7 +310,7 @@ import * as os from "os";
 import * as Path from "path";
 import * as fs from "fs";
 import {formatNumber, getDescFile, makeRandomId, pullObjectS3ToTmp, putDataToS3} from "./utils";
-import {FindOptions, Op} from "sequelize";
+import {FindOptions, Op, WhereOptions} from "sequelize";
 import {getTotalCost} from "./validateBuy";
 
 
@@ -318,18 +340,16 @@ app.get('/solution/best/zip', async (req, res, next) => {
 app.get('/solution/best', async (req, res, next) => {
     const valid = !!req.query.valid;
     const taskId = parseInt(req.query.taskId || '0');
+    const solver = req.query.solver;
     let promises = [];
     if (taskId === 0) {
         for (let i = 1; i <= taskNum; i++) {
-            promises.push(getBestSolutionModel(i, valid));
+            promises.push(getBestSolutionModel(getWhereOption(i, valid, solver)));
         }
     } else {
-
-        promises.push(getBestSolutionModel(taskId, valid));
+        promises.push(getBestSolutionModel(getWhereOption(taskId, valid, solver)));
     }
     Promise.all(promises).then((solutions) => {
-        console.log("valid: " + valid);
-        console.log(solutions);
         res.json({ solutions });
     })
         .catch((e) => {
@@ -420,8 +440,10 @@ app.get('/solution/:id/validate', async (req, res, next) => {
 
 app.get('/solution/best/:id', async (req, res, next) => {
     const id = parseInt(req.params['id']);
+    const valid = req.query.valid || false;
+    const solver = req.query.solver;
 
-    const best = await getBestSolutionModel(id).catch((e) => {
+    const best = await getBestSolutionModel(getWhereOption(id, valid, solver)).catch((e) => {
         console.error("DB error" + e);
         res.status(500);
         res.json({ error: e });

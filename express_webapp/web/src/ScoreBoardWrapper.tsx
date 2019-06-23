@@ -24,9 +24,10 @@ const optionToUrlParam = (options: any) => {
 interface Options {
     taskId?: number;
     valid?: boolean;
+    solver?: string;
 }
 
-const getSolution = (options: Options, onlyBest: boolean) => {
+const getSolution  = (options: Options, onlyBest: boolean): Promise<Solution[]> => {
     const uri = onlyBest ? './solution/best' : './solution';
     return fetch(`${uri}?${optionToUrlParam(options)}`).then((response) => {
         return response.json();
@@ -85,6 +86,8 @@ interface State {
     onlyValid: boolean;
     onlyBest: boolean;
     sortBy?: string;
+    solver?: string;
+    withBest: boolean;
 }
 
 class ScoreBoardWrapper extends React.Component<Props, State> {
@@ -98,6 +101,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
             onlyValid: false,
             sortBy: undefined,
             onlyBest: false,
+            withBest: false,
         }
     }
 
@@ -135,15 +139,24 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
 
     handleRefresh = () => {
         const option: Options = {};
-        const { filterByTask, taskId, onlyValid, onlyBest } = this.state;
+        const { filterByTask, taskId, onlyValid, onlyBest, solver, withBest } = this.state;
         if (filterByTask && taskId > 0) {
             option['taskId'] = taskId;
         }
         if (onlyValid) {
             option.valid = true;
         }
+        if (solver) {
+            option.solver = solver;
+        }
         this.setState({ loading: false }, () => {
-            getSolution(option, onlyBest).then((solutions) => {
+            getSolution(option, onlyBest).then(async (sol) => {
+                let solutions = sol;
+                if (withBest) {
+                    const {solver, ...otherOp} = option;
+                    const bests = await getSolution(otherOp, true);
+                    solutions = sol.concat(bests.filter((b) => sol.findIndex((s) => s.solutionId === b.solutionId) < 0));
+                }
                 this.setState({
                     solutions,
                     loading: false,
@@ -154,7 +167,7 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
     };
 
     render(): React.ReactNode {
-        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy, onlyBest } = this.state;
+        const { loading, solutions, alert, filterByTask, taskId, onlyValid, sortBy, onlyBest, solver, withBest } = this.state;
         if (!solutions) {
             return <div>loading</div>;
         }
@@ -201,6 +214,9 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                     </div>
                 }
                 <div>
+                    <input type="text" value={solver} onChange={(e) => { this.setState({ solver: e.target.value })}} />
+                </div>
+                <div>
                     <input name="filterByTask" type="checkbox" checked={filterByTask} onChange={(e) => this.setState({ filterByTask: e.currentTarget.checked })}/>
                     <label> filter by Task Id</label>
                     <input type="number" disabled={!filterByTask} value={taskId} onChange={(e) => { this.setState({ taskId: parseInt(e.target.value) })}} />
@@ -212,6 +228,10 @@ class ScoreBoardWrapper extends React.Component<Props, State> {
                 <div>
                     <input name="onlyBest" type="checkbox" checked={onlyBest} onChange={(e) => this.setState({ onlyBest: e.currentTarget.checked })}/>
                     <label>Only Best</label>
+                </div>
+                <div>
+                    <input name="withBest" type="checkbox" checked={withBest} onChange={(e) => this.setState({ withBest: e.currentTarget.checked })}/>
+                    <label>With Best</label>
                 </div>
                 <div>
                     <select onChange={(e) => this.setState({ sortBy: e.currentTarget.value })}>
