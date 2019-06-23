@@ -15,7 +15,7 @@ GraphDistance::GraphDistance(uint32_t V) {
 
   distance.clear();
   distance.resize(V);
-
+  fill(distance.begin(), distance.end(), -1);
 
   prev.clear();
   prev.resize(V);
