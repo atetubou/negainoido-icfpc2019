@@ -504,6 +504,34 @@ bool AI::jump_to_beacon(Position dst, const int id) {
   return true;
 }
 
+bool AI::do_command(Command cmd, const int id) {
+  switch (cmd.type) {
+  case CmdType::Move:
+    return move(cmd.dir, id);
+  case CmdType::TurnCW:
+    turn_CW(id);
+    return true;
+  case CmdType::TurnCCW:
+    turn_CCW(id);
+    return true;
+    break;
+  case CmdType::UseExtension:
+    return use_extension(cmd.x, cmd.y, id);
+  case CmdType::UseFastWheel:
+    return use_fast_wheel(id);
+  case CmdType::UseDrill:
+    return use_drill(id);
+  case CmdType::UseClone:
+    return use_clone(id);
+  case CmdType::InstallBeacon:
+    return install_beacon(id);
+  case CmdType::JumpToBeacon:
+    return jump_to_beacon(Position(cmd.x, cmd.y), id);
+  default:
+    LOG(FATAL) << "BUG?: unknown command name: " << static_cast<int>(cmd.type);
+  }
+}
+
 bool AI::is_finished() {
   return get_filled_count() + block_count == height * width;
 }

@@ -157,6 +157,9 @@ public:
   // This doesn't change any internal state.
   bool try_move(const Direction &dir, const int id = 0);
 
+  // Executes a command. This is a wrapper of 'move', 'use_extesion', etc.
+  bool do_command(Command cmd, const int id);
+
   // Executes a command and updates the internal state.
   // If it's a invalid move, it returns false without changing internal states.
   bool move(const Direction &dir, const int id = 0);
