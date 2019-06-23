@@ -43,12 +43,66 @@ int main(int argc, char *argv[]) {
   collect_cloning(&ai, &gridg);
 
   if (!ai.spawn_points.empty()) {
-    ai.dump_state();
     for (const auto d : gridg.shortest_paths(ai.get_pos(), ai.spawn_points)) {
       ai.move(d);
     }
   }
 
-  ai.dump_state();
+  while (ai.get_count_clone()) {
+    const int workers = ai.get_count_active_workers();
+    ai.use_clone(0);
+    for (int i = 1; i < workers; ++i) {
+      ai.nop(i);
+    }
+  }
+
+  auto selected = [&](){
+    std::vector<pos> selected;
+    for (auto i = 0u; i < ai.board.size(); ++i) {
+      for (auto j = 0u; j < ai.board[i].size(); ++j) {
+	if (ai.board[i][j] != '#') {
+	  selected.emplace_back(i, j);
+	}
+      }
+    }
+
+    std::mt19937 get_rand_mt;
+    absl::c_shuffle(selected, get_rand_mt);
+    
+    selected.resize(ai.get_count_active_workers());
+    return selected;
+  }();
+
+  auto groups = get_groups(ai, selected);
+
+  std::vector<std::deque<Direction>> directions(ai.get_count_active_workers());
+
+  while (!ai.is_finished()) {
+    for (int i = 0; i < ai.get_count_active_workers(); ++i) {
+      if (directions[i].empty()) {
+	for (auto it = groups[i].begin(); it != groups[i].end();){
+	  if (ai.filled[it->first][it->second]) {
+	    it = groups[i].erase(it);
+	  } else {
+	    ++it;
+	  }
+	}
+
+	if (!groups[i].empty()) {
+	  auto p = gridg.shortest_paths(ai.get_pos(i), groups[i]);
+	  directions[i] = std::deque<Direction>(p.begin(), p.end());
+	}
+      }
+      
+      if (directions[i].empty()) {
+	ai.nop(i);
+	continue;
+      }
+
+      ai.move(directions[i].front(), i);
+      directions[i].pop_front();
+    }
+  }
+
   ai.print_commands();
 }
