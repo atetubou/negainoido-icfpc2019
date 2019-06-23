@@ -247,7 +247,7 @@ bool GridGraph::can_visit(int x, int y) const {
     board_[x][y] != '#';
 }
 
-std::vector<Direction> GridGraph::shortest_paths(pos start, const std::vector<pos>& goals) {
+std::vector<Direction> GridGraph::shortest_paths(pos start, const std::vector<pos>& goals) const {
   const int dx[] = {0, 0, 1, -1};
   const int dy[] = {1, -1, 0, 0};
 

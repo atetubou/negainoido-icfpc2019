@@ -30,6 +30,7 @@ cc_binary(
         "//tailed:LKH3",
         "@com_google_absl//absl/flags:flag",
         "@com_google_absl//absl/strings",
+        "@com_google_absl//absl/algorithm:container",
         "@com_google_glog//:glog",
     ],
 )
