@@ -93,7 +93,7 @@ class AI {
   std::vector<Worker> workers;
 
   void next_turn(const int id);
-  bool valid_pos(Position);
+  bool valid_pos(Position) const;
   bool move_body(const Direction &dir, const int id = 0);
 
 
@@ -120,27 +120,27 @@ public:
 
   std::set<Position> beacon_pos;
 
-  int get_height();
-  int get_width();
+  int get_height() const;
+  int get_width() const;
 
   int get_block_count() const;
 
   // Gets current time
-  int get_time();
+  int get_time() const;
   // Gets the current position
   Position get_pos(const int id = 0) const;
 
   // Gets the current direction
-  Direction get_dir(const int id = 0);
+  Direction get_dir(const int id = 0) const;
   // Gets the number of filled cells
-  int get_filled_count();
+  int get_filled_count() const;
 
   // Gets the number of available boosters
-  int get_count_fast();
-  int get_count_drill();
-  int get_count_extension();
-  int get_count_clone();
-  int get_count_teleport();
+  int get_count_fast() const;
+  int get_count_drill() const;
+  int get_count_extension() const;
+  int get_count_clone() const;
+  int get_count_teleport() const;
 
   // Gets number of workers in this turn.
   // i.e. workers.size() - |workers cloned in this turn|
@@ -150,26 +150,26 @@ public:
 
   // Gets the unit time until each tool is consumed.
   // Returns 0 if the tool is not used now.
-  int get_duration_fast(const int id = 0);
-  int get_duration_drill(const int id = 0);
+  int get_duration_fast(const int id = 0) const;
+  int get_duration_drill(const int id = 0) const;
 
   // Returns the position that is next to the current position.
-  Position get_neighbor(const Direction &dir, const int id = 0);
+  Position get_neighbor(const Direction &dir, const int id = 0) const;
 
   // Gets the all (possible) positions of manipulators.
   // It may be in invalid postion. (e.g. out of the map, unreachable postion)
-  std::vector<Position> get_absolute_manipulator_positions(const int id = 0);
+  std::vector<Position> get_absolute_manipulator_positions(const int id = 0) const;
 
   // Gets the all manipulators' positions after one rotation.
   // Unreachable/invalid positions are skipped.
-  std::vector<Position> rotated_manipulator_positions(const int id, bool is_ccw);
+  std::vector<Position> rotated_manipulator_positions(const int id, bool is_ccw) const;
 
   // Checks if pos is 'reachable' from the current position.
-  bool reachable(Position pos, const int id = 0);
+  bool reachable(Position pos, const int id = 0) const;
 
   // Checks if the robot can move to the direction.
   // This doesn't change any internal state.
-  bool try_move(const Direction &dir, const int id = 0);
+  bool try_move(const Direction &dir, const int id = 0) const;
 
   // Executes a command. This is a wrapper of 'move', 'use_extesion', etc.
   bool do_command(Command cmd, const int id);
@@ -189,11 +189,11 @@ public:
   bool jump_to_beacon(Position dst, const int id);
 
   // Checks if get_filled_count() == Height * Width
-  bool is_finished();
+  bool is_finished() const;
   // Outputs executed commands to stdout
-  void print_commands();
+  void print_commands() const;
 
 
   // Prints AI's state for debugging.
-  void dump_state();
+  void dump_state() const;
 };
