@@ -155,6 +155,7 @@ fn main() {
     const CHAR_E: i32 = 'e' as i32;
     const CHAR_F: i32 = 'f' as i32;
     const CHAR_L: i32 = 'l' as i32;
+    const CHAR_O: i32 = 'o' as i32;
     const CHAR_Q: i32 = 'q' as i32;
     const CHAR_S: i32 = 's' as i32;
     const CHAR_U: i32 = 'u' as i32;
@@ -301,13 +302,7 @@ fn main() {
                                              &ai.workers[0].current_pos,
                                              &cursor);
                         message = format!("Suggest: {:?}", route);
-                        for c in route {
-                            let dir = match c {
-                                'A' => Direction::Left,
-                                'S' => Direction::Down,
-                                'D' => Direction::Right,
-                                _ => Direction::Up,
-                            };
+                        for dir in route {
                             if !ai.mv(0, dir) {
                                 break;
                             }
@@ -331,13 +326,7 @@ fn main() {
                         loop {
                             let Position(wx, wy) = ai.workers[0].current_pos;
                             if let Some(route) = paint(&ai.board, &ai.filled, wx, wy, min_x, min_y, max_x, max_y) {
-                                for c in route {
-                                    let dir = match c {
-                                        'A' => Direction::Left,
-                                        'S' => Direction::Down,
-                                        'D' => Direction::Right,
-                                        _ => Direction::Up,
-                                    };
+                                for dir in route {
                                     if !ai.mv(0, dir) {
                                         break;
                                     }
@@ -367,6 +356,11 @@ fn main() {
                 }
                 message = format!("Undo (history={})", history.len());
                 changed = false;
+            },
+            CHAR_O => {
+                message = format!("Save output: {}.handout", args[1]);
+                let mut file = File::create(format!("{}.hand.out", args[1])).unwrap();
+                let _ = file.write_all(ai.print_commands().as_bytes());
             },
             CHAR_QUIT => {
                 break;
