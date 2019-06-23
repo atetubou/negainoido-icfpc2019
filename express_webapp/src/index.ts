@@ -48,6 +48,8 @@ class LSolution extends Model<LSolution> {
     checked: boolean;
     @Column(DataType.BOOLEAN)
     has_buy: boolean;
+    @Column(DataType.BIGINT)
+    cost: number;
     @CreatedAt
     @Column
     created: Date;
@@ -140,6 +142,7 @@ const defaultBucket = process.env.S3_BUCKET || 'negainoido-icfpc2019-dev';
 app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 
 const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
+const generateBuyKey = (model: LSolution) => `buy_${model.solver}_${model.task_id}_${model.id}`;
 
 const validateModel = (taskId: number, model: LSolution, file: string, buyFile?: string) => {
     return runSim(getDescFile(taskId), file, buyFile)
@@ -162,11 +165,16 @@ app.post('/solution', async (req, res, next) => {
     const solver = req.body['solver'] || 'unknown';
     const task_id = parseInt(req.body['task']) || 0;
     const data = (req.files!.file as fileUpload.UploadedFile).data;
-    // const buyData = req.files!.buyFile ? (req.files!.buyFile as fileUpload.UploadedFile).data : undefined;
+    const buyData = req.files!.buyFile ? (req.files!.buyFile as fileUpload.UploadedFile).data : undefined;
+    const cost = buyData ? getTotalCost(buyData.toString()) : 0;
+    if (cost < 0) {
+        next();
+        return;
+    }
     let valid = false;
     const score = parseInt(req.body['score']) || -1;
 
-    const solution = new LSolution({solver, task_id, score, valid});
+    const solution = new LSolution({solver, task_id, score, valid, cost, has_buy: buyData ? true : false });
 
     solution.save().then(async (model) => {
         console.log('created object ' + model);
@@ -178,9 +186,18 @@ app.post('/solution', async (req, res, next) => {
         const s3 = new AWS.S3();
 
         putDataToS3(s3, params).then((data) => {
+            if (buyData) {
+                const params = {
+                    Bucket: defaultBucket,
+                    Key: generateBuyKey(model),
+                    Body: buyData,
+                };
+
+                return putDataToS3(s3, params);
+            }
+        }).then(() => {
             res.json({
                 solution: model,
-                s3_data: data,
             });
         }).catch((e) => {
             LSolution.destroy({where: {id: model.id}}).catch(() => {});
@@ -190,6 +207,7 @@ app.post('/solution', async (req, res, next) => {
         const tmp = os.tmpdir();
         const key = encodeURIComponent(makeRandomId(`${solver}_${task_id}_`));
         const file = Path.join(tmp, key);
+        const buyFile = buyData ? Path.join(tmp, key + '_buy') : undefined;
 
         await new Promise((resolve, reject) => {
             fs.writeFile(file, data, async (err) => {
@@ -197,9 +215,24 @@ app.post('/solution', async (req, res, next) => {
                     console.error('failed to write file: ' + err);
                     reject(err);
                 } else {
-                    return validateModel(model.task_id, model, file);
+                    resolve();
                 }
             });
+        }).then(() => {
+            if (buyFile) {
+                return new Promise((resolve, reject) => {
+                    fs.writeFile(buyFile, buyData, async (err) => {
+                        if (err) {
+                            console.error('failed to write file: ' + err);
+                            reject(err);
+                        } else {
+                            resolve();
+                        }
+                    });
+                });
+            }
+        }).then(() => {
+            return validateModel(model.task_id, model, file);
         }).catch((e) => {
             console.log('error in validate: ' + e);
         });
@@ -256,6 +289,7 @@ import * as Path from "path";
 import * as fs from "fs";
 import {formatNumber, getDescFile, makeRandomId, pullObjectS3ToTmp, putDataToS3} from "./utils";
 import {FindOptions, Op} from "sequelize";
+import {getTotalCost} from "./validateBuy";
 
 
 app.get('/solution/best/zip', async (req, res, next) => {
