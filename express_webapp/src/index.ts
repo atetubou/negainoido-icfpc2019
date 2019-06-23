@@ -141,6 +141,22 @@ app.use(fileUpload({ limits: { fileSize: 50 * 1024 * 1024 } }));
 
 const generateKey = (model: LSolution) => `solution_${model.solver}_${model.task_id}_${model.id}`;
 
+const validateModel = (taskId: number, model: LSolution, file: string, buyFile?: string) => {
+    return runSim(getDescFile(taskId), file, buyFile)
+        .then((s) => {
+            model.score = parseInt(s);
+            model.valid = true;
+            model.checked = true;
+            return model.save();
+        })
+        .catch((e) => {
+            console.log('Failed to run sim : ' + e);
+            model.valid = false;
+            model.checked = true;
+            return model.save().then(() => { throw e; });
+        });
+};
+
 // endpoint for submission
 app.post('/solution', async (req, res, next) => {
     const solver = req.body['solver'] || 'unknown';
@@ -161,19 +177,15 @@ app.post('/solution', async (req, res, next) => {
         };
         const s3 = new AWS.S3();
 
-        s3.putObject(params, (err, data) => {
-            if (err) {
-                LSolution.destroy({where: {id: model.id}}).catch(() => {
-                });
-                console.error('faield to upload: ' + err);
-                next(err);
-            } else {
-                console.log(data);
-                res.json({
-                    solution: model,
-                    s3_data: data,
-                });
-            }
+        putDataToS3(s3, params).then((data) => {
+            res.json({
+                solution: model,
+                s3_data: data,
+            });
+        }).catch((e) => {
+            LSolution.destroy({where: {id: model.id}}).catch(() => {});
+            console.error('faield to upload: ' + e);
+            next(e);
         });
         const tmp = os.tmpdir();
         const key = encodeURIComponent(makeRandomId(`${solver}_${task_id}_`));
@@ -185,19 +197,7 @@ app.post('/solution', async (req, res, next) => {
                     console.error('failed to write file: ' + err);
                     reject(err);
                 } else {
-                    runSim(getDescFile(task_id), file)
-                        .then((s) => {
-                            model.score = parseInt(s);
-                            model.valid = true;
-                            model.checked = true;
-                            model.save().then(resolve).catch(reject);
-                        })
-                        .catch((e) => {
-                            console.log('Failed to run sim : ' + e);
-                            model.valid = false;
-                            model.checked = true;
-                            model.save().then(() => reject(e)).catch(reject);
-                        });
+                    return validateModel(model.task_id, model, file);
                 }
             });
         }).catch((e) => {
@@ -254,7 +254,7 @@ import {Readable} from "stream";
 import * as os from "os";
 import * as Path from "path";
 import * as fs from "fs";
-import {formatNumber, getDescFile, makeRandomId} from "./utils";
+import {formatNumber, getDescFile, makeRandomId, pullObjectS3ToTmp, putDataToS3} from "./utils";
 import {FindOptions, Op} from "sequelize";
 
 
@@ -335,7 +335,7 @@ app.get('/solution/:id/validate', async (req, res, next) => {
     const id = parseInt(req.params['id']);
 
     const target = await LSolution.findOne({
-        attributes: ['id', 'solver', 'task_id'],
+        attributes: ['id', 'solver', 'task_id', 'has_buy'],
         where: { id: id },
     }).catch((e) => {
         console.error("DB error" + e);
@@ -356,37 +356,12 @@ app.get('/solution/:id/validate', async (req, res, next) => {
         Bucket: defaultBucket,
         Key: key,
     };
-    s3.getObject(params, (err, data) => {
-        if (err) {
-            console.error('failed to download: ' + err);
-            next(err);
-        } else {
-            const tmp = os.tmpdir();
-            const file = Path.join(tmp, encodeURIComponent(key) + '.sol');
-            fs.writeFile(file, data.Body, async (err) => {
-                if (err) {
-                    console.error('failed to write file: ' + err);
-                    next(err);
-                } else {
-                    runSim(getDescFile(target.task_id), file)
-                        .then((score) => {
-                            target.score = parseInt(score);
-                            target.valid = true;
-                            target.checked = true;
-                            return target.save().then(() => {
-                                res.json({solution: target});
-                            });
-                        })
-                        .catch((e) => {
-                            console.log('Failed to run sim : ' + e);
-                            target.valid = false;
-                            target.checked = true;
-                            target.save().then(() => next(e)).catch(next);
-                        });
-                }
-            });
-
-        }
+    pullObjectS3ToTmp(s3, params).then((file) => {
+        return validateModel(target.task_id, target, file)
+            .then(() => res.json({solution: target}));
+    }).catch((e) => {
+        console.error('failed to download ' + e);
+        next(e);
     });
 });
 
