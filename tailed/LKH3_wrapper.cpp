@@ -135,8 +135,7 @@ std::vector<int> SolveByOurselfs(const std::vector<std::vector<int>>& matrix) {
 
   int cur_cost = cost(bestans);
 
-  std::random_device seed_gen;
-  std::mt19937 engine(seed_gen());
+  std::mt19937 engine;
 
   for (int i = 0; i < 100; ++i) {
     auto tans = bestans;
@@ -173,8 +172,7 @@ SolveShrinkedTSP(const AI& ai, int n, const std::string& path_to_LKH3) {
     }
   }
 
-  std::random_device seed_gen;
-  std::mt19937 engine(seed_gen());
+  std::mt19937 engine;
   std::shuffle(selected.begin(), selected.end(), engine);
 
   n = std::min<int>(selected.size(), n);
