@@ -201,7 +201,7 @@ void KonmariAI::konmari_move() {
   // try_to_use_fast_weel();
   std::vector<std::pair<int,int>> path;
   get_nearest_unfilled(&path);
-  try_to_use_drill(&path);
+  // try_to_use_drill(&path);
   for (const Direction& dir : GridGraph::path_to_actions(path)) {
     move(dir);
   }
