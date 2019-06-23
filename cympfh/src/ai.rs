@@ -4,7 +4,7 @@ use std::cmp::{min, max};
 
 use crate::geo::{Line, Point, intersect_ss, intersect_sp};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub enum Direction {
   Right,
   Down,
@@ -12,10 +12,17 @@ pub enum Direction {
   Up,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Position(pub isize, pub isize);
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
+pub enum Command {
+  Move(Direction),
+  Rotate(bool),
+  Boost
+}
+
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Worker {
     pub current_dir: Direction,
     pub current_pos: Position,
@@ -39,12 +46,28 @@ impl Position {
 }
 
 impl Direction {
-    fn to_pos(&self) -> Position {
+    pub fn to_pos(&self) -> Position {
         match self {
             Direction::Right => Position(0, 1),
             Direction::Down => Position(1, 0),
             Direction::Left => Position(0, -1),
             Direction::Up => Position(-1, 0),
+        }
+    }
+    pub fn cw(&self) -> Direction {
+        match self {
+            Direction::Right => Direction::Down,
+            Direction::Down => Direction::Left,
+            Direction::Left => Direction::Up,
+            Direction::Up => Direction::Right,
+        }
+    }
+    pub fn ccw(&self) -> Direction {
+        match self {
+            Direction::Right => Direction::Up,
+            Direction::Down => Direction::Right,
+            Direction::Left => Direction::Down,
+            Direction::Up => Direction::Left,
         }
     }
 }
@@ -178,7 +201,7 @@ impl AI {
         Position(x + dx, y + dy)
     }
 
-    pub fn turn_cw(&mut self, idx: usize) {
+    pub fn turn_cw(&mut self, idx: usize) -> bool {
         self.workers[idx].current_dir = match self.workers[idx].current_dir {
             Direction::Right => Direction::Down,
             Direction::Down => Direction::Left,
@@ -190,9 +213,10 @@ impl AI {
             self.fill_cell(idx, &p);
         }
         self.next_turn();
+        true
     }
 
-    pub fn turn_ccw(&mut self, idx: usize) {
+    pub fn turn_ccw(&mut self, idx: usize) -> bool {
         self.workers[idx].current_dir = match self.workers[idx].current_dir {
             Direction::Right => Direction::Up,
             Direction::Up => Direction::Left,
@@ -204,6 +228,7 @@ impl AI {
             self.fill_cell(idx, &p);
         }
         self.next_turn();
+        true
     }
 
     pub fn get_absolute_manipulator_positions(&self, idx: usize) -> Vec<Position> {
@@ -212,6 +237,38 @@ impl AI {
         for &p in self.workers[idx].manipulator_range.iter() {
             let q = p.rotate(self.workers[idx].current_dir);
             ret.push(Position(x + q.0, y + q.1));
+        }
+        ret
+    }
+
+    pub fn rotated_manipulator_positions(&self, idx: usize, cw: bool) -> Vec<Position> {
+        let mut ret = vec![];
+        let Position(wx, wy) = self.workers[idx].current_pos;
+        let ndir = if cw {
+          self.workers[idx].current_dir.cw()
+        } else {
+          self.workers[idx].current_dir.ccw()
+        };
+        for &p in self.workers[idx].manipulator_range.iter() {
+            let mani = p.rotate(ndir);
+            let q = Position(mani.0 + wx, mani.1 + wy);
+            if self.reachable(idx, &q) {
+                ret.push(q);
+            }
+        }
+        ret
+    }
+
+    pub fn moved_manipulator_positions(&self, idx: usize, d: Direction) -> Vec<Position> {
+        let mut ret = vec![];
+        if !self.try_move(idx, d) { return ret }
+        let Position(wx, wy) = self.workers[idx].current_pos;
+        let v = d.to_pos();
+        for &p in self.workers[idx].manipulator_range.iter() {
+            let q = Position(wx + p.0 + v.0, wy + p.1 + v.1);
+            if self.reachable(idx, &q) {
+                ret.push(q);
+            }
         }
         ret
     }

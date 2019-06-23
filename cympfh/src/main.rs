@@ -9,8 +9,8 @@ mod ai;
 mod geo;
 mod graph;
 
-use ai::{AI, Direction, Position};
-use graph::{shortest, paint};
+use ai::{AI, Direction, Position, Command};
+use graph::{shortest_path, udon_shortest_path, paint, udon_paint};
 
 extern crate ncurses;
 use ncurses::*;
@@ -21,6 +21,9 @@ enum EditorMode {
     CursorShortestPath,
     CursorRectPaintFirst,
     CursorRectPaintSecond(Position),
+    CursorUdonShortestPath,
+    CursorUdonRectPaintFirst,
+    CursorUdonRectPaintSecond(Position),
 }
 
 const WINDOW_HEIGHT: usize = 40;
@@ -162,6 +165,8 @@ fn main() {
     const CHAR_V: i32 = 'v' as i32;
     const CHAR_W: i32 = 'w' as i32;
     const CHAR_X: i32 = 'x' as i32;
+    const CHAR_LARGE_X: i32 = 88;
+    const CHAR_LARGE_V: i32 = 86;
     const CHAR_RET: i32 = 10;
     const CHAR_UP: i32 = 65;
     const CHAR_DOWN: i32 = 66;
@@ -256,9 +261,21 @@ fn main() {
                 cursor = ai.workers[0].current_pos;
                 changed = false;
             },
+            CHAR_LARGE_X => {
+                message = format!("Udon Shortest Path Mode: Choose a cell");
+                mode = EditorMode::CursorUdonShortestPath;
+                cursor = ai.workers[0].current_pos;
+                changed = false;
+            },
             CHAR_V => {
                 message = format!("Rect Paint: Choose one of corner");
                 mode = EditorMode::CursorRectPaintFirst;
+                cursor = ai.workers[0].current_pos;
+                changed = false;
+            },
+            CHAR_LARGE_V => {
+                message = format!("Udon Rect Paint: Choose one of corner");
+                mode = EditorMode::CursorUdonRectPaintFirst;
                 cursor = ai.workers[0].current_pos;
                 changed = false;
             },
@@ -298,16 +315,54 @@ fn main() {
                         mode = EditorMode::Normal;
                     },
                     EditorMode::CursorShortestPath => {
-                        let route = shortest(&ai.board,
-                                             &ai.workers[0].current_pos,
-                                             &cursor);
-                        message = format!("Suggest: {:?}", route);
-                        for dir in route {
-                            if !ai.mv(0, dir) {
-                                break;
+                        if let Some(commands) = shortest_path(&ai, 0, cursor) {
+                            for &cmd in commands.iter() {
+                                match cmd {
+                                    Command::Move(d) => {
+                                        ai.mv(0, d);
+                                    },
+                                    Command::Rotate(cw) => {
+                                        if cw {
+                                            ai.turn_cw(0);
+                                        } else {
+                                            ai.turn_ccw(0);
+                                        }
+                                    },
+                                    _ => {}
+                                }
                             }
+                            message = format!("Shortest path to {:?}", &cursor);
+                            changed = true;
+                        } else {
+                            message = format!("!!Not found any Shortest path to {:?}", &cursor);
+                            changed = false;
                         }
-                        changed = true;
+                        cursor = Position(-1, -1);
+                        mode = EditorMode::Normal;
+                    },
+                    EditorMode::CursorUdonShortestPath => {
+                        if let Some(commands) = udon_shortest_path(&ai, 0, cursor) {
+                            for &cmd in commands.iter() {
+                                match cmd {
+                                    Command::Move(d) => {
+                                        ai.mv(0, d);
+                                    },
+                                    Command::Rotate(cw) => {
+                                        if cw {
+                                            ai.turn_cw(0);
+                                        } else {
+                                            ai.turn_ccw(0);
+                                        }
+                                    },
+                                    _ => {}
+                                }
+                            }
+                            message = format!("Udon Shortest path to {:?}", &cursor);
+                            changed = true;
+                        } else {
+                            message = format!("Not found any Udon Shortest path to {:?}", &cursor);
+                            changed = false;
+                        }
                         cursor = Position(-1, -1);
                         mode = EditorMode::Normal;
                     },
@@ -325,11 +380,66 @@ fn main() {
 
                         loop {
                             let Position(wx, wy) = ai.workers[0].current_pos;
-                            if let Some(route) = paint(&ai.board, &ai.filled, wx, wy, min_x, min_y, max_x, max_y) {
-                                for dir in route {
-                                    if !ai.mv(0, dir) {
-                                        break;
-                                    }
+                            if let Some((q, commands)) = paint(&ai, 0, wx, wy, min_x, min_y, max_x, max_y) {
+                                for cmd in commands {
+                                    if ai.filled[q.0 as usize][q.1 as usize] { break }
+                                    let success = match cmd {
+                                        Command::Move(dir) => {
+                                            ai.mv(0, dir)
+                                        },
+                                        Command::Rotate(cw) => {
+                                            if cw {
+                                                ai.turn_cw(0)
+                                            } else {
+                                                ai.turn_ccw(0)
+                                            }
+                                        },
+                                        _ => {
+                                            false
+                                        }
+                                    };
+                                    if !success { break }
+                                }
+                            } else {
+                                break;
+                            }
+                        }
+
+                        changed = true;
+                        cursor = Position(-1, -1);
+                        mode = EditorMode::Normal;
+                    },
+                    EditorMode::CursorUdonRectPaintFirst => {
+                        message = format!("Udon Rect Paint: You choose {:?} as a corner. Choose another corner", cursor);
+                        mode = EditorMode::CursorUdonRectPaintSecond(cursor.clone());
+                        changed = false;
+                    },
+                    EditorMode::CursorUdonRectPaintSecond(p) => {
+                        message = format!("Udon Rect Painting: {:?} to {:?}", &p, &cursor);
+
+                        let rect_min = Position(min(p.0, cursor.0), min(p.1, cursor.1));
+                        let rect_max = Position(max(p.0, cursor.0), max(p.1, cursor.1));
+
+                        loop {
+                            if let Some((q, commands)) = udon_paint(&ai, 0, rect_min, rect_max) {
+                                for cmd in commands {
+                                    if ai.filled[q.0 as usize][q.1 as usize] { break }
+                                    let success = match cmd {
+                                        Command::Move(dir) => {
+                                            ai.mv(0, dir)
+                                        },
+                                        Command::Rotate(cw) => {
+                                            if cw {
+                                                ai.turn_cw(0)
+                                            } else {
+                                                ai.turn_ccw(0)
+                                            }
+                                        },
+                                        _ => {
+                                            false
+                                        }
+                                    };
+                                    if !success { break }
                                 }
                             } else {
                                 break;
