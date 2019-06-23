@@ -18,7 +18,7 @@ import {
     generateBuyKey,
     generateKey,
     getBestSolution,
-    getBestSolutionModel,
+    getBestSolutionModel, getBestSolutionModels,
     getSolutionById,
     getWhereOption,
     LSolution, pullBuyDataFromS3, pullDataFromS3,
@@ -128,7 +128,7 @@ app.get('/stat', (req, res, next) => {
 
 
 import fileUpload = require('express-fileupload');
-import {optimizeSolutions, optimizeSolutions2, optimizeSolutions3} from "./optimizeSolution";
+import {getSolutionStats, optimizeSolutions, optimizeSolutions2, optimizeSolutions3} from "./optimizeSolution";
 
 AWS.config.loadFromPath(process.env.KEY_JSON || './aws_key.json');
 AWS.config.update({ region: 'us-east-2' });
@@ -217,6 +217,14 @@ app.post('/solution', async (req, res, next) => {
     });
 });
 
+app.get('/solution/best/test', async (req, res, next) => {
+    const budget = parseInt(req.query.budget || '0');
+    const baseSolutions = await getBestSolutionModels(getWhereOption(0, true, undefined, 0));
+    optimizeSolutions3(budget, baseSolutions).then((solutions) => {
+        const stats = getSolutionStats(solutions, baseSolutions.map((s) => s ? s.score : -1));
+        res.json({ solutions, stats });
+    }).catch(next);
+});
 
 app.get('/solution/best/zip', async (req, res, next) => {
     const budget = parseInt(req.query.budget || '0');
@@ -225,7 +233,8 @@ app.get('/solution/best/zip', async (req, res, next) => {
     res.attachment('solutions.zip');
     archive.pipe(res);
     archive.on("error", next);
-    await optimizeSolutions3(budget)
+    const baseSolutions = await getBestSolutionModels(getWhereOption(0, true, undefined, 0));
+    await optimizeSolutions3(budget, baseSolutions)
         .then((solutions) => {
             return solutions.map((solution) => {
                 if (solution) {

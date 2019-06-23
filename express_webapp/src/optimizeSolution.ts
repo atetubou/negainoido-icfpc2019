@@ -7,8 +7,19 @@ const estimateScore = (taskId: number, baseScore: number, score: number) => {
     return 1000 * Math.log2(task.x * task.y)  * baseScore / score;
 };
 
-export const optimizeSolutions = async (budget: number) => {
-    const baseSolutions = await getBestSolutionModels(getWhereOption(0, true, undefined, 0));
+export const getSolutionStats = (solutions: LSolution[], baseScores: number[]) => {
+    let totalCost = 0;
+    let totalScore = 0;
+    solutions.forEach((solution) => {
+        if(!solution) return;
+        totalCost += solution.cost;
+        const taskId = solution.task_id;
+        totalScore += estimateScore(taskId, baseScores[taskId-1], solution.score);
+    });
+    return { cost: totalCost, eScore: totalScore };
+};
+
+export const optimizeSolutions = async (budget: number, baseSolutions: LSolution[]) => {
     const baseScores = baseSolutions.map((solution) => solution ? solution.score : -1);
     let solutions = baseSolutions.concat([]);
 
@@ -46,8 +57,7 @@ export const optimizeSolutions = async (budget: number) => {
     return solutions;
 };
 
-export const optimizeSolutions2 = async (budget: number) => {
-    const baseSolutions = await getBestSolutionModels(getWhereOption(0, true, undefined, 0));
+export const optimizeSolutions2 = async (budget: number, baseSolutions: LSolution[]) => {
     const baseScores = baseSolutions.map((solution) => solution ? solution.score : -1);
     let solutions = baseSolutions.concat([]);
 
@@ -89,8 +99,7 @@ export const optimizeSolutions2 = async (budget: number) => {
     return solutions;
 };
 
-export const optimizeSolutions3 = async (budget: number) => {
-    const baseSolutions = await getBestSolutionModels(getWhereOption(0, true, undefined, 0));
+export const optimizeSolutions3 = async (budget: number, baseSolutions: LSolution[]) => {
     const baseScores = baseSolutions.map((solution) => solution ? solution.score : -1);
     let solutions = baseSolutions.concat([]);
 
