@@ -266,8 +266,7 @@ SolveShrinkedTSP(const AI& ai, int n, const std::vector<std::pair<int, int>>& wa
 }
 
 std::vector<std::vector<pos>> get_groups(const AI& ai,
-					 const std::vector<pos>& tsp_tours,
-					 const std::vector<pos>& want_visit) {
+					 const std::vector<pos>& tsp_tours) {
   int w = ai.board.size();
   int h = ai.board[0].size();
 
@@ -329,7 +328,7 @@ std::vector<std::pair<int, int>> tikutaOrder(const AI& ai, int n,
 
   auto tsp_tours = SolveShrinkedTSP(ai, n, want_visit);
 
-  auto groups = get_groups(ai, tsp_tours, want_visit);
+  auto groups = get_groups(ai, tsp_tours);
 
   {
     auto board = ai.board;
@@ -362,7 +361,10 @@ std::vector<std::pair<int, int>> tikutaOrder(const AI& ai, int n,
 
   {
     std::vector<std::vector<bool>> visited(ai.board.size(),
-					   std::vector<bool>(ai.board[0].size()));
+					   std::vector<bool>(ai.board[0].size(), 1));
+    for (const auto p : want_visit) {
+      visited[p.first][p.second] = false;
+    }
     pos cur = groups[0][0];
 
     for (auto group : groups) {
