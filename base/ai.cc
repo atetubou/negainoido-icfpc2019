@@ -251,7 +251,7 @@ int AI::get_count_workers() { return workers.size(); }
 int AI::get_duration_fast(const int id) { return workers[id].duration_fast; }
 int AI::get_duration_drill(const int id) { return workers[id].duration_drill; }
 
-Position AI::get_neighbor(const Direction &dir, const int id) {
+Position AI::get_neighbor(const Direction &dir, const int id) const {
   const int dx[] = {0,1, 0,-1};
   const int dy[] = {1,0,-1, 0};
   int idx = static_cast<int>(dir);
@@ -294,8 +294,11 @@ std::vector<Position> AI::rotated_manipulator_positions(bool is_cw, const int id
 }
 
 std::vector<Position> AI::moved_manipulator_positions(const Direction& d, const int id) const {
-  Position self = get_pos(id);
   std::vector<Position> ret;
+  if (!try_move(d, id)) {
+    return ret;
+  }
+  Position self = get_pos(id);
 
   const auto v = dir2vec(d);
 
@@ -330,7 +333,7 @@ void AI::push_command(Command cmd, const int id) {
   executed_cmds[id].push_back(cmd);
 }
 
-bool AI::try_move(const Direction &dir, const int id) {
+bool AI::try_move(const Direction &dir, const int id) const {
   Position next_pos = get_neighbor(dir, id);
 
   // Check validity
