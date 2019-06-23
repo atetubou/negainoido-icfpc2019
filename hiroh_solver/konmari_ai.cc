@@ -64,7 +64,7 @@ void KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
   // path.begin() -> path.back().
   const auto& s = path->front();
   const auto& g = path->back();
-  const int cost_with_drill = std::abs(g.first - s.first) + std::abs(g.second - g.first);
+  const int cost_with_drill = std::abs(g.first - s.first) + std::abs(g.second - s.second);
   // Lazy assumption. We may not be able to g with drill.
   if (cost_with_drill > 30)
     return;
@@ -95,11 +95,17 @@ void KonmariAI::try_to_use_drill(std::vector<std::pair<int,int>>* path) {
 
 absl::optional<Position> KonmariAI::decide_extension_pos() {
   std::set<Position> unfilled_cands;
+  std::set<Position> manus;
+  for (const auto& p : get_absolute_manipulator_positions()) {
+    manus.insert(p);
+  }
+
   for (const auto& p : get_absolute_manipulator_positions()) {
     for (const auto& np: get_neighbors(p)) {
       int x = np.first;
       int y = np.second;
       if (!filled[x][y] &&
+          manus.find(np) == manus.end() &&
           unfilled_cands.find(np) == unfilled_cands.end()) {
         unfilled_cands.insert(np);
         if (reachable(np)) {
