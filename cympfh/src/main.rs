@@ -172,6 +172,10 @@ fn main() {
     const CHAR_DOWN: i32 = 66;
     const CHAR_RIGHT: i32 = 67;
     const CHAR_LEFT: i32 = 68;
+    const CHAR_ALT_DOWN: i32 = 258;
+    const CHAR_ALT_UP: i32 = 259;
+    const CHAR_ALT_LEFT: i32 = 260;
+    const CHAR_ALT_RIGHT: i32 = 261;
     const CHAR_HELP: i32 = '?' as i32;
     const CHAR_RESET: i32 = '<' as i32;
 
@@ -180,6 +184,9 @@ fn main() {
     let mut cursor = Position(-1, -1);
     let mut mode = EditorMode::Normal;
     dump(&ai, &win, &String::new(), &cursor);
+
+    keypad(win, true);
+    mousemask(ALL_MOUSE_EVENTS as u32, None);
 
     loop {
 
@@ -280,25 +287,86 @@ fn main() {
                 changed = false;
             },
             // cursor move
-            CHAR_UP => {
+            CHAR_UP | CHAR_ALT_UP => {
                 cursor.0 -= 1;
                 message = format!("Cursor at {:?}", cursor);
                 changed = false;
             },
-            CHAR_RIGHT => {
+            CHAR_RIGHT | CHAR_ALT_RIGHT => {
                 cursor.1 += 1;
                 message = format!("Cursor at {:?}", cursor);
                 changed = false;
             },
-            CHAR_DOWN => {
+            CHAR_DOWN | CHAR_ALT_DOWN => {
                 cursor.0 += 1;
                 message = format!("Cursor at {:?}", cursor);
                 changed = false;
             },
-            CHAR_LEFT => {
+            CHAR_LEFT | CHAR_ALT_LEFT => {
                 cursor.1 -= 1;
                 message = format!("Cursor at {:?}", cursor);
                 changed = false;
+            },
+            KEY_MOUSE => {
+                let mut event = MEVENT {bstate: 0, id: 0, x: 0, y: 0, z: 0};
+                if getmouse(&mut event) == OK {
+                    let offset = if ai.height <= WINDOW_HEIGHT {
+                        0
+                    } else if ai.workers[0].current_pos.0 as usize > WINDOW_HEIGHT / 2 {
+                        ai.workers[0].current_pos.0 - WINDOW_HEIGHT as isize / 2
+                    } else {
+                        0
+                    };
+                    let clicked = Position(event.y as isize + offset - 4, event.x as isize);
+                    match mode {
+                        EditorMode::Normal => {
+                            message = format!("Clickd at {:?}: Start Udon Rect Painting", clicked);
+                            mode = EditorMode::CursorUdonRectPaintSecond(clicked);
+                            changed = false;
+                        },
+                        EditorMode::CursorUdonRectPaintSecond(p) => {
+
+                            message = format!("Udon Rect Painting: {:?} to {:?}", &p, &clicked);
+
+                            let rect_min = Position(min(p.0, clicked.0), min(p.1, clicked.1));
+                            let rect_max = Position(max(p.0, clicked.0), max(p.1, clicked.1));
+
+                            loop {
+                                if let Some((q, commands)) = udon_paint(&ai, 0, rect_min, rect_max) {
+                                    for cmd in commands {
+                                        if ai.filled[q.0 as usize][q.1 as usize] { break }
+                                        let success = match cmd {
+                                            Command::Move(dir) => {
+                                                ai.mv(0, dir)
+                                            },
+                                            Command::Rotate(cw) => {
+                                                if cw {
+                                                    ai.turn_cw(0)
+                                                } else {
+                                                    ai.turn_ccw(0)
+                                                }
+                                            },
+                                            _ => {
+                                                false
+                                            }
+                                        };
+                                        if !success { break }
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
+                            changed = true;
+                            mode = EditorMode::Normal;
+                        },
+                        _ => {
+                            message = format!("Clicked at {:?}: Ignored", clicked);
+                            changed = false;
+                        }
+                    }
+                } else {
+                    message = format!("Hmm??");
+                }
             },
             CHAR_RET => {
                 match mode {
@@ -480,7 +548,7 @@ fn main() {
             },
             CHAR_HELP => {
                 message = String::from("Move: a/s/d/w, Rotate: q/e, Boost: b/l/f/c");
-            }
+            },
             unknown => {
                 message = format!("Unknown keycode: {}", unknown);
                 changed = false;
