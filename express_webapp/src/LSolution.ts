@@ -84,7 +84,7 @@ export const getBestSolutionModel = (where: WhereOptions) => {
     return LSolution.findOne({
         attributes: ['id', 'solver', 'task_id', 'valid', 'score', 'has_buy', 'cost'],
         where: {score: {[Op.gt]: 0}, ...where},
-        order: [['score', 'ASC']]
+        order: [['score', 'ASC'], ['cost', 'ASC']]
     });
 };
 
