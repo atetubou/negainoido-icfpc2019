@@ -89,10 +89,21 @@ int main(int argc, char *argv[]) {
 	ai.print_commands();
 	return 0;
       }
-      
+
+      if (ai.get_count_extension()) {
+	int d = ai.get_absolute_manipulator_positions(i).size() - 2;
+	auto v = dir2vec(ai.get_dir(i));
+	v.first *= d;
+	v.second *= d;
+
+	LOG_IF(FATAL, !ai.use_extension(v.first, v.second, i));
+	continue;
+      }
+
       bool recalc_goal = directions[i].empty();
       auto current_goal = current_goals[i];
-      recalc_goal |= current_goal && ai.filled[current_goal->first][current_goal->second];
+      recalc_goal |= current_goal && ai.filled[current_goal->first][current_goal->second] &&
+	ai.board[current_goal->first][current_goal->second] != 'B';
 
       if (recalc_goal) {
 	current_goals[i].reset();
