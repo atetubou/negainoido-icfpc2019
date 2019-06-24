@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use std::cmp::{min, max};
+use std::collections::HashSet;
 
 use crate::geo::{Line, Point, intersect_ss, intersect_sp};
 
@@ -98,10 +99,12 @@ pub struct AI {
     pub count_drill: usize,
     pub count_extension: usize,
     pub count_clone: usize,
+    pub count_teleport: usize,
     pub filled_count: usize,
     pub block_count: usize,
     pub workers: Vec<Worker>,
-    pub executed_cmds: Vec<String>,
+    pub beacons: HashSet<Position>,
+    pub executed_cmds: Vec<Vec<String>>,
     pub board: Vec<Vec<char>>,
     pub filled: Vec<Vec<bool>>,
 }
@@ -130,10 +133,12 @@ impl AI {
             count_drill: 0,
             count_extension: 0,
             count_clone: 0,
+            count_teleport: 0,
             filled_count: 0,
             block_count: block_count,
             workers: vec![Worker::new(w_pos)],
-            executed_cmds: vec![],
+            executed_cmds: vec![vec![]],
+            beacons: HashSet::new(),
             board: board,
             filled: vec![vec![false; w]; h],
         }
@@ -184,6 +189,7 @@ impl AI {
               'F' => { self.count_fast += 1; },
               'L' => { self.count_drill += 1; },
               'C' => { self.count_clone += 1; },
+              'R' => { self.count_teleport += 1; },
               _ => {}
           }
           self.board[x as usize][y as usize] = '.';
@@ -208,7 +214,7 @@ impl AI {
             Direction::Left => Direction::Up,
             Direction::Up => Direction::Right,
         };
-        self.executed_cmds.push(String::from("E"));
+        self.executed_cmds[idx].push(String::from("E"));
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
@@ -223,7 +229,7 @@ impl AI {
             Direction::Left => Direction::Down,
             Direction::Down => Direction::Right,
         };
-        self.executed_cmds.push(String::from("Q"));
+        self.executed_cmds[idx].push(String::from("Q"));
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
@@ -323,7 +329,7 @@ impl AI {
             self.move_body(idx, dir);
         }
         // push command
-        self.executed_cmds.push(match dir {
+        self.executed_cmds[idx].push(match dir {
             Direction::Up => String::from("W"),
             Direction::Down => String::from("S"),
             Direction::Left => String::from("A"),
@@ -338,7 +344,7 @@ impl AI {
     }
 
     pub fn print_commands(&self) -> String {
-        self.executed_cmds.join("")
+        self.executed_cmds.iter().map(|cmds| cmds.join("")).collect::<Vec<String>>().join("#")
     }
 
     pub fn use_fast_wheel(&mut self, idx: usize) -> bool {
@@ -347,7 +353,7 @@ impl AI {
         }
         self.workers[idx].duration_fast = 50;
         self.count_fast -= 1;
-        self.executed_cmds.push(String::from("F"));
+        self.executed_cmds[idx].push(String::from("F"));
         true
     }
 
@@ -357,7 +363,62 @@ impl AI {
         }
         self.workers[idx].duration_drill = 30;
         self.count_drill -= 1;
-        self.executed_cmds.push(String::from("L"));
+        self.executed_cmds[idx].push(String::from("L"));
+        true
+    }
+
+    pub fn use_clone(&mut self, idx: usize) -> bool {
+        if self.count_clone == 0 {
+            return false;
+        }
+
+        let Position(wx,wy) = self.workers[idx].current_pos;
+        if self.board[wx as usize][wy as usize] != 'X' {
+            return false;
+        }
+
+        self.count_clone -= 1;
+
+        self.workers.push(Worker::new(Position(wx, wy)));
+
+        self.executed_cmds.push(vec![]);
+        self.executed_cmds[idx].push(String::from("C"));
+        true
+    }
+
+    pub fn install_beacon(&mut self, idx: usize) -> bool {
+        if self.count_teleport == 0 {
+            return false;
+        }
+        let Position(wx, wy) = self.workers[idx].current_pos;
+        if self.board[wx as usize][wy as usize] == 'X' || self.board[wx as usize][wy as usize] == 'b' {
+            return false;
+        }
+
+        self.count_teleport -= 1;
+        self.board[wx as usize][wy as usize] = 'b';
+
+        self.beacons.insert(Position(wx,wy));
+
+        self.executed_cmds[idx].push(String::from("R"));
+
+        true
+    }
+
+    pub fn jump_to_beacon(&mut self, idx: usize, dst: &Position) -> bool {
+        if !self.beacons.contains(dst) {
+            return false;
+        }
+
+        self.workers[idx].current_pos.0 = dst.0;
+        self.workers[idx].current_pos.1 = dst.1;
+
+        self.executed_cmds[idx].push(format!("T({},{})",dst.0, dst.1));
+        true
+    }
+
+    pub fn nop(&mut self, idx: usize) -> bool {
+        self.executed_cmds[idx].push(String::from("Z"));
         true
     }
 
@@ -386,7 +447,7 @@ impl AI {
           return false;
         }
         self.count_extension -= 1;
-        self.executed_cmds.push(format!("B({},{})", p.1, -p.0));
+        self.executed_cmds[idx].push(format!("B({},{})", p.1, -p.0));
         {
           let q = p.rotate_reverse(self.workers[idx].current_dir);
           self.workers[idx].manipulator_range.push(q);
