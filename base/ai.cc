@@ -547,8 +547,10 @@ bool AI::use_extension(const int dx, const int dy, const int id) {
 
   bool can_use = false;
 
+  auto rpos = rotate_reverse({dx, dy}, get_dir(id));
+
   for(auto m: workers[id].manipulator_range) {
-    if (std::abs(m.first - dx) + std::abs(m.second - dy) == 1) {
+    if (std::abs(m.first - rpos.first) + std::abs(m.second - rpos.second) == 1) {
       can_use = true;
     }
   }
@@ -556,7 +558,7 @@ bool AI::use_extension(const int dx, const int dy, const int id) {
   if(!can_use)
     return false;
 
-  workers[id].manipulator_range.push_back( rotate_reverse({dx, dy}, get_dir(id)) );
+  workers[id].manipulator_range.push_back(rpos);
   count_extension--;
 
   // Fill a cell visited by a new manipulator.
