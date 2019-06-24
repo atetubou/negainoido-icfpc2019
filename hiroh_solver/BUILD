@@ -8,7 +8,10 @@ cc_binary(
 
 cc_binary(
     name = "konmari_ai",
-    srcs = ["konmari_ai.cc"],
+    srcs = ["konmari_ai.cc",
+            "konmari_ai_core.cc",
+            "konmari_ai_solver.h",
+    ],
     copts = ["-std=c++14"],
     deps = [
         "//base:ai",
