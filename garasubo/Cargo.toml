@@ -6,3 +6,4 @@ edition = "2018"
 
 [dependencies]
 rust-base = { path="../rust_base" }
+ncurses = "5.99.0"
