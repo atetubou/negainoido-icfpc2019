@@ -199,7 +199,7 @@ pub fn udon_shortest_path(ai: &AI, idx: usize, dst: Position) -> Option<Vec<Comm
     let mut q = VecDeque::new();
     let mut used = HashSet::new();
 
-    q.push_back((world.workers[0].clone(), vec![]));
+    q.push_back((world.workers[idx].clone(), vec![]));
 
     while let Some((worker, history)) = q.pop_front() {
 
@@ -208,7 +208,7 @@ pub fn udon_shortest_path(ai: &AI, idx: usize, dst: Position) -> Option<Vec<Comm
         used.insert(w);
 
         for &cw in [true, false].iter() {
-            world.workers[0] = worker.clone();
+            world.workers[idx] = worker.clone();
             let cmd = Command::Rotate(cw);
             let mut history_next = history.clone();
             let success = if cw {
@@ -221,10 +221,10 @@ pub fn udon_shortest_path(ai: &AI, idx: usize, dst: Position) -> Option<Vec<Comm
             if world.filled[dst.0 as usize][dst.1 as usize] {
                 return Some(history_next);
             }
-            q.push_back((world.workers[0].clone(), history_next));
+            q.push_back((world.workers[idx].clone(), history_next));
         }
         for &d in [Direction::Left, Direction::Right, Direction::Up, Direction::Down].iter() {
-            world.workers[0] = worker.clone();
+            world.workers[idx] = worker.clone();
             let cmd = Command::Move(d);
             let mut history_next = history.clone();
             let success = world.mv(idx, d);
@@ -233,7 +233,7 @@ pub fn udon_shortest_path(ai: &AI, idx: usize, dst: Position) -> Option<Vec<Comm
             if world.filled[dst.0 as usize][dst.1 as usize] {
                 return Some(history_next);
             }
-            q.push_back((world.workers[0].clone(), history_next));
+            q.push_back((world.workers[idx].clone(), history_next));
         }
     };
 
