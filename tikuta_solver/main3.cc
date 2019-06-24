@@ -48,7 +48,7 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  while (ai.get_count_clone()) {
+  while (!ai.spawn_points.empty() && ai.get_count_clone()) {
     const int workers = ai.get_count_active_workers();
     ai.use_clone(0);
     for (int i = 1; i < workers; ++i) {
