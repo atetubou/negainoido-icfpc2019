@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
 
   collect_cloning(&ai, &gridg);
 
-  if (!ai.spawn_points.empty()) {
+  if (!ai.spawn_points.empty() && ai.get_count_clone()) {
     for (const auto d : gridg.shortest_paths(ai.get_pos(), ai.spawn_points)) {
       ai.move(d);
     }
