@@ -80,16 +80,22 @@ int main(int argc, char *argv[]) {
   auto groups = calc_groups();
 
   std::vector<std::deque<Direction>> directions(ai.get_count_active_workers());
-  int get_filled_count = ai.get_filled_count();
+  std::vector<absl::optional<pos>> current_goals(ai.get_count_active_workers());
 
   while (!ai.is_finished()) {
     for (int i = 0; i < ai.get_count_active_workers(); ++i) {
       if (ai.is_finished()) {
+	LOG(INFO) << ai.get_time();
 	ai.print_commands();
 	return 0;
       }
+      
+      bool recalc_goal = directions[i].empty();
+      auto current_goal = current_goals[i];
+      recalc_goal |= current_goal && ai.filled[current_goal->first][current_goal->second];
 
-      if (directions[i].empty()) {
+      if (recalc_goal) {
+	current_goals[i].reset();
 	for (auto it = groups[i].begin(); it != groups[i].end();){
 	  if (ai.filled[it->first][it->second]) {
 	    it = groups[i].erase(it);
@@ -99,19 +105,19 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (!groups[i].empty()) {
-	  auto p = gridg.shortest_paths(ai.get_pos(i), groups[i]);
+	  pos goal;
+	  auto p = gridg.shortest_paths(ai.get_pos(i), groups[i], &goal);
 	  directions[i] = std::deque<Direction>(p.begin(), p.end());
+	  current_goals[i] = goal;
 	}
       }
       
       if (directions[i].empty()) {
 	LOG_IF(INFO, !ai.nop(i)) << "nop failed";
-	if (get_filled_count != ai.get_filled_count()) {
-	  get_filled_count = ai.get_filled_count();
-	  groups = calc_groups();
-	  directions.clear();
-	  directions.resize(ai.get_count_active_workers());
-	}
+	auto g = calc_groups();
+	groups[i] = g[i];
+	directions.clear();
+	directions.resize(ai.get_count_active_workers());
 	continue;
       }
 
@@ -124,5 +130,6 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  LOG(INFO) << ai.get_time();
   ai.print_commands();
 }
