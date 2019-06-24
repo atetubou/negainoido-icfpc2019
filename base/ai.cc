@@ -774,12 +774,22 @@ void AI::dump_state() const {
               << ", fast: " << workers[i].duration_fast << std::endl;
   }
 
+  std::set<Position> manis;
+  for (auto i = 0u; i < workers.size(); ++i) {
+    for (auto p : get_absolute_manipulator_positions(i)) {
+      manis.insert(p);
+    }
+  }
+
   for(int i = 0; i < height; ++i) {
     for(int j = 0; j < width; ++j) {
-      if (ws.find(std::make_pair(i, j)) != ws.end()) {
+      auto pos = std::make_pair(i, j);
+      if (ws.find(pos) != ws.end()) {
         std::cerr << "W";
+      } else if (manis.find(pos) != manis.end()) {
+        std::cerr << "M";
       } else if(filled[i][j]) {
-        std::cerr << "V";
+        std::cerr << "-";
       } else {
         std::cerr << board[i][j];
       }
