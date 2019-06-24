@@ -92,17 +92,19 @@ impl Worker {
 
 #[derive(Debug, Clone)]
 pub struct AI {
-    pub current_time: usize,
+    pub current_time: Vec<usize>,
     pub height: usize,
     pub width: usize,
-    pub count_fast: usize,
-    pub count_drill: usize,
-    pub count_extension: usize,
-    pub count_clone: usize,
-    pub count_teleport: usize,
+    pub count_fast: Vec<usize>,
+    pub count_drill: Vec<usize>,
+    pub count_extension: Vec<usize>,
+    pub count_clone: Vec<usize>,
+    pub count_teleport: Vec<usize>,
     pub filled_count: usize,
     pub block_count: usize,
     pub workers: Vec<Worker>,
+    pub active_worker_id: usize,
+    pub count_active_workers: usize,
     pub beacons: HashSet<Position>,
     pub executed_cmds: Vec<Vec<String>>,
     pub board: Vec<Vec<char>>,
@@ -126,17 +128,19 @@ impl AI {
         let block_count = board.iter().map(|row|
                   row.iter().filter(|&c| *c == '#').count()).sum();
         AI {
-            current_time: 0,
+            current_time: vec![0],
             height: h,
             width: w,
-            count_fast: 0,
-            count_drill: 0,
-            count_extension: 0,
-            count_clone: 0,
-            count_teleport: 0,
+            count_fast: vec![0],
+            count_drill: vec![0],
+            count_extension: vec![0],
+            count_clone: vec![0],
+            count_teleport: vec![0],
             filled_count: 0,
             block_count: block_count,
             workers: vec![Worker::new(w_pos)],
+            active_worker_id: 0,
+            count_active_workers: 1,
             executed_cmds: vec![vec![]],
             beacons: HashSet::new(),
             board: board,
@@ -177,24 +181,23 @@ impl AI {
         true
     }
 
+    pub fn pickup(&mut self, idx: usize) {
+        let Position(x, y) = self.workers[idx].current_pos;
+        match self.board[x as usize][y as usize] {
+            'B' => { self.count_extension[idx] += 1; },
+            'F' => { self.count_fast[idx] += 1; },
+            'L' => { self.count_drill[idx] += 1; },
+            'C' => { self.count_clone[idx] += 1; },
+            'R' => { self.count_teleport[idx] += 1; },
+            _ => { return }
+        }
+        self.board[x as usize][y as usize] = '.';
+    }
+
     pub fn fill_cell(&mut self, idx: usize, p: &Position) -> bool {
         let Position(x, y) = *p;
         if !self.valid_pos(p) { return false; }
         if !self.reachable(idx, p) { return false; }
-
-        // pick up when item is on body,
-        if self.workers[idx].current_pos == *p {  // when on body
-          match self.board[x as usize][y as usize] {
-              'B' => { self.count_extension += 1; },
-              'F' => { self.count_fast += 1; },
-              'L' => { self.count_drill += 1; },
-              'C' => { self.count_clone += 1; },
-              'R' => { self.count_teleport += 1; },
-              _ => {}
-          }
-          self.board[x as usize][y as usize] = '.';
-        }
-
         if self.filled[x as usize][y as usize] { return false; }
         self.filled[x as usize][y as usize] = true;
         self.filled_count += 1;
@@ -208,6 +211,7 @@ impl AI {
     }
 
     pub fn turn_cw(&mut self, idx: usize) -> bool {
+        self.init_turn(idx);
         self.workers[idx].current_dir = match self.workers[idx].current_dir {
             Direction::Right => Direction::Down,
             Direction::Down => Direction::Left,
@@ -218,11 +222,12 @@ impl AI {
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
-        self.next_turn();
+        self.next_turn(idx);
         true
     }
 
     pub fn turn_ccw(&mut self, idx: usize) -> bool {
+        self.init_turn(idx);
         self.workers[idx].current_dir = match self.workers[idx].current_dir {
             Direction::Right => Direction::Up,
             Direction::Up => Direction::Left,
@@ -233,7 +238,7 @@ impl AI {
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
-        self.next_turn();
+        self.next_turn(idx);
         true
     }
 
@@ -279,16 +284,20 @@ impl AI {
         ret
     }
 
-    fn next_turn(&mut self) {
-        self.current_time += 1;
-        for i in 0..self.workers.len() {
-            if self.workers[i].duration_drill > 0 {
-                self.workers[i].duration_drill -= 1;
-            }
-            if self.workers[i].duration_fast > 0 {
-                self.workers[i].duration_fast -= 1;
-            }
+    fn init_turn(&mut self, _idx: usize) -> bool {
+        self.count_active_workers = self.workers.len();
+        !self.is_finished()
+    }
+
+    fn next_turn(&mut self, idx: usize) {
+        if self.workers[idx].duration_drill > 0 {
+            self.workers[idx].duration_drill -= 1;
         }
+        if self.workers[idx].duration_fast > 0 {
+            self.workers[idx].duration_fast -= 1;
+        }
+        self.current_time[idx] += 1;
+        self.pickup(idx);
     }
 
     fn try_move(&self, idx: usize, dir: Direction) -> bool {
@@ -315,7 +324,6 @@ impl AI {
           self.block_count -= 1;
         }
 
-        // fill && pick up
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
@@ -323,6 +331,7 @@ impl AI {
     }
 
     pub fn mv(&mut self, idx: usize, dir: Direction) -> bool {
+        if !self.init_turn(idx) { return false; }
         if !self.move_body(idx, dir) { return false; }
         // when FAST
         if self.workers[idx].duration_fast > 0 {
@@ -335,7 +344,7 @@ impl AI {
             Direction::Left => String::from("A"),
             Direction::Right => String::from("D"),
         });
-        self.next_turn();
+        self.next_turn(idx);
         true
     }
 
@@ -348,59 +357,72 @@ impl AI {
     }
 
     pub fn use_fast_wheel(&mut self, idx: usize) -> bool {
-        if self.count_fast == 0 {
+        if self.count_fast[idx] == 0 {
             return false;
         }
+        if !self.init_turn(idx) { return false; }
         self.workers[idx].duration_fast = 50;
-        self.count_fast -= 1;
+        self.count_fast[idx] -= 1;
         self.executed_cmds[idx].push(String::from("F"));
+        self.next_turn(idx);
         true
     }
 
     pub fn use_drill(&mut self, idx: usize) -> bool {
-        if self.count_drill == 0 {
+        if self.count_drill[idx] == 0 {
             return false;
         }
+        if !self.init_turn(idx) { return false; }
         self.workers[idx].duration_drill = 30;
-        self.count_drill -= 1;
+        self.count_drill[idx] -= 1;
         self.executed_cmds[idx].push(String::from("L"));
+        self.next_turn(idx);
         true
     }
 
     pub fn use_clone(&mut self, idx: usize) -> bool {
-        if self.count_clone == 0 {
+        if self.count_clone[idx] == 0 {
             return false;
         }
+        if !self.init_turn(idx) { return false; }
 
         let Position(wx,wy) = self.workers[idx].current_pos;
         if self.board[wx as usize][wy as usize] != 'X' {
             return false;
         }
-
-        self.count_clone -= 1;
+        self.count_clone[idx] -= 1;
 
         self.workers.push(Worker::new(Position(wx, wy)));
-
         self.executed_cmds.push(vec![]);
+        self.count_fast.push(0);
+        self.count_drill.push(0);
+        self.count_extension.push(0);
+        self.count_clone.push(0);
+        self.count_teleport.push(0);
+        self.current_time.push(self.current_time[idx] + 1);
+
         self.executed_cmds[idx].push(String::from("C"));
+        self.next_turn(idx);
         true
     }
 
     pub fn install_beacon(&mut self, idx: usize) -> bool {
-        if self.count_teleport == 0 {
+        if self.count_teleport[idx] == 0 {
             return false;
         }
+        if !self.init_turn(idx) { return false; }
         let Position(wx, wy) = self.workers[idx].current_pos;
         if self.board[wx as usize][wy as usize] == 'X' || self.board[wx as usize][wy as usize] == 'b' {
             return false;
         }
 
-        self.count_teleport -= 1;
+        self.count_teleport[idx] -= 1;
         self.board[wx as usize][wy as usize] = 'b';
 
         self.beacons.insert(Position(wx,wy));
 
         self.executed_cmds[idx].push(String::from("R"));
+        self.next_turn(idx);
 
         true
     }
@@ -409,23 +431,27 @@ impl AI {
         if !self.beacons.contains(dst) {
             return false;
         }
+        if !self.init_turn(idx) { return false; }
 
         self.workers[idx].current_pos.0 = dst.0;
         self.workers[idx].current_pos.1 = dst.1;
 
         self.executed_cmds[idx].push(format!("T({},{})",dst.0, dst.1));
+        self.next_turn(idx);
         true
     }
 
     pub fn nop(&mut self, idx: usize) -> bool {
+        if !self.init_turn(idx) { return false; }
         self.executed_cmds[idx].push(String::from("Z"));
+        self.next_turn(idx);
         true
     }
 
     // return relative positions
     pub fn extension_positions(&self, idx: usize) -> Vec<Position> {
         let Position(wx, wy) = self.workers[idx].current_pos;
-        let mybody = self.get_absolute_manipulator_positions(0);
+        let mybody = self.get_absolute_manipulator_positions(idx);
         let is_my_body = |p: &Position| { mybody.iter().any(|&q| *p == q) };
         let mut ret = vec![];
         for &Position(x, y) in mybody.iter() {
@@ -440,13 +466,14 @@ impl AI {
 
     // p is relative
     pub fn use_extension(&mut self, idx: usize, p: Position) -> bool {
-        if self.count_extension == 0 {
+        if self.count_extension[idx] == 0 {
             return false;
         }
         if !self.extension_positions(idx).iter().any(|&q| q == p) {
           return false;
         }
-        self.count_extension -= 1;
+        if !self.init_turn(idx) { return false; }
+        self.count_extension[idx] -= 1;
         self.executed_cmds[idx].push(format!("B({},{})", p.1, -p.0));
         {
           let q = p.rotate_reverse(self.workers[idx].current_dir);
@@ -455,6 +482,7 @@ impl AI {
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
+        self.next_turn(idx);
         true
     }
 }
