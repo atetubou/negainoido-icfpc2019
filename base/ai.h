@@ -6,6 +6,8 @@
 #include<map>
 #include<set>
 
+#include <gflags/gflags.h>
+
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
@@ -75,6 +77,8 @@ public:
   int duration_fast = 0;
 
 };
+
+DECLARE_string(buystring);
 
 class AI {
   static const int32_t H_MAX = 1000;

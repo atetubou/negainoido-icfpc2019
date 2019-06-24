@@ -191,9 +191,15 @@ bool AI::init_turn(const int id) {
   return !is_finished();
 }
 
+DEFINE_string(buy, "", "buy");
+
 AI::AI() {
   get_board_from_stdin();
   initialize();
+
+  std::cerr<< "Buy: " << FLAGS_buy << std::endl;
+
+  init_buy(FLAGS_buy);
 }
 
 void AI::init_buy(const std::string buystring) {
