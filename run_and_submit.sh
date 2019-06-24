@@ -29,7 +29,7 @@ validator=./bazel-bin/binary_validator/binary_validator
 
 BUY=${BUY:-""}
 
-for task in `seq -w 2 220`
+for task in `seq -w 1 999`
 do
     if [ ! -f problems/prob-$task.in ]; then
         continue
