@@ -207,7 +207,7 @@ app.post('/solution', async (req, res, next) => {
                 });
             }
         }).then(() => {
-            return validateModel(model.task_id, model, buyFile);
+            return validateModel(model.task_id, model, file, buyFile);
         }).catch((e) => {
             console.log('error in validate: ' + e);
         });
@@ -358,7 +358,7 @@ app.get('/solution/:id/validate', async (req, res, next) => {
     const id = parseInt(req.params['id']);
 
     const target = await LSolution.findOne({
-        attributes: ['id', 'solver', 'task_id', 'has_buy'],
+        attributes: ['id', 'solver', 'task_id', 'has_buy', 'cost'],
         where: { id: id },
     }).catch((e) => {
         console.error("DB error" + e);
