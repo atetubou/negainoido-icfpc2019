@@ -177,6 +177,13 @@ void AI::initialize() {
   }
 
   pickup_booster(0);
+
+  // Reset filled_count
+  filled_count = 0;
+  for (int i = 0; i < height; ++i)
+    for (int j = 0; j < width; ++j)
+      if (filled[i][j])
+        filled_count++;
 }
 
 bool AI::init_turn(const int id) {
