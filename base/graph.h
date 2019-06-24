@@ -46,6 +46,7 @@ public:
                     int stop_value = (1<<29));
 
   std::vector<Direction> shortest_paths(pos start, const std::vector<pos>& goals) const;
+  std::vector<Direction> shortest_paths(pos start, const std::vector<pos>& goals, pos* goal) const;
 
   bool can_visit(int x, int y) const;
 
