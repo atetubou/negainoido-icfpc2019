@@ -84,6 +84,11 @@ int main(int argc, char *argv[]) {
 
   while (!ai.is_finished()) {
     for (int i = 0; i < ai.get_count_active_workers(); ++i) {
+      if (ai.is_finished()) {
+	ai.print_commands();
+	return 0;
+      }
+
       if (directions[i].empty()) {
 	for (auto it = groups[i].begin(); it != groups[i].end();){
 	  if (ai.filled[it->first][it->second]) {
@@ -100,7 +105,7 @@ int main(int argc, char *argv[]) {
       }
       
       if (directions[i].empty()) {
-	ai.nop(i);
+	LOG_IF(INFO, !ai.nop(i)) << "nop failed";
 	if (get_filled_count != ai.get_filled_count()) {
 	  get_filled_count = ai.get_filled_count();
 	  groups = calc_groups();
@@ -110,7 +115,11 @@ int main(int argc, char *argv[]) {
 	continue;
       }
 
-      ai.move(directions[i].front(), i);
+      if (!ai.move(directions[i].front(), i)) {
+	ai.dump_state();
+	LOG(INFO) << directions[i];
+	LOG(FATAL) << "failed to move " << directions[i].front() << " " << i;
+      }
       directions[i].pop_front();
     }
   }
