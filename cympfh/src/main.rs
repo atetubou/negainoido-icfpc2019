@@ -143,6 +143,16 @@ fn main() {
         ai.fill_cell(0, &p);
     }
 
+    for item in args[2].chars() {
+        match item {
+            'B' => { ai.count_extension += 1; }
+            'L' => { ai.count_drill += 1; }
+            'F' => { ai.count_fast += 1; }
+            'C' => { ai.count_clone += 1; }
+            _ => {}
+        }
+    }
+
     let win = initscr();
 
     start_color();
