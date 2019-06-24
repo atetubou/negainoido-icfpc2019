@@ -196,76 +196,153 @@ vector<int> compute_traversal(const int start_index, const vector<vector<Edge>> 
   return compute_traversal(start_index, G, visited);
 }
 
-vector<int> compute_tour(const int start_index, AI &ai, GraphDistance &gd, const set<int> &visited_vertices_) {
-  set<int> visited_vertices = visited_vertices_;
+vector<int> compute_tour(const int start_index, AI &ai, GraphDistance &gd) {
+  vector<int> tour;
+  set<int> filled_vertices;
+  const int H = ai.board.size();
+  const int W = ai.board[0].size();
+  vector<string> debug_board = ai.board;
+  REP(h, H) REP(w, W) {
+    if (ai.filled[h][w]) {
+      filled_vertices.insert(to_index(h, w));
+      debug_board[h][w] = 'V';
+    }
+  }
+  // for (auto s: debug_board) {
+  //   cerr << s << endl;
+  // }
+  cerr << "#filled_vertiecs: " << filled_vertices.size() << endl;
   
   vector<Position> relative_positions = ai.get_relative_manipulator_positions();
-  auto dist_and_closest_vertices = gd.find_closest_vertices(start_index, [&relative_positions, &visited_vertices](int index) {
-      int h = to_position(index).first;
-      int w = to_position(index).second;
-      for (auto p: relative_positions) {
-        int nh = h + p.first;
-        int nw = w + p.second;
-        if (visited_vertices.count(to_index(nh, nw))) return true;
+  
+  auto has_unfilled_neighbors = [&ai, &relative_positions, &filled_vertices](int index) {
+    int h = to_position(index).first;
+    int w = to_position(index).second;
+    for (auto p: relative_positions) {
+      int nh = h + p.first;
+      int nw = w + p.second;
+      if (!ai.reachable(Position(h, w), Position(nh, nw))) {
+        continue;
       }
-      return false;
-    });
-  cerr << dist_and_closest_vertices << endl;
-  int distance = dist_and_closest_vertices.first;
-  set<int> closest_vertices = dist_and_closest_vertices.second;
-  
-  
-  
-  
-  set<int> required_vertices;
-  // REP(w, W) REP(h, H) {
-  //   if (ai.board[h][w] != '#' && visited_vertices.count(to_index(h, w)) == 0) {
-  //     required_vertices.insert(to_index(h, w));
-  //     covered_vertices.insert(to_index(h, w));
-  //     cover(to_index(h, w), ai, covered_vertices);
-  //   }
-  // }
+      
+      if (filled_vertices.count(to_index(nh, nw)) == 0) {
+        return true;
+      }
+    }
+    return false;
+  };
 
-  // vector<string> debug_board= ai.board;
-  // for (int index: required_vertices) {
-  //   int h = to_position(index).first;
-  //   int w = to_position(index).second;
-  //   debug_board[h][w] = 'R';
-  // }
+  auto count_unfilled_neighbors = [&ai, &relative_positions, &filled_vertices](int index) {
+    int h = to_position(index).first;
+    int w = to_position(index).second;
+    int res = 0;
+    for (auto p: relative_positions) {
+      int nh = h + p.first;
+      int nw = w + p.second;
+      if (!ai.reachable(Position(h, w), Position(nh, nw))) {
+        continue;
+      }
+      
+      if (filled_vertices.count(to_index(nh, nw)) == 0) {
+        res++;
+      }
+    }
+    return res;
+  };
+
+  int curr_index = start_index;
+  while (true) {
+    auto dist_and_closest_vertices = gd.find_closest_vertices(curr_index, has_unfilled_neighbors);
+    if (dist_and_closest_vertices.first == -1) {
+      break;
+    }
+  
+    // cerr << dist_and_closest_vertices << endl;
+    int best_next = -1;
+    pair<int, int> best_score(0, 0);
+    for (int v : dist_and_closest_vertices.second) {
+      int nc = count_unfilled_neighbors(v);
+      pair<int, int> score(nc, -to_position(v).second);
+      if (score > best_score) {
+        best_next = v;
+        best_score = score;
+      }
+    }
+    LOG_IF(FATAL, best_next < 0);
+
+    vector<int> path;
+    gd.shortest_path(curr_index, best_next, path);
+    for (size_t i = 1; i < path.size(); i++) {
+      tour.push_back(path[i]);
+      for (auto p: relative_positions) {
+        int nh = to_position(path[i]).first + p.first;
+        int nw = to_position(path[i]).second + p.second;
+        if (ai.reachable(to_position(path[i]), Position(nh, nw))) {
+          filled_vertices.insert(to_index(nh, nw));
+        }
+      }
+    }
+    curr_index = path.back();
+  }
+  for (int v : filled_vertices) {
+    int h = to_position(v).first;
+    int w = to_position(v).second;
+    debug_board[h][w] = 'V';
+  }
   // for (string s: debug_board) {
   //   cerr << s << endl;
   // }
-  // required_vertices.insert(start_index);
-  vector<Edge> edges;
-  // for (int v: required_vertices) {
-  //   set<int> neighbors = gd.enumerate_neighbors(v, 10);
-  //   for (int w: neighbors) {
-  //     if (required_vertices.count(w)) {
-  //       edges.push_back(Edge(v, w, gd.shortest_path(v, w)));
-  //     }
+  return tour;
+  
+  // set<int> required_vertices;
+  // // REP(w, W) REP(h, H) {
+  // //   if (ai.board[h][w] != '#' && visited_vertices.count(to_index(h, w)) == 0) {
+  // //     required_vertices.insert(to_index(h, w));
+  // //     covered_vertices.insert(to_index(h, w));
+  // //     cover(to_index(h, w), ai, covered_vertices);
+  // //   }
+  // // }
+
+  // // vector<string> debug_board= ai.board;
+  // // for (int index: required_vertices) {
+  // //   int h = to_position(index).first;
+  // //   int w = to_position(index).second;
+  // //   debug_board[h][w] = 'R';
+  // // }
+  // // for (string s: debug_board) {
+  // //   cerr << s << endl;
+  // // }
+  // // required_vertices.insert(start_index);
+  // vector<Edge> edges;
+  // // for (int v: required_vertices) {
+  // //   set<int> neighbors = gd.enumerate_neighbors(v, 10);
+  // //   for (int w: neighbors) {
+  // //     if (required_vertices.count(w)) {
+  // //       edges.push_back(Edge(v, w, gd.shortest_path(v, w)));
+  // //     }
+  // //   }
+  // // }
+
+  // sort(ALL(edges), [](const Edge &e1, const Edge &e2) { return e1.weight < e2.weight; } );
+  // vector<Edge> mst_edges;
+  // UnionFind uf(MAX_H * MAX_W);
+
+  // for (const auto &e: edges) {
+  //   if (!uf.same(e.src_index, e.dst_index)) {
+  //     mst_edges.push_back(e);
+  //     uf.unite(e.src_index, e.dst_index);
   //   }
   // }
-
-  sort(ALL(edges), [](const Edge &e1, const Edge &e2) { return e1.weight < e2.weight; } );
-  vector<Edge> mst_edges;
-  UnionFind uf(MAX_H * MAX_W);
-
-  for (const auto &e: edges) {
-    if (!uf.same(e.src_index, e.dst_index)) {
-      mst_edges.push_back(e);
-      uf.unite(e.src_index, e.dst_index);
-    }
-  }
-  LOG_IF(FATAL, uf.size(edges[0].src_index) != int(required_vertices.size()));
-  cerr << "MST-size: " << mst_edges.size() << endl;
+  // LOG_IF(FATAL, uf.size(edges[0].src_index) != int(required_vertices.size()));
+  // cerr << "MST-size: " << mst_edges.size() << endl;
   
-  vector<vector<Edge>> G(MAX_V);
-  for (const auto &e: mst_edges) {
-    G[e.src_index].push_back(e);
-    G[e.dst_index].push_back(e.reverse());
-  }
+  // vector<vector<Edge>> G(MAX_V);
+  // for (const auto &e: mst_edges) {
+  //   G[e.src_index].push_back(e);
+  //   G[e.dst_index].push_back(e.reverse());
+  // }
 
-  return compute_traversal(start_index, G);
+  // return compute_traversal(start_index, G);
 }
 
 string move(int src_index, int dst_index, set<int> &visited_vertices, set<int> &wrapped_vertices, AI &ai, GraphDistance &gd) {
@@ -288,19 +365,17 @@ string enjoy_tour(int start_index, const vector<int> &tour, set<int> &visited_ve
 
   for (size_t i = initial_i; i < tour.size(); i++) {
     int next_index = tour[i];
-    if (visited_vertices.count(next_index) == 0 && !is_wrapped(next_index, ai, wrapped_vertices)) {
-      const string command = get_move(original_gd, prev_index, next_index);
-      int curr_index = prev_index;
-      for (char c: command) {
-        curr_index = move_index(curr_index, c);
-        visited_vertices.insert(curr_index);
-        cover(curr_index, ai, wrapped_vertices);
-      }
-      LOG_IF(FATAL, curr_index != next_index);
-      res += command;
-      visited_vertices.insert(next_index);
-      prev_index = next_index;
+    const string command = get_move(original_gd, prev_index, next_index);
+    int curr_index = prev_index;
+    for (char c: command) {
+      curr_index = move_index(curr_index, c);
+      visited_vertices.insert(curr_index);
+      cover(curr_index, ai, wrapped_vertices);
     }
+    LOG_IF(FATAL, curr_index != next_index);
+    res += command;
+    visited_vertices.insert(next_index);
+    prev_index = next_index;
   }
   return res;
 }
@@ -398,7 +473,7 @@ int main(int argc, char** argv) {
   cerr << "#B: " << b_vertices.size() << endl;
   cerr << "#C: " << c_vertices.size() << endl;
   cerr << "#visited_vertices: " << visited_vertices.size() << endl;
-  vector<int> tour = compute_tour(start_index, ai, original_gd, visited_vertices);
+  vector<int> tour = compute_tour(start_index, ai, original_gd);
   
   if (c_vertices.empty() || x_vertices.empty() || tour.size() == 1) {
     REP(i, extensions_per_wrapper) {
