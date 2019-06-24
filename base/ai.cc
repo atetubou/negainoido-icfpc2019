@@ -100,6 +100,10 @@ bool AI::valid_pos(Position target) const {
 }
 
 bool AI::reachable(Position target, const int id) const {
+  return reachable_sub(get_pos(id), target);
+}
+
+bool AI::reachable_sub(Position src, Position target) const {
   int x = target.first;
   int y = target.second;
   if (!valid_pos(target))
@@ -108,9 +112,8 @@ bool AI::reachable(Position target, const int id) const {
   if (board[x][y] == '#')
     return false;
 
-  auto worker_pos = get_pos(id);
-  int wx = worker_pos.first;
-  int wy = worker_pos.second;
+  int wx = src.first;
+  int wy = src.second;
   for (int cx = std::min(x, wx); cx <= std::max(x, wx); cx++) {
     for (int cy = std::min(y, wy); cy <= std::max(y, wy); cy++) {
       if (board[cx][cy] != '#')
@@ -136,13 +139,18 @@ bool AI::reachable(Position target, const int id) const {
   return true;
 }
 
-void AI::initialize() {
+void AI::get_board_from_stdin() {
   std::cin >> height >> width;
   std::string buf;
   while (std::cin >> buf) {
     board.push_back(buf);
   }
 
+  filled.resize(height);
+  for (int i = 0; i < height; ++i) filled[i].resize(width);
+}
+
+void AI::initialize() {
   Position worker_pos = std::make_pair(0, 0);
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
@@ -157,9 +165,6 @@ void AI::initialize() {
       }
     }
   }
-  filled.resize(height);
-  for (int i = 0; i < height; ++i) filled[i].resize(width);
-
   workers.clear();
   workers.push_back(Worker(worker_pos));
 
@@ -187,12 +192,11 @@ bool AI::init_turn(const int id) {
 }
 
 AI::AI() {
+  get_board_from_stdin();
   initialize();
 }
 
-AI::AI(const std::string buystring) {
-  initialize();
-
+void AI::init_buy(const std::string buystring) {
   for (auto c : buystring) {
     switch(c) {
     case 'B':
@@ -215,6 +219,26 @@ AI::AI(const std::string buystring) {
       break;
     }
   }
+}
+
+AI::AI(const std::string buystring) {
+  get_board_from_stdin();
+  initialize();
+
+  init_buy(buystring);
+}
+
+AI::AI(const std::vector<std::string> &init_board, const std::vector<std::vector<bool>> &init_filled,
+       const std::string buystring) {
+  height = init_board.size();
+  width = init_board[0].size();
+
+  board = init_board;
+  filled = init_filled;
+
+  initialize();
+
+  init_buy(buystring);
 }
 
 void AI::pickup_booster(const int id) {
@@ -297,12 +321,12 @@ Position AI::get_neighbor(const Direction &dir, const int id) const {
                   workers[id].current_pos.second + dy[idx]);
 }
 
-std::vector<Position> AI::get_absolute_manipulator_positions(const int id) {
+std::vector<Position> AI::get_absolute_manipulator_positions(const int id) const {
 
   Position self = get_pos(id);
   std::vector<Position> ret;
 
-  for (Position&p : workers[id].manipulator_range) {
+  for (const Position&p : workers[id].manipulator_range) {
     Position mani = rotate(p, get_dir(id));
     mani.first += self.first;
     mani.second += self.second;

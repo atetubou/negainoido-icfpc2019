@@ -102,10 +102,14 @@ class AI {
   bool move_body(const Direction &dir, const int id);
 
 
+  void get_board_from_stdin();
   void initialize();
+  void init_buy(const std::string buystring);
 
   bool init_turn(const int id);
   void pickup_booster(const int id);
+
+  bool reachable_sub(Position src, Position pos) const;
 
   void push_command(struct Command cmd, const int id);
 
@@ -114,6 +118,10 @@ public:
   AI();
   // accepts a string representing buyfile's content
   AI(const std::string buystring);
+
+  AI(const std::vector<std::string> &init_board,
+     const std::vector<std::vector<bool>> &init_filled,
+     const std::string buystring = "");
 
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
@@ -164,7 +172,7 @@ public:
 
   // Gets the all (possible) positions of manipulators.
   // It may be in invalid postion. (e.g. out of the map, unreachable postion)
-  std::vector<Position> get_absolute_manipulator_positions(const int id = 0);
+  std::vector<Position> get_absolute_manipulator_positions(const int id = 0) const;
 
   // Gets the all manipulators' positions after one rotation.
   // Unreachable/invalid positions are skipped.
@@ -224,5 +232,5 @@ public:
 
   // Returns a shortest command sequence which fills dst.
   // The returned sequence only conistents of Move. TurnCW and TurnCCW.
-  std::vector<Command> shortest_filling_commands(Position dst, const int id = 0) const;
+  std::vector<Command> shortest_filling_commands(Position dst, const int id = 0);
 };
