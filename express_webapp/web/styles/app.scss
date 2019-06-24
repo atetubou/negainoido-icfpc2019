@@ -1,0 +1,9 @@
+.scoreBoard {
+  margin: 12px;
+  &-valid {
+    color: green;
+  }
+  &-invalid {
+    color: red;
+  }
+}

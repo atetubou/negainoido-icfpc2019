@@ -1,5 +1,6 @@
 import * as path from 'path';
 import * as webpack from 'webpack';
+import MiniCssExtractPlugin from 'mini-css-extract-plugin';
 
 const config: webpack.Configuration = {
   entry: './src/index.tsx',
@@ -8,6 +9,11 @@ const config: webpack.Configuration = {
       {
         test: /\.tsx?$/,
         use: 'ts-loader',
+        exclude: /node_modules/
+      },
+      {
+        test: /\.scss$/,
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
         exclude: /node_modules/
       }
     ]
@@ -18,7 +24,10 @@ const config: webpack.Configuration = {
   output: {
     filename: 'index.js',
     path: path.resolve(__dirname, 'dist')
-  }
+  },
+  plugins: [
+    new MiniCssExtractPlugin({filename: 'main.css'}),
+  ],
 };
 
 export default config;

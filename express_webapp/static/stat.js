@@ -1,12 +1,9 @@
 function draw_data(data) {
 
-  var rows = [];
-  for (var i = 0; i < data.values.length; ++i) {
-    rows[i] = data.values[i].best;
-  }
+  var rows = data.values;
 
   var table = new Tabulator("#content", {
-    height: 10000,
+    height: 100000,
     data: rows,           //load row data from array
     layout:"fitColumns",      //fit columns to width of table
     responsiveLayout:"hide",  //hide columns that dont fit on the table
@@ -21,23 +18,19 @@ function draw_data(data) {
       {column:"task_id", dir:"asc"},
     ],
     columns: [
-      {title: "best",
-        columns: [
-          {title:"id", field:"id"},
-          {title:"solver", field:"solver"},
-          {title:"task_id", field:"task_id"},
-          {title:"score", field:"score"},
-          {title:"created", field:"created"},
-          {title:"updatedAt", field:"updatedAt"},
-        ]
-      }
+      {title:"id", field:"id"},
+      {title:"solver", field:"solver"},
+      {title:"task_id", field:"task_id"},
+      {title:"score", field:"score"},
+      {title:"created", field:"created"},
+      {title:"updatedAt", field:"updatedAt"},
     ]
   });
 }
 
-function load_data() {
+function load_data(num) {
   var xhr = new XMLHttpRequest();
-  xhr.open('GET', '/score/stat/api', true);
+  xhr.open('GET', `/score/stat/api?num=${num}`, true);
   xhr.onreadystatechange = function() {
     switch ( xhr.readyState ) {
       case 0:
@@ -59,5 +52,4 @@ function load_data() {
   xhr.send();
 }
 
-setTimeout(load_data, 500);
-setInterval(load_data, 20000);
+setTimeout(load_data, 100, 3);
