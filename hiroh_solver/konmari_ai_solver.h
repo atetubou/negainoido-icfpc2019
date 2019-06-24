@@ -19,7 +19,7 @@ class KonmariAISolver {
                   /*, std::map<char, int> extensions*/);
   ~KonmariAISolver();
 
-  std::vector<std::vector<Command>> solve();
+  std::vector<std::vector<Command>> solve(int* score);
  private:
   class Impl;
   std::unique_ptr<Impl> impl;

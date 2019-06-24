@@ -436,7 +436,7 @@ class KonmariAISolver::Impl {
 public:
   Impl(const std::vector<std::string>& board,
        const std::vector<std::vector<bool>>& filled);
-  std::vector<std::vector<Command>> solve();
+  std::vector<std::vector<Command>> solve(int* score);
 private:
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
@@ -446,19 +446,17 @@ KonmariAISolver::Impl::Impl(const std::vector<std::string>& board,
                             const std::vector<std::vector<bool>>& filled)
   : board(board), filled(filled) {}
 
-std::vector<std::vector<Command>> KonmariAISolver::Impl::solve() {
+std::vector<std::vector<Command>> KonmariAISolver::Impl::solve(int* score) {
   std::cerr << "Worker computing...." << std::endl;
   KonmariAI original_ai(board, filled);
 
 #if 1
-  Position init_pos = original_ai.get_pos();
   original_ai.pick_up_extensions();
   while (!original_ai.is_finished()) {
     original_ai.konmari_move();
-    original_ai.dump_state();
   }
-  int score = original_ai.get_time();
-  std::cerr << "Score: " << score << std::endl;
+  *score = original_ai.get_time();
+  std::cerr << "Score: " << *score << std::endl;
   return original_ai.executed_cmds;
 #else
   int best_score = (1<<29);
@@ -484,6 +482,7 @@ std::vector<std::vector<Command>> KonmariAISolver::Impl::solve() {
   }
 
   std::cerr << "Best Score (v=" << best_v << "):" << best_score << std::endl;
+  *score = best_score;
   return best_cmds;
 #endif
 }
@@ -528,6 +527,6 @@ KonmariAISolver::KonmariAISolver(const std::pair<int,int>& initial,
 
 KonmariAISolver::~KonmariAISolver() = default;
 
-std::vector<std::vector<Command>> KonmariAISolver::solve() {
-  return impl->solve();
+std::vector<std::vector<Command>> KonmariAISolver::solve(int* score) {
+  return impl->solve(score);
 }

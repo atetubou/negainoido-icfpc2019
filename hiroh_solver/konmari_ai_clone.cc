@@ -93,6 +93,7 @@ int main(int argc, char *argv[]) {
   const int height = ai.board.size();
   std::vector<std::vector<Command>> cmds(workers.size());
   size_t max_cmd_length = 0;
+  std::vector<int> scores(workers.size());
   for (size_t i = 0; i < workers.size(); i++) {
     const auto& w = workers[i];
     for (size_t k = 0; k < nop_count[i]; k++) {
@@ -100,7 +101,7 @@ int main(int argc, char *argv[]) {
       nop_cmd.type = CmdType::Nop;
       cmds[i].push_back(nop_cmd);
     }
-    auto w_cmds = w->solve()[0];
+    auto w_cmds = w->solve(&scores[i])[0];
     for (const auto& cmd : w_cmds) {
       cmds[i].push_back(cmd);
     }
@@ -122,4 +123,6 @@ int main(int argc, char *argv[]) {
       std::cout << AI::cmd2str(cmd, height);
   }
   std::cout << std::endl;
+
+  std::cerr << "Summarized Score: " << ai.get_time() + *std::max_element(scores.begin(), scores.end()) << std::endl;
 }

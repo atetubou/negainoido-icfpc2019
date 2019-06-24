@@ -34,6 +34,8 @@ int main() {
                      read_file_ai.board,
                      read_file_ai.filled,
                      area);
-  auto cmds = ai.solve();
+  int score = 0;;
+  auto cmds = ai.solve(&score);
   std::cout << commands2str(cmds, read_file_ai.get_height()) << std::endl;
+  std::cerr << "Score: " << score << std::endl;
 }
