@@ -26,6 +26,37 @@ std::ostream& operator<<(std::ostream& os, const Direction& d) {
   LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
 }
 
+std::ostream& operator<<(std::ostream& os, const Command& cmd) {
+  switch (cmd.type) {
+  case CmdType::Move:
+    return os << "Move(" << cmd.dir << ")";
+  case CmdType::TurnCW:
+    return os << "TurnCW";
+  case CmdType::TurnCCW:
+    return os << "TurnCCW";
+  case CmdType::UseExtension:
+    return os << "UseExtension(" << cmd.x << ", " << cmd.y << ")";
+  case CmdType::UseFastWheel:
+    return os << "UseFastWheel";
+  case CmdType::UseDrill:
+    return os << "UseDrill";
+  case CmdType::UseClone:
+    return os << "UseClone";
+  case CmdType::InstallBeacon:
+    return os << "InstallBeacon";
+  case CmdType::JumpToBeacon:
+    return os << "JumpToBeason(" << cmd.x << "," << cmd.y << ")";
+  case CmdType::Nop:
+    return os << "Nop";
+  default:
+    break;
+  }
+
+  LOG(FATAL) << "Invalid command " << static_cast<int>(cmd.type);
+  return os;
+}
+
+
 Position dir2vec(const Direction &dir) {
   static const int dx[] = {0, 1, 0, -1};
   static const int dy[] = {1, 0, -1, 0};
