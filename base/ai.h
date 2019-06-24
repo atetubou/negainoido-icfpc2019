@@ -166,6 +166,11 @@ public:
   // It may be in invalid postion. (e.g. out of the map, unreachable postion)
   std::vector<Position> get_absolute_manipulator_positions(const int id = 0);
 
+  // Gets the all (possible) relative positions of manipulators from the current position.
+  // It may be in invalid postion. (e.g. out of the map, unreachable postion)
+  std::vector<Position> get_relative_manipulator_positions(const int id = 0);
+
+
   // Gets the all manipulators' positions after one rotation.
   // Unreachable/invalid positions are skipped.
   std::vector<Position> rotated_manipulator_positions(bool is_cw, const int id = 0);
@@ -174,8 +179,12 @@ public:
   // Unreachable/invalid positions are skipped.
   std::vector<Position> moved_manipulator_positions(const Direction& d, const int id = 0) const;
 
+
   // Checks if pos is 'reachable' from the current position.
   bool reachable(Position pos, const int id = 0) const;
+
+  // Checks if target is 'reachable' from source.
+  bool reachable(Position source, Position target) const;
 
   // Checks if the robot can move to the direction.
   // This doesn't change any internal state.

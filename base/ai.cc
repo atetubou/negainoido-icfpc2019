@@ -100,17 +100,25 @@ bool AI::valid_pos(Position target) const {
 }
 
 bool AI::reachable(Position target, const int id) const {
+  auto worker_pos = get_pos(id);
+  return reachable(worker_pos, target);
+}
+
+bool AI::reachable(Position source, Position target) const {
   int x = target.first;
   int y = target.second;
   if (!valid_pos(target))
     return false;
-
   if (board[x][y] == '#')
     return false;
 
-  auto worker_pos = get_pos(id);
-  int wx = worker_pos.first;
-  int wy = worker_pos.second;
+  int wx = source.first;
+  int wy = source.second;
+  if (!valid_pos(source))
+    return false;
+  if (board[wx][wy] == '#')
+    return false;  
+  
   for (int cx = std::min(x, wx); cx <= std::max(x, wx); cx++) {
     for (int cy = std::min(y, wy); cy <= std::max(y, wy); cy++) {
       if (board[cx][cy] != '#')
@@ -135,6 +143,7 @@ bool AI::reachable(Position target, const int id) const {
 
   return true;
 }
+
 
 void AI::initialize() {
   std::cin >> height >> width;
@@ -306,6 +315,16 @@ std::vector<Position> AI::get_absolute_manipulator_positions(const int id) {
     Position mani = rotate(p, get_dir(id));
     mani.first += self.first;
     mani.second += self.second;
+    ret.push_back(mani);
+  }
+  return ret;
+}
+
+std::vector<Position> AI::get_relative_manipulator_positions(const int id) {
+  Position self = get_pos();
+  std::vector<Position> ret;
+  for (Position&p : workers[id].manipulator_range) {
+    Position mani = rotate(p, get_dir());
     ret.push_back(mani);
   }
   return ret;

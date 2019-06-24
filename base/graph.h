@@ -6,6 +6,7 @@
 #include <vector>
 #include <set>
 #include <string>
+#include <functional>
 
 #include "base/ai.h"
 
@@ -29,6 +30,8 @@ class GraphDistance {
   int shortest_path(int src, int dst, std::vector<int> &paths, int stop_value = (1<<29));
   std::set<int> enumerate_neighbors(int src, int limit);
   void shortest_path_tree(int src, std::vector<int> &dist, std::vector<int> &parent);
+  // return a pair of the shortest distance D and vertices whose distances from the source equals  D
+  std::pair<int, std::set<int>> find_closest_vertices(int src, std::function<bool(int)> predicate);
  private:
   void clear_updates(const std::vector<int> &updated_vertices);
 };

@@ -141,6 +141,46 @@ void GraphDistance::shortest_path_tree(int src, std::vector<int> &dist, std::vec
   }
 }
 
+std::pair<int, std::set<int>> GraphDistance::find_closest_vertices(int src, std::function<bool(int)> predicate) {
+  int spd = -1;
+  std::set<int> res;
+  std::vector<int> updated_vertices;
+  std::priority_queue<P, std::vector<P>, std::greater<P>>  que;
+  que.push(P(0, src));
+  updated_vertices.push_back(src);
+
+  distance[src] = 0;
+  while (!que.empty()) {
+    P p = que.top(); que.pop();
+    int d = p.first;
+    int v = p.second;
+
+    if (spd != -1 && d > spd) {
+      continue;
+    }
+
+    if (predicate(v)) {
+      res.insert(v);
+      spd = d;
+    }
+
+    for (const auto &e: graph[v]) {
+      int w = e.dst;
+      int cdw = distance[w];
+      int ndw = d + e.weight;
+      if (cdw == -1 || cdw > ndw) {
+        updated_vertices.push_back(w);
+        distance[w] = ndw;
+        prev[w] = v;
+        que.push(P(distance[w], w));
+      }
+    }
+  }
+  clear_updates(updated_vertices);
+
+  return make_pair(spd, res);
+}
+
 
 void GraphDistance::clear_updates(const std::vector<int> &updated_vertices) {
   for (auto v: updated_vertices) {

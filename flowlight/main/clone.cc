@@ -6,6 +6,7 @@
 #include <iostream>
 #include "base/graph.h"
 #include "union_find.h"
+#include "base/ai.h"
 #include <glog/logging.h>
 using namespace std;
 
@@ -35,11 +36,21 @@ template <typename T> ostream &operator<<(ostream &out, const vector<T> &v) {
   return out;
 }
 
+template <typename T> ostream &operator<<(ostream &out, const set<T> &v) {
+  out << "{";
+  int i = 0;
+  for (const auto &e: v) {
+    if (i > 0) out << ", ";
+    out << e;
+    i++;
+  }
+  out << "}";
+  return out;
+}
+
 const int MAX_H = 1000;
 const int MAX_W = 1000;
 const int MAX_V = MAX_H * MAX_W;
-
-typedef pair<int, int> Position;
 
 int to_index(const Position &position) {
   return position.first * MAX_W + position.second;
@@ -58,8 +69,8 @@ int move_index(int index, char c) {
   int h = to_position(index).first;
   int w = to_position(index).second;
   switch(c) {
-  case 'W': h++; break;
-  case 'S': h--; break;
+  case 'S': h++; break;
+  case 'W': h--; break;
   case 'A': w--; break;
   case 'D': w++; break;
   default:
@@ -89,16 +100,15 @@ string get_move(GraphDistance &gd, const int src_index, int dst_index) {
   vector<int> paths;
   int d = gd.shortest_path(src_index, dst_index, paths);
   LOG_IF(FATAL, d < 1 || d + 1 != int(paths.size()));
-  // cerr << src_index << " " << dst_index  << " " << d << endl;
 
   string res;
   for (size_t i = 0; i + 1 < paths.size(); i++) {
     const int dh = to_position(paths[i + 1]).first - to_position(paths[i]).first;
     const int dw = to_position(paths[i + 1]).second - to_position(paths[i]).second;
     if (dh == 1) {
-      res += "W";
-    } else if (dh == -1) {
       res += "S";
+    } else if (dh == -1) {
+      res += "W";
     } else if (dw == 1) {
       res +=  "D";
     } else if (dw == -1) {
@@ -110,78 +120,39 @@ string get_move(GraphDistance &gd, const int src_index, int dst_index) {
   return res;
 }
 
-void cover(int index, const vector<string> &board, set<int> &covered_vertices) {
+void cover(int index, AI &ai, set<int> &covered_vertices) {
   Position position = to_position(index);
-  const int H = board.size();
-  const int W = board[0].size();
-  const int h = position.first;
-  const int w = position.second;
-  if (w + 1 < W) {
-    if (h > 0 && board[h - 1][w + 1] != '#') {
-      covered_vertices.insert(to_index(h - 1, w + 1));
-    }
-    if (board[h][w + 1] != '#') {
-      covered_vertices.insert(to_index(h, w + 1));
-    }
-    if (h + 1 < H && board[h + 1][w + 1] != '#') {
-      covered_vertices.insert(to_index(h + 1, w + 1));
+  for (auto p: ai.get_relative_manipulator_positions()) {
+    Position q = position;
+    q.first += p.first;
+    q.second += p.second;
+    if (ai.reachable(position, q)) {
+      covered_vertices.insert(to_index(q.first, q.second));
     }
   }
 }
 
-bool is_wrapped(int index, const vector<string> &board, const set<int> &wrapped_vertices) {
+bool is_wrapped(int index, AI &ai, const set<int> &wrapped_vertices) {
   Position position = to_position(index);
-  const int H = board.size();
-  const int W = board[0].size();
-  const int h = position.first;
-  const int w = position.second;
-  if (wrapped_vertices.count(index) == 0) return false;
-
-  if (w + 1 < W) {
-    if (h > 0 && board[h - 1][w + 1] != '#') {
-      if (wrapped_vertices.count(to_index(h - 1, w + 1)) == 0) return false;
-    }
-    if (board[h][w + 1] != '#') {
-      if (wrapped_vertices.count(to_index(h, w + 1)) == 0) return false;
-    }
-    if (h + 1 < H && board[h + 1][w + 1] != '#') {
-      if (wrapped_vertices.count(to_index(h + 1, w + 1)) == 0) return false;
+  for (auto p: ai.get_relative_manipulator_positions()) {
+    Position q = position;
+    q.first += p.first;
+    q.second += p.second;
+    if (ai.reachable(position, q)) {
+      if (wrapped_vertices.count(to_index(q)) == 0) return false;
     }
   }
   return true;
 }
 
-set<int> collect_required_vertices(const vector<string> &board) {
-  const int H = board.size();
-  const int W = board[0].size();
-  set<int> covered_vertices;
-  set<int> required_vertices;
-  REP(w, W - 1) REP(h, H) {
-    if (h % 3 == 1 && board[h][w] != '#') {
-      required_vertices.insert(to_index(h, w));
-      covered_vertices.insert(to_index(h, w));
-      cover(to_index(h, w), board, covered_vertices);
-    }
-  }
-
-  REP(w, W) REP(h, H) {
-    int index = to_index(h, w);
-    if (board[h][w] != '#' && covered_vertices.count(index) == 0) {
-      required_vertices.insert(index);
-      cover(index, board, covered_vertices);
-    }
-  }
-  return required_vertices;
-}
-
-vector<pair<int, int>> collect_clone_greedy(int start_index, GraphDistance &gd, const vector<int> &clone_vertices) {
+vector<pair<int, int>> collect_item_greedy(int start_index, GraphDistance &gd, const vector<int> &item_vertices) {
   vector<pair<int, int>> res;
   set<int> used;
 
-  while (used.size() < clone_vertices.size()) {
+  while (used.size() < item_vertices.size()) {
     int best_v = -1;
     int best_d = 1e9;
-    for (int v : clone_vertices) {
+    for (int v : item_vertices) {
       if (used.count(v)) continue;
       int spd = gd.shortest_path(start_index, v);
       if (spd < best_d) {
@@ -205,7 +176,6 @@ vector<int> compute_traversal(const int v, const vector<vector<Edge>> &G, vector
     if (!visited[e.dst_index]) {
       vector<int> sub_vs = compute_traversal(e.dst_index, G, visited);
       sub_vs_list.push_back(sub_vs);
-      // es.push_back(e.reverse());
     }
   }
 
@@ -226,16 +196,55 @@ vector<int> compute_traversal(const int start_index, const vector<vector<Edge>> 
   return compute_traversal(start_index, G, visited);
 }
 
-vector<int> compute_tour(const int start_index, const set<int> &visit_vertices, GraphDistance &gd) {
-  vector<Edge> edges;
-  for (int v: visit_vertices) {
-    set<int> neighbors = gd.enumerate_neighbors(v, 5);
-    for (int w: neighbors) {
-      if (visit_vertices.count(w)) {
-        edges.push_back(Edge(v, w, gd.shortest_path(v, w)));
+vector<int> compute_tour(const int start_index, AI &ai, GraphDistance &gd, const set<int> &visited_vertices_) {
+  set<int> visited_vertices = visited_vertices_;
+  
+  vector<Position> relative_positions = ai.get_relative_manipulator_positions();
+  auto dist_and_closest_vertices = gd.find_closest_vertices(start_index, [&relative_positions, &visited_vertices](int index) {
+      int h = to_position(index).first;
+      int w = to_position(index).second;
+      for (auto p: relative_positions) {
+        int nh = h + p.first;
+        int nw = w + p.second;
+        if (visited_vertices.count(to_index(nh, nw))) return true;
       }
-    }
-  }
+      return false;
+    });
+  cerr << dist_and_closest_vertices << endl;
+  int distance = dist_and_closest_vertices.first;
+  set<int> closest_vertices = dist_and_closest_vertices.second;
+  
+  
+  
+  
+  set<int> required_vertices;
+  // REP(w, W) REP(h, H) {
+  //   if (ai.board[h][w] != '#' && visited_vertices.count(to_index(h, w)) == 0) {
+  //     required_vertices.insert(to_index(h, w));
+  //     covered_vertices.insert(to_index(h, w));
+  //     cover(to_index(h, w), ai, covered_vertices);
+  //   }
+  // }
+
+  // vector<string> debug_board= ai.board;
+  // for (int index: required_vertices) {
+  //   int h = to_position(index).first;
+  //   int w = to_position(index).second;
+  //   debug_board[h][w] = 'R';
+  // }
+  // for (string s: debug_board) {
+  //   cerr << s << endl;
+  // }
+  // required_vertices.insert(start_index);
+  vector<Edge> edges;
+  // for (int v: required_vertices) {
+  //   set<int> neighbors = gd.enumerate_neighbors(v, 10);
+  //   for (int w: neighbors) {
+  //     if (required_vertices.count(w)) {
+  //       edges.push_back(Edge(v, w, gd.shortest_path(v, w)));
+  //     }
+  //   }
+  // }
 
   sort(ALL(edges), [](const Edge &e1, const Edge &e2) { return e1.weight < e2.weight; } );
   vector<Edge> mst_edges;
@@ -247,6 +256,7 @@ vector<int> compute_tour(const int start_index, const set<int> &visit_vertices, 
       uf.unite(e.src_index, e.dst_index);
     }
   }
+  LOG_IF(FATAL, uf.size(edges[0].src_index) != int(required_vertices.size()));
   cerr << "MST-size: " << mst_edges.size() << endl;
   
   vector<vector<Edge>> G(MAX_V);
@@ -258,36 +268,37 @@ vector<int> compute_tour(const int start_index, const set<int> &visit_vertices, 
   return compute_traversal(start_index, G);
 }
 
-string move(int src_index, int dst_index, set<int> &visited_vertices, set<int> &wrapped_vertices, const vector<string> &board, GraphDistance &gd) {
+string move(int src_index, int dst_index, set<int> &visited_vertices, set<int> &wrapped_vertices, AI &ai, GraphDistance &gd) {
   const string command = get_move(gd, src_index, dst_index);
   int curr_index = src_index;
   for (char c: command) {
+    ai.move(*char_to_direction(c));
     curr_index = move_index(curr_index, c);
     visited_vertices.insert(curr_index);
-    cover(curr_index, board, wrapped_vertices);
+    cover(curr_index, ai, wrapped_vertices);
   }
   LOG_IF(FATAL, curr_index != dst_index);
   return command;
 }
 
-string enjoy_tour(int start_index, const vector<int> &tour, set<int> &visited_indices, set<int> &wrapped_indices,const vector<string> &board,  GraphDistance &original_gd) {
+string enjoy_tour(int start_index, const vector<int> &tour, set<int> &visited_vertices, set<int> &wrapped_vertices, AI &ai,  GraphDistance &original_gd) {
   string res;
   int prev_index = start_index;
   size_t initial_i = start_index != tour[0] ? 0 : 1;
 
   for (size_t i = initial_i; i < tour.size(); i++) {
     int next_index = tour[i];
-    if (visited_indices.count(next_index) == 0 && !is_wrapped(next_index, board, wrapped_indices)) {
+    if (visited_vertices.count(next_index) == 0 && !is_wrapped(next_index, ai, wrapped_vertices)) {
       const string command = get_move(original_gd, prev_index, next_index);
       int curr_index = prev_index;
       for (char c: command) {
         curr_index = move_index(curr_index, c);
-        visited_indices.insert(curr_index);
-        cover(curr_index, board, wrapped_indices);
+        visited_vertices.insert(curr_index);
+        cover(curr_index, ai, wrapped_vertices);
       }
       LOG_IF(FATAL, curr_index != next_index);
       res += command;
-      visited_indices.insert(next_index);
+      visited_vertices.insert(next_index);
       prev_index = next_index;
     }
   }
@@ -296,27 +307,26 @@ string enjoy_tour(int start_index, const vector<int> &tour, set<int> &visited_in
 
 
 int main(int argc, char** argv) {
-  int H, W;
-  cin >> H >> W;
-  vector<string> board(H);
-
-  REP(i, H) cin >> board[H - 1 - i];
-
+  google::InitGoogleLogging(argv[0]);
+  AI ai;
   // find start index
-  int start_index = -1;
   vector<int> c_vertices;
   vector<int> x_vertices;
+  vector<int> b_vertices;
+  const int H = ai.board.size();
+  const int W = ai.board[0].size();
+  int start_index = to_index(ai.get_pos().first, ai.get_pos().second);
   REP(h, H) REP(w, W) {
-    if (board[h][w] == 'W') {
-      start_index = to_index(h, w);
-    }
-
-    if (board[h][w] == 'C') {
+    if (ai.board[h][w] == 'C') {
       c_vertices.push_back(to_index(h, w));
     }
 
-    if (board[h][w] == 'X') {
+    if (ai.board[h][w] == 'X') {
       x_vertices.push_back(to_index(h, w));
+    }
+
+    if (ai.board[h][w] == 'B') {
+      b_vertices.push_back(to_index(h, w));
     }
   }
   LOG_IF(FATAL, start_index < 0);
@@ -327,31 +337,44 @@ int main(int argc, char** argv) {
   int dw[] = {0, -1, 0, 1};
 
   REP(h, H) REP(w, W) {
-    if (board[h][w] == '#') continue;
+    if (ai.board[h][w] == '#') continue;
     
     REP(k, 4) {
       int nh = h + dh[k];
       int nw = w + dw[k];
-      if (0 <= nh && nh < H && 0 <= nw && nw < W && board[nh][nw] != '#') {
+      if (0 <= nh && nh < H && 0 <= nw && nw < W && ai.board[nh][nw] != '#') {
         original_gd.add_edge(to_index(h, w), to_index(nh, nw), 1);
       }
     }
   }
 
   string res = "";
-  set<int> visited_indices;
-  set<int> wrapped_indices;
-  visited_indices.insert(start_index);
-  cover(start_index, board, wrapped_indices);
+  set<int> visited_vertices;
+  set<int> wrapped_vertices;
+  visited_vertices.insert(start_index);
+  cover(start_index, ai, wrapped_vertices);
+  int extensions_per_wrapper = (b_vertices.size()) / (c_vertices.size() + 1);
 
-  vector<pair<int, int>> clone_collect_moves = collect_clone_greedy(start_index, original_gd, c_vertices);
-  if (!clone_collect_moves.empty() && !x_vertices.empty()) {
-    for (const auto &e: clone_collect_moves) {
+  vector<int> item_vertices;
+  if (extensions_per_wrapper > 0) {
+    cerr << "LET's use exntension (" << extensions_per_wrapper << " per wrapper)" << endl;
+    for (int v: b_vertices) item_vertices.push_back(v);
+  }
+
+  if (!c_vertices.empty() && !x_vertices.empty()) {
+    for (int v: c_vertices) item_vertices.push_back(v);
+  }
+
+  if (item_vertices.size() > 0) {
+    vector<pair<int, int>> item_collect_moves = collect_item_greedy(start_index, original_gd, item_vertices);
+    for (const auto &e: item_collect_moves) {
       int dst_index = e.second;
-      res += move(start_index, dst_index, visited_indices, wrapped_indices, board, original_gd);
+      res += move(start_index, dst_index, visited_vertices, wrapped_vertices, ai, original_gd);
       start_index = dst_index;
     }
+  }
 
+  if (!c_vertices.empty() && !x_vertices.empty()) {
     int best_d = 1e9;
     int best_x = -1;
     for (int v: x_vertices) {
@@ -361,20 +384,28 @@ int main(int argc, char** argv) {
         best_x = v;
       }
     }
-
-    res += move(start_index, best_x, visited_indices, wrapped_indices, board, original_gd);
+    
+    res += move(start_index, best_x, visited_vertices, wrapped_vertices, ai, original_gd);
     start_index = best_x;
     cerr << "++++++ LET'S CLONE (" << c_vertices.size() <<  ")++++++" << " " << res << endl;
   }
 
-  
-  set<int> required_vertices = collect_required_vertices(board);
-  required_vertices.insert(start_index);
+  for (int i = 0; i < extensions_per_wrapper; i++) {
+    LOG_IF(FATAL, !ai.use_extension(0, 2 + i));
+  }
+  LOG_IF(FATAL, start_index != to_index(ai.get_pos()));
 
-  vector<int> tour = compute_tour(start_index, required_vertices, original_gd);
-  // cerr << tour.size() << " " << required_vertices.size() << endl;
-  if (clone_collect_moves.empty() || x_vertices.empty() || tour.size() == 1) {
-    res += enjoy_tour(start_index, tour, visited_indices, wrapped_indices, board, original_gd);
+  cerr << "#B: " << b_vertices.size() << endl;
+  cerr << "#C: " << c_vertices.size() << endl;
+  cerr << "#visited_vertices: " << visited_vertices.size() << endl;
+  vector<int> tour = compute_tour(start_index, ai, original_gd, visited_vertices);
+  
+  if (c_vertices.empty() || x_vertices.empty() || tour.size() == 1) {
+    REP(i, extensions_per_wrapper) {
+      res += "B(" + to_string(2 + i) +  "," +  "0)";
+    }
+    cerr << "Tour Length: " << tour.size() << endl;
+    res += enjoy_tour(start_index, tour, visited_vertices, wrapped_vertices, ai, original_gd);
   } else {
     vector<vector<int>> subtours;
     int clone_count = min<int>(1 + c_vertices.size(), tour.size());
@@ -392,7 +423,10 @@ int main(int argc, char** argv) {
       if (i > 0) {
         res += "#";  
       }
-      res += enjoy_tour(start_index, subtours[i], visited_indices, wrapped_indices, board, original_gd);
+      REP(i, extensions_per_wrapper) {
+        res += "B(" + to_string(2 + i) +  "," +  "0)";
+      }
+      res += enjoy_tour(start_index, subtours[i], visited_vertices, wrapped_vertices, ai, original_gd);
     }
   }
   cerr << res.size() << endl;
