@@ -204,7 +204,7 @@ public:
   // If it's a invalid move, it returns false without changing internal states.
   bool move(const Direction &dir, const int id = 0);
   bool use_extension(const int dx, const int dy, const int id = 0);
-  bool turn_CW(const int id = 0);  // Turn commands always succeed
+  bool turn_CW(const int id = 0);  // Turn commands alwayids succeed
   bool turn_CCW(const int id = 0);
 
   bool use_fast_wheel(const int id = 0);
@@ -238,4 +238,6 @@ public:
   // Returns a shortest command sequence which fills dst.
   // The returned sequence only conistents of Move. TurnCW and TurnCCW.
   std::vector<Command> shortest_filling_commands(Position dst, const int id = 0);
+
+  std::set<Position> unfilled_neighbors(int id);
 };

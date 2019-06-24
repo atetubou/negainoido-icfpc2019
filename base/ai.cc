@@ -836,3 +836,23 @@ void AI::dump_state() const {
     std::cerr << std::endl;;
   }
 }
+
+std::set<Position> AI::unfilled_neighbors(int id) {
+  static const int dx[] = {0, 1, 0, -1};
+  static const int dy[] = {1, 0, -1, 0};
+
+  std::set<Position> st;
+
+  for (Position p: get_absolute_manipulator_positions(id)) {
+    for (int i = 0; i<4; i++) {
+      int nx = p.first  + dx[i];
+      int ny = p.second + dy[i];
+
+      if (valid_pos(Position(nx, ny)) && !filled[nx][ny]) {
+        st.insert(Position(nx, ny));
+      }
+    }
+  }
+
+  return st;
+}
