@@ -4,7 +4,7 @@
 * Hirokazu Honda
 * Kazuhiro Hattori
 * Keiichi Watanabe
-* Shuichi Hihara
+* Shuichi Hirahara
 * Takanori Hayashi
 * Taku Terao
 * Takumi Shimada
