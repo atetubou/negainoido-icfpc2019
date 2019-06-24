@@ -108,10 +108,14 @@ export const optimizeSolutions3 = async (budget: number, baseSolutions: LSolutio
     const baseScores = baseSolutions.map((solution) => solution ? solution.score : -1);
     let solutions = baseSolutions.concat([]);
 
-    const unit = 500;
+    const unit = 2000;
     let targetBudget = unit;
     const improves: { score: number, solution: LSolution }[] = [];
-    while (targetBudget <= budget) {
+    let limitBudgetPerTask = budget;
+    if (budget > 6000) {
+	limitBudgetPerTask = 6000;
+    }
+    while (targetBudget <= limitBudgetPerTask) {
         const solutionsWith = await getBestSolutionModels(getWhereOption(0, true, undefined, targetBudget));
         solutionsWith.filter((s) => !!s).forEach((solution, i) => {
             if (improves.findIndex((s) => s.solution.id === solution.id) >= 0) return;
