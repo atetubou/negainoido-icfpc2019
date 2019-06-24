@@ -112,8 +112,8 @@ export const optimizeSolutions3 = async (budget: number, baseSolutions: LSolutio
     let targetBudget = unit;
     const improves: { score: number, solution: LSolution }[] = [];
     let limitBudgetPerTask = budget;
-    if (budget > 6000) {
-	limitBudgetPerTask = 6000;
+    if (budget > 10000) {
+	    limitBudgetPerTask = 10000;
     }
     while (targetBudget <= limitBudgetPerTask) {
         const solutionsWith = await getBestSolutionModels(getWhereOption(0, true, undefined, targetBudget));
