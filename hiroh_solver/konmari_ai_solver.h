@@ -8,6 +8,8 @@
 #include <set>
 #include <map>
 
+#include "base/ai.h"
+
 class KonmariAISolver {
  public:
   KonmariAISolver(const std::pair<int,int>& initial,
@@ -17,7 +19,7 @@ class KonmariAISolver {
                   /*, std::map<char, int> extensions*/);
   ~KonmariAISolver();
 
-  std::string solve();
+  std::vector<std::vector<Command>> solve(int* score);
  private:
   class Impl;
   std::unique_ptr<Impl> impl;

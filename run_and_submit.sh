@@ -27,15 +27,19 @@ bazel build $target
 solver=./bazel-bin/$(echo $target | sed -e 's$:$/$g' -e 's$//$$g')
 validator=./bazel-bin/binary_validator/binary_validator
 
+BUY=${BUY:-""}
+
 for task in `seq -w 1 999`
 do
     if [ ! -f problems/prob-$task.in ]; then
         continue
     fi
-    $solver < problems/prob-$task.in > problems/prob-$task.out
+    buyfile=problems/prob-$task.buy
+    echo $BUY > $buyfile
+    $solver  --buy=$(cat $buyfile) < problems/prob-$task.in > problems/prob-$task.out
     echo "prob-${task}.in"
     solver_name=$1-@$(git rev-list -n1 HEAD)
-    curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@problems/prob-$task.out -F solver="${solver_name}" -F task=$task
+    curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@problems/prob-$task.out -F solver="${solver_name}" -F task=$task -F buyFile=@$buyfile
     ## if you want to use buy file, please replace "buy" with your buy file name.
     # curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@ans -F buyFile=@buy -F solver="${solver_name}" -F task=$task
 done

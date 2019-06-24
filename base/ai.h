@@ -6,6 +6,8 @@
 #include<map>
 #include<set>
 
+#include <gflags/gflags.h>
+
 #include "absl/strings/string_view.h"
 #include "absl/types/optional.h"
 
@@ -75,6 +77,8 @@ public:
   int duration_fast = 0;
 
 };
+
+DECLARE_string(buystring);
 
 class AI {
   static const int32_t H_MAX = 1000;
@@ -215,6 +219,7 @@ public:
   // Checks if get_filled_count() == Height * Width
   bool is_finished() const;
 
+  static std::string cmd2str(struct Command cmd, int height);
   // Returns command sequence in official format
   std::string commands2str() const;
 

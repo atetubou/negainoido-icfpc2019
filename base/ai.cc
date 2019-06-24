@@ -26,6 +26,37 @@ std::ostream& operator<<(std::ostream& os, const Direction& d) {
   LOG(FATAL) << "Invalid direction " << static_cast<int>(d);
 }
 
+std::ostream& operator<<(std::ostream& os, const Command& cmd) {
+  switch (cmd.type) {
+  case CmdType::Move:
+    return os << "Move(" << cmd.dir << ")";
+  case CmdType::TurnCW:
+    return os << "TurnCW";
+  case CmdType::TurnCCW:
+    return os << "TurnCCW";
+  case CmdType::UseExtension:
+    return os << "UseExtension(" << cmd.x << ", " << cmd.y << ")";
+  case CmdType::UseFastWheel:
+    return os << "UseFastWheel";
+  case CmdType::UseDrill:
+    return os << "UseDrill";
+  case CmdType::UseClone:
+    return os << "UseClone";
+  case CmdType::InstallBeacon:
+    return os << "InstallBeacon";
+  case CmdType::JumpToBeacon:
+    return os << "JumpToBeason(" << cmd.x << "," << cmd.y << ")";
+  case CmdType::Nop:
+    return os << "Nop";
+  default:
+    break;
+  }
+
+  LOG(FATAL) << "Invalid command " << static_cast<int>(cmd.type);
+  return os;
+}
+
+
 Position dir2vec(const Direction &dir) {
   static const int dx[] = {0, 1, 0, -1};
   static const int dy[] = {1, 0, -1, 0};
@@ -177,6 +208,13 @@ void AI::initialize() {
   }
 
   pickup_booster(0);
+
+  // Reset filled_count
+  filled_count = 0;
+  for (int i = 0; i < height; ++i)
+    for (int j = 0; j < width; ++j)
+      if (filled[i][j])
+        filled_count++;
 }
 
 bool AI::init_turn(const int id) {
@@ -191,9 +229,15 @@ bool AI::init_turn(const int id) {
   return !is_finished();
 }
 
+DEFINE_string(buy, "", "buy");
+
 AI::AI() {
   get_board_from_stdin();
   initialize();
+
+  std::cerr<< "Buy: " << FLAGS_buy << std::endl;
+
+  init_buy(FLAGS_buy);
 }
 
 void AI::init_buy(const std::string buystring) {
@@ -541,8 +585,10 @@ bool AI::use_extension(const int dx, const int dy, const int id) {
 
   bool can_use = false;
 
+  auto rpos = rotate_reverse({dx, dy}, get_dir(id));
+
   for(auto m: workers[id].manipulator_range) {
-    if (std::abs(m.first - dx) + std::abs(m.second - dy) == 1) {
+    if (std::abs(m.first - rpos.first) + std::abs(m.second - rpos.second) == 1) {
       can_use = true;
     }
   }
@@ -550,7 +596,7 @@ bool AI::use_extension(const int dx, const int dy, const int id) {
   if(!can_use)
     return false;
 
-  workers[id].manipulator_range.push_back( rotate_reverse({dx, dy}, get_dir(id)) );
+  workers[id].manipulator_range.push_back(rpos);
   count_extension--;
 
   // Fill a cell visited by a new manipulator.
@@ -674,7 +720,8 @@ bool AI::is_finished() const {
   return get_filled_count() + block_count == height * width;
 }
 
-std::string cmd2str(struct Command cmd, int height) {
+// static
+std::string AI::cmd2str(struct Command cmd, int height) {
   std::string s;
 
   switch (cmd.type) {
@@ -766,12 +813,22 @@ void AI::dump_state() const {
               << ", fast: " << workers[i].duration_fast << std::endl;
   }
 
+  std::set<Position> manis;
+  for (auto i = 0u; i < workers.size(); ++i) {
+    for (auto p : get_absolute_manipulator_positions(i)) {
+      manis.insert(p);
+    }
+  }
+
   for(int i = 0; i < height; ++i) {
     for(int j = 0; j < width; ++j) {
-      if (ws.find(std::make_pair(i, j)) != ws.end()) {
+      auto pos = std::make_pair(i, j);
+      if (ws.find(pos) != ws.end()) {
         std::cerr << "W";
+      } else if (manis.find(pos) != manis.end()) {
+        std::cerr << "M";
       } else if(filled[i][j]) {
-        std::cerr << "V";
+        std::cerr << "-";
       } else {
         std::cerr << board[i][j];
       }

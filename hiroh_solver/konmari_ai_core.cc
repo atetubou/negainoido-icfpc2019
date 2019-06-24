@@ -20,11 +20,9 @@
 class KonmariAI : public AI {
 public:
   KonmariAI(const std::vector<std::string>& board,
-            const std::vector<std::vector<bool>>& filled,
-            const std::set<std::pair<int,int>>& area_) :
+            const std::vector<std::vector<bool>>& filled) :
     AI(board, filled),
-    graph(board),
-    area(area_) {
+    graph(board) {
 
     std::map<char, int> count;
     for (int x = 0; x < get_height(); x++) {
@@ -56,10 +54,6 @@ public:
   void konmari_move();
   Position get_nearest_unfilled(std::vector<std::pair<int,int>>* path);
 
-  bool konmari_finish() {
-    area_update();
-    return area.empty();
-  }
 private:
   std::vector<Position> get_neighbors(const Position& p) {
     std::vector<Position> ret;
@@ -88,26 +82,9 @@ private:
   std::vector<Position> DPTSP(std::vector<Position> cells, int* cost);
   std::vector<Position> greedyTSP(std::vector<Position> cells, int* cost);
 
-  void go_to_area();
-  bool is_responsible(const Position& p) {
-    return area.find(p) != area.end();
-  }
-
-  void area_update() {
-    auto it = area.begin();
-    for (; it != area.end();) {
-      if (filled[it->first][it->second]) {
-        it = area.erase(it);
-      } else {
-        it++;
-      }
-    }
-  }
-
   int used_extension = 0;
   int drill_threshold = 7;
   GridGraph graph;
-  std::set<Position> area;
 };
 
 #define INF (1<<29)
@@ -197,28 +174,6 @@ std::vector<Position> KonmariAI::greedyTSP(std::vector<Position> cells,
   }
 
   return best_path;
-}
-
-void KonmariAI::go_to_area() {
-  Position nearest_pos; // in area
-  int min_cost = INF;
-  std::vector<std::pair<int,int>> best_path;
-  for (const auto& p: area) {
-    std::vector<std::pair<int,int>> path;
-    int c = graph.shortest_path(get_pos().first, get_pos().second,
-                                p.first, p.second,
-                                path, min_cost);
-    if (min_cost > c) {
-      min_cost = c;
-      nearest_pos = p;
-      best_path = std::move(path);
-    }
-  }
-
-  // TODO(hiroh): Use shortest_filling_commands.
-  for (const Direction& dir : GridGraph::path_to_actions(best_path)) {
-      move(dir);
-  }
 }
 
 void KonmariAI::try_to_use_fast_weel() {
@@ -355,9 +310,6 @@ void KonmariAI::pick_up_extensions() {
   }
 
   if (extensions.empty()) {
-    // There is no extension..
-    // We have to go the position that is in area and nearest from the current pos.
-    go_to_area();
     return;
   }
 
@@ -411,7 +363,7 @@ Position KonmariAI::get_nearest_unfilled(std::vector<std::pair<int,int>>* path) 
       int y = np.second;
       if (!passed[x][y]) {
         passed[x][y] = true;
-        if (!filled[x][y] && board[x][y] != '#' && is_responsible(np)) {
+        if (!filled[x][y] && board[x][y] != '#') {
           graph.shortest_path(centre.first, centre.second, x, y, *path);
           return np;
         }
@@ -483,47 +435,56 @@ void KonmariAI::konmari_move() {
 class KonmariAISolver::Impl {
 public:
   Impl(const std::vector<std::string>& board,
-       const std::vector<std::vector<bool>>& filled,
-       const std::set<std::pair<int,int>>& area);
-  std::string solve();
+       const std::vector<std::vector<bool>>& filled);
+  std::vector<std::vector<Command>> solve(int* score);
 private:
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
-  std::set<std::pair<int,int>> area;
 };
 
 KonmariAISolver::Impl::Impl(const std::vector<std::string>& board,
-                            const std::vector<std::vector<bool>>& filled,
-                            const std::set<std::pair<int,int>>& area)
-  : board(board), filled(filled), area(area) {}
+                            const std::vector<std::vector<bool>>& filled)
+  : board(board), filled(filled) {}
 
-std::string KonmariAISolver::Impl::solve() {
-  KonmariAI original_ai(board, filled, area);
-  if (original_ai.konmari_finish()) {
-    return "";
+std::vector<std::vector<Command>> KonmariAISolver::Impl::solve(int* score) {
+  std::cerr << "Worker computing...." << std::endl;
+  KonmariAI original_ai(board, filled);
+
+#if 1
+  original_ai.pick_up_extensions();
+  while (!original_ai.is_finished()) {
+    original_ai.konmari_move();
   }
-  // First pick up all extensions.
+  *score = original_ai.get_time();
+  std::cerr << "Score: " << *score << std::endl;
+  return original_ai.executed_cmds;
+#else
   int best_score = (1<<29);
   std::string best_str;
+  std::vector<std::vector<Command>> best_cmds;
   int best_v = -1;
   for (int v = 1; v < 30; v++) {
     KonmariAI ai = original_ai;
+    std::cerr << "trying v=" << v << std::endl;
     ai.set_drill_threshold(v);
+    // First pick up all extensions.
     ai.pick_up_extensions();
-    while (!ai.konmari_finish()) {
+    while (!ai.is_finished()) {
       ai.konmari_move();
     }
     int score = ai.get_time();
-    LOG(INFO) << "Score (v=" << v << "):" << score << std::endl;
+    std::cerr << "Score (v=" << v << "):" << score << std::endl;
     if (best_score > score) {
       best_v = v;
       best_score = score;
-      best_str = ai.commands2str();
+      best_cmds = ai.executed_cmds;
     }
   }
 
-  LOG(INFO) << "Best Score (v=" << best_v << "):" << best_score << std::endl;
-  return best_str;
+  std::cerr << "Best Score (v=" << best_v << "):" << best_score << std::endl;
+  *score = best_score;
+  return best_cmds;
+#endif
 }
 
 KonmariAISolver::KonmariAISolver(const std::pair<int,int>& initial,
@@ -533,12 +494,22 @@ KonmariAISolver::KonmariAISolver(const std::pair<int,int>& initial,
   auto new_board = board;
   int W = board[0].size();
   int H = board.size();
-
+  std::vector<std::vector<bool>> new_filled = filled;
   for (int i = 0; i < H; i++) {
     for (int j = 0; j < W; j++) {
-      if (new_board[i][j] != '#' && new_board[i][j] != '.') {
-        // This is item.
-        new_board[i][j] = '.';
+      if (board[i][j] == '#' && filled[i][j]) {
+        LOG(FATAL) << "Wall is filled....";
+      }
+    }
+  }
+  for (int i = 0; i < H; i++) {
+    for (int j = 0; j < W; j++) {
+      if (new_board[i][j] != '#') {
+        if (area.find(std::make_pair(i,j)) == area.end()) {
+          // This cell doesn't have to be filled by this ai.
+          new_filled[i][j] = true;
+          new_board[i][j] = '.';
+        }
       }
     }
   }
@@ -551,12 +522,11 @@ KonmariAISolver::KonmariAISolver(const std::pair<int,int>& initial,
 
   new_board[initial.first][initial.second] = 'W';
 
-  impl = std::make_unique<KonmariAISolver::Impl>(std::move(new_board), filled, area);
-  // impl = new KonmariAISolver::Impl(std::move(new_board), filled, area);
+  impl = std::make_unique<KonmariAISolver::Impl>(std::move(new_board), std::move(new_filled));
 }
 
 KonmariAISolver::~KonmariAISolver() = default;
 
-std::string KonmariAISolver::solve() {
-  return impl->solve();
+std::vector<std::vector<Command>> KonmariAISolver::solve(int* score) {
+  return impl->solve(score);
 }
