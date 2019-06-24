@@ -340,12 +340,16 @@ int main(int argc, char** argv) {
   visited_indices.insert(start_index);
   cover(start_index, ai.board, wrapped_indices);
 
-  vector<pair<int, int>> clone_collect_moves = collect_clone_greedy(start_index, original_gd, c_vertices);
-  if (!clone_collect_moves.empty() && !x_vertices.empty()) {
-    for (const auto &e: clone_collect_moves) {
-      int dst_index = e.second;
-      res += move(start_index, dst_index, visited_indices, wrapped_indices, ai.board, original_gd);
-      start_index = dst_index;
+  const int total_clone_count = initial_clone_count + c_vertices.size();
+  
+  if (total_clone_count > 0 && !x_vertices.empty()) {
+    vector<pair<int, int>> clone_collect_moves = collect_clone_greedy(start_index, original_gd, c_vertices);
+    if (!clone_collect_moves.empty()) {
+      for (const auto &e: clone_collect_moves) {
+        int dst_index = e.second;
+        res += move(start_index, dst_index, visited_indices, wrapped_indices, ai.board, original_gd);
+        start_index = dst_index;
+      }
     }
 
     int best_d = 1e9;
@@ -360,7 +364,7 @@ int main(int argc, char** argv) {
 
     res += move(start_index, best_x, visited_indices, wrapped_indices, ai.board, original_gd);
     start_index = best_x;
-    cerr << "++++++ LET'S CLONE (" << c_vertices.size() <<  ")++++++" << " " << res << endl;
+    cerr << "++++++ LET'S CLONE (" << c_vertices.size() <<  ", " << initial_clone_count << ")++++++" << " " << res << endl;
   }
 
   
@@ -369,11 +373,11 @@ int main(int argc, char** argv) {
 
   vector<int> tour = compute_tour(start_index, required_vertices, original_gd);
   // cerr << tour.size() << " " << required_vertices.size() << endl;
-  if (clone_collect_moves.empty() || x_vertices.empty() || tour.size() == 1) {
+  if (total_clone_count == 0 || x_vertices.empty() || tour.size() == 1) {
     res += enjoy_tour(start_index, tour, visited_indices, wrapped_indices, ai.board, original_gd);
   } else {
     vector<vector<int>> subtours;
-    int clone_count = min<int>(1 + c_vertices.size(), tour.size());
+    int clone_count = min<int>(1 + total_clone_count, tour.size());
     int subtour_size = (tour.size() + clone_count - 1) / clone_count;
     for (size_t i = 0; i < tour.size(); i += subtour_size) {
       size_t start_index = i;
