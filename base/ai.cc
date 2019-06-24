@@ -720,7 +720,8 @@ bool AI::is_finished() const {
   return get_filled_count() + block_count == height * width;
 }
 
-std::string cmd2str(struct Command cmd, int height) {
+// static
+std::string AI::cmd2str(struct Command cmd, int height) {
   std::string s;
 
   switch (cmd.type) {

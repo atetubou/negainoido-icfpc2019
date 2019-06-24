@@ -219,6 +219,7 @@ public:
   // Checks if get_filled_count() == Height * Width
   bool is_finished() const;
 
+  static std::string cmd2str(struct Command cmd, int height);
   // Returns command sequence in official format
   std::string commands2str() const;
 
