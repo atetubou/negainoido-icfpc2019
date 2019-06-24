@@ -207,7 +207,7 @@ app.post('/solution', async (req, res, next) => {
                 });
             }
         }).then(() => {
-            return validateModel(model.task_id, model, file);
+            return validateModel(model.task_id, model, buyFile);
         }).catch((e) => {
             console.log('error in validate: ' + e);
         });
