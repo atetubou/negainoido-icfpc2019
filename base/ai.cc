@@ -139,13 +139,18 @@ bool AI::reachable_sub(Position src, Position target) const {
   return true;
 }
 
-void AI::initialize() {
+void AI::get_board_from_stdin() {
   std::cin >> height >> width;
   std::string buf;
   while (std::cin >> buf) {
     board.push_back(buf);
   }
 
+  filled.resize(height);
+  for (int i = 0; i < height; ++i) filled[i].resize(width);
+}
+
+void AI::initialize() {
   Position worker_pos = std::make_pair(0, 0);
   for (int i = 0; i < height; ++i) {
     for (int j = 0; j < width; ++j) {
@@ -160,9 +165,6 @@ void AI::initialize() {
       }
     }
   }
-  filled.resize(height);
-  for (int i = 0; i < height; ++i) filled[i].resize(width);
-
   workers.clear();
   workers.push_back(Worker(worker_pos));
 
@@ -190,10 +192,12 @@ bool AI::init_turn(const int id) {
 }
 
 AI::AI() {
+  get_board_from_stdin();
   initialize();
 }
 
 AI::AI(const std::string buystring) {
+  get_board_from_stdin();
   initialize();
 
   for (auto c : buystring) {
@@ -218,6 +222,16 @@ AI::AI(const std::string buystring) {
       break;
     }
   }
+}
+
+AI::AI(const std::vector<std::string> &init_board, const std::vector<std::vector<bool>> &init_filled) {
+  height = init_board.size();
+  width = init_board[0].size();
+
+  board = init_board;
+  filled = init_filled;
+
+  initialize();
 }
 
 void AI::pickup_booster(const int id) {
