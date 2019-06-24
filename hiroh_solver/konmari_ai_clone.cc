@@ -50,13 +50,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  size_t nop_count[100] = {};
-  // nop coun
   while (ai.get_count_clone()) {
     const int workers = ai.get_count_active_workers();
     ai.use_clone(0);
     for (int i = 1; i < workers; ++i) {
-      nop_count[i]++;
+      ai.nop(i);
     }
   }
 
@@ -91,16 +89,11 @@ int main(int argc, char *argv[]) {
 
   LOG(ERROR) << "The number of workers: " << workers.size();
   const int height = ai.board.size();
-  std::vector<std::vector<Command>> cmds(workers.size());
+  std::vector<std::vector<Command>> cmds = ai.executed_cmds;
   size_t max_cmd_length = 0;
   std::vector<int> scores(workers.size());
   for (size_t i = 0; i < workers.size(); i++) {
     const auto& w = workers[i];
-    for (size_t k = 0; k < nop_count[i]; k++) {
-      struct Command nop_cmd;
-      nop_cmd.type = CmdType::Nop;
-      cmds[i].push_back(nop_cmd);
-    }
     auto w_cmds = w->solve(&scores[i])[0];
     for (const auto& cmd : w_cmds) {
       cmds[i].push_back(cmd);
