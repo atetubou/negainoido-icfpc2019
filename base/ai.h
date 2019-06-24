@@ -107,6 +107,8 @@ class AI {
   bool init_turn(const int id);
   void pickup_booster(const int id);
 
+  bool reachable_sub(Position src, Position pos) const;
+
   void push_command(struct Command cmd, const int id);
 
 public:
@@ -164,7 +166,7 @@ public:
 
   // Gets the all (possible) positions of manipulators.
   // It may be in invalid postion. (e.g. out of the map, unreachable postion)
-  std::vector<Position> get_absolute_manipulator_positions(const int id = 0);
+  std::vector<Position> get_absolute_manipulator_positions(const int id = 0) const;
 
   // Gets the all manipulators' positions after one rotation.
   // Unreachable/invalid positions are skipped.
@@ -224,5 +226,5 @@ public:
 
   // Returns a shortest command sequence which fills dst.
   // The returned sequence only conistents of Move. TurnCW and TurnCCW.
-  std::vector<Command> shortest_filling_commands(Position dst, const int id = 0) const;
+  std::vector<Command> shortest_filling_commands(Position dst, const int id = 0);
 };
