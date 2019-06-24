@@ -56,11 +56,11 @@ int main(int argc, char *argv[]) {
     }
   }
 
-  auto selected = [&](){
+  auto calc_groups = [&](){
     std::vector<pos> selected;
     for (auto i = 0u; i < ai.board.size(); ++i) {
       for (auto j = 0u; j < ai.board[i].size(); ++j) {
-	if (ai.board[i][j] != '#') {
+	if (ai.board[i][j] != '#' && !ai.filled[i][j]) {
 	  selected.emplace_back(i, j);
 	}
       }
@@ -69,16 +69,26 @@ int main(int argc, char *argv[]) {
     std::mt19937 get_rand_mt;
     absl::c_shuffle(selected, get_rand_mt);
     
-    selected.resize(ai.get_count_active_workers());
-    return selected;
-  }();
+    if (static_cast<int>(selected.size()) > ai.get_count_active_workers()) {
+      selected.resize(ai.get_count_active_workers());		       
+    }
+    auto g = get_groups(ai, selected);
+    g.resize(ai.get_count_active_workers());
+    return g;
+  };
 
-  auto groups = get_groups(ai, selected);
+  auto groups = calc_groups();
 
   std::vector<std::deque<Direction>> directions(ai.get_count_active_workers());
+  int get_filled_count = ai.get_filled_count();
 
   while (!ai.is_finished()) {
     for (int i = 0; i < ai.get_count_active_workers(); ++i) {
+      if (ai.is_finished()) {
+	ai.print_commands();
+	return 0;
+      }
+
       if (directions[i].empty()) {
 	for (auto it = groups[i].begin(); it != groups[i].end();){
 	  if (ai.filled[it->first][it->second]) {
@@ -95,11 +105,21 @@ int main(int argc, char *argv[]) {
       }
       
       if (directions[i].empty()) {
-	ai.nop(i);
+	LOG_IF(INFO, !ai.nop(i)) << "nop failed";
+	if (get_filled_count != ai.get_filled_count()) {
+	  get_filled_count = ai.get_filled_count();
+	  groups = calc_groups();
+	  directions.clear();
+	  directions.resize(ai.get_count_active_workers());
+	}
 	continue;
       }
 
-      ai.move(directions[i].front(), i);
+      if (!ai.move(directions[i].front(), i)) {
+	ai.dump_state();
+	LOG(INFO) << directions[i];
+	LOG(FATAL) << "failed to move " << directions[i].front() << " " << i;
+      }
       directions[i].pop_front();
     }
   }
