@@ -196,10 +196,7 @@ AI::AI() {
   initialize();
 }
 
-AI::AI(const std::string buystring) {
-  get_board_from_stdin();
-  initialize();
-
+void AI::init_buy(const std::string buystring) {
   for (auto c : buystring) {
     switch(c) {
     case 'B':
@@ -224,7 +221,15 @@ AI::AI(const std::string buystring) {
   }
 }
 
-AI::AI(const std::vector<std::string> &init_board, const std::vector<std::vector<bool>> &init_filled) {
+AI::AI(const std::string buystring) {
+  get_board_from_stdin();
+  initialize();
+
+  init_buy(buystring);
+}
+
+AI::AI(const std::vector<std::string> &init_board, const std::vector<std::vector<bool>> &init_filled,
+       const std::string buystring) {
   height = init_board.size();
   width = init_board[0].size();
 
@@ -232,6 +237,8 @@ AI::AI(const std::vector<std::string> &init_board, const std::vector<std::vector
   filled = init_filled;
 
   initialize();
+
+  init_buy(buystring);
 }
 
 void AI::pickup_booster(const int id) {
