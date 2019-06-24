@@ -25,7 +25,13 @@
 How to run
 ```
 $ bazel build //...
-$ ./bazel-bin/tikuta_solver/tikuta_solver3 --buy=CCC < problems/prob-002.desc > problems/prob-002.out
+$ ./bazel-bin/tikuta_solver/tikuta_solver3 --buy=CCC < problems/prob-002.in > problems/prob-002.out
+```
+## flowlight_solver
+
+```
+$ bazel build //...
+$ ./bazel-bin/flowlight/main/flowlight_solver --buy=CC < problems/pro-002.in > probolems/prob-002.out
 ```
 
 ## cym
