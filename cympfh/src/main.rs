@@ -196,7 +196,10 @@ fn main() {
         match getch() {
             // worker move
             CHAR_A => {
-                if ai.mv(0, Direction::Left) {
+                if ai.count_extension > 0 {
+                    message = String::from("!!! Use B !!!");
+                    changed = false;
+                } else if ai.mv(0, Direction::Left) {
                     message = String::from("Left");
                 } else {
                     message = String::from("Cannot Left");
@@ -204,7 +207,10 @@ fn main() {
                 }
             },
             CHAR_D => {
-                if ai.mv(0, Direction::Right) {
+                if ai.count_extension > 0 {
+                    message = String::from("!!! Use B !!!");
+                    changed = false;
+                } else if ai.mv(0, Direction::Right) {
                     message = String::from("Right");
                 } else {
                     message = String::from("Cannot Right");
@@ -212,7 +218,10 @@ fn main() {
                 }
             },
             CHAR_S => {
-                if ai.mv(0, Direction::Down) {
+                if ai.count_extension > 0 {
+                    message = String::from("!!! Use B !!!");
+                    changed = false;
+                } else if ai.mv(0, Direction::Down) {
                     message = String::from("Down");
                 } else {
                     message = String::from("Cannot Down");
@@ -220,7 +229,10 @@ fn main() {
                 }
             },
             CHAR_W => {
-                if ai.mv(0, Direction::Up) {
+                if ai.count_extension > 0 {
+                    message = String::from("!!! Use B !!!");
+                    changed = false;
+                } else if ai.mv(0, Direction::Up) {
                     message = String::from("Up");
                 } else {
                     message = String::from("Cannot Up");
@@ -228,12 +240,22 @@ fn main() {
                 }
             },
             CHAR_E => {
-                ai.turn_cw(0);
-                message = String::from("Turn CW");
+                if ai.count_extension > 0 {
+                    message = String::from("!!! Use B !!!");
+                    changed = false;
+                } else {
+                    ai.turn_cw(0);
+                    message = String::from("Turn CW");
+                }
             },
             CHAR_Q => {
-                ai.turn_ccw(0);
-                message = String::from("Turn CCW");
+                if ai.count_extension > 0 {
+                    message = String::from("!!! Use B !!!");
+                    changed = false;
+                } else {
+                    ai.turn_ccw(0);
+                    message = String::from("Turn CCW");
+                }
             },
             // boosters
             CHAR_B => {
