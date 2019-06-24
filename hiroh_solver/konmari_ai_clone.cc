@@ -4,6 +4,7 @@
 #include <set>
 #include <vector>
 #include <deque>
+#include <memory>
 
 #include <glog/logging.h>
 #include <glog/stl_logging.h>
@@ -15,6 +16,7 @@
 #include "base/ai.h"
 #include "base/graph.h"
 #include "tailed/LKH3_wrapper.h"
+#include "hiroh_solver/konmari_ai_solver.h"
 
 using pos = std::pair<int, int>;
 
@@ -48,11 +50,13 @@ int main(int argc, char *argv[]) {
     }
   }
 
+  size_t nop_count[100] = {};
+  // nop coun
   while (ai.get_count_clone()) {
     const int workers = ai.get_count_active_workers();
     ai.use_clone(0);
     for (int i = 1; i < workers; ++i) {
-      ai.nop(i);
+      nop_count[i]++;
     }
   }
 
@@ -77,70 +81,45 @@ int main(int argc, char *argv[]) {
     return g;
   };
 
-  auto groups = calc_groups();
-
-  std::vector<std::deque<Direction>> directions(ai.get_count_active_workers());
-  std::vector<absl::optional<pos>> current_goals(ai.get_count_active_workers());
-
-  while (!ai.is_finished()) {
-    for (int i = 0; i < ai.get_count_active_workers(); ++i) {
-      if (ai.is_finished()) {
-	LOG(INFO) << ai.get_time();
-	ai.print_commands();
-	return 0;
-      }
-
-      if (ai.get_count_extension()) {
-	int d = ai.get_absolute_manipulator_positions(i).size() - 2;
-	auto v = dir2vec(ai.get_dir(i));
-	v.first *= d;
-	v.second *= d;
-
-	LOG_IF(FATAL, !ai.use_extension(v.first, v.second, i));
-	continue;
-      }
-
-      bool recalc_goal = directions[i].empty();
-      auto current_goal = current_goals[i];
-      recalc_goal |= current_goal && ai.filled[current_goal->first][current_goal->second] &&
-	ai.board[current_goal->first][current_goal->second] != 'B';
-
-      if (recalc_goal) {
-	current_goals[i].reset();
-	for (auto it = groups[i].begin(); it != groups[i].end();){
-	  if (ai.filled[it->first][it->second]) {
-	    it = groups[i].erase(it);
-	  } else {
-	    ++it;
-	  }
-	}
-
-	if (!groups[i].empty()) {
-	  pos goal;
-	  auto p = gridg.shortest_paths(ai.get_pos(i), groups[i], &goal);
-	  directions[i] = std::deque<Direction>(p.begin(), p.end());
-	  current_goals[i] = goal;
-	}
-      }
-
-      if (directions[i].empty()) {
-	LOG_IF(INFO, !ai.nop(i)) << "nop failed";
-	auto g = calc_groups();
-	groups[i] = g[i];
-	directions.clear();
-	directions.resize(ai.get_count_active_workers());
-	continue;
-      }
-
-      if (!ai.move(directions[i].front(), i)) {
-	ai.dump_state();
-	LOG(INFO) << directions[i];
-	LOG(FATAL) << "failed to move " << directions[i].front() << " " << i;
-      }
-      directions[i].pop_front();
-    }
+  std::vector<std::unique_ptr<KonmariAISolver>> workers;
+  for (const auto& g : calc_groups()) {
+    workers.push_back(std::make_unique<KonmariAISolver>(ai.get_pos(),
+                                                        ai.board,
+                                                        ai.filled,
+                                                        std::set<std::pair<int,int>>(g.begin(), g.end())));
   }
 
-  LOG(INFO) << ai.get_time();
-  ai.print_commands();
+  LOG(ERROR) << "The number of workers: " << workers.size();
+  const int height = ai.board.size();
+  std::vector<std::vector<Command>> cmds(workers.size());
+  size_t max_cmd_length = 0;
+  for (size_t i = 0; i < workers.size(); i++) {
+    const auto& w = workers[i];
+    for (size_t k = 0; k < nop_count[i]; k++) {
+      struct Command nop_cmd;
+      nop_cmd.type = CmdType::Nop;
+      cmds[i].push_back(nop_cmd);
+    }
+    auto w_cmds = w->solve()[0];
+    for (const auto& cmd : w_cmds) {
+      cmds[i].push_back(cmd);
+    }
+    max_cmd_length = std::max(max_cmd_length, cmds.back().size());
+  }
+
+  std::string phase1 = ai.commands2str();
+  std::string phase2;
+  std::cout << phase1;
+  for (size_t j = 0; j < workers.size(); j++) {
+    for (size_t i = cmds[j].size(); i < max_cmd_length; i++) {
+      struct Command nop_cmd;
+      nop_cmd.type = CmdType::Nop;
+      cmds[j].push_back(nop_cmd);
+    }
+    if (j != 0)
+      std::cout << "#";
+    for (const auto& cmd : cmds[j])
+      std::cout << AI::cmd2str(cmd, height);
+  }
+  std::cout << std::endl;
 }
