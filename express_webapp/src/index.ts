@@ -77,7 +77,7 @@ app.get('/', (req, res, next) => {
 });
 
 app.get('/solution', async (req, res, next) => {
-    const valid = req.query.valid || false;
+    const valid = !!req.query.valid;
     const removeFailed = req.query.removeFailed || false;
     const limit = req.query.limit;
     const taskId = parseInt(req.query.taskId || '0');

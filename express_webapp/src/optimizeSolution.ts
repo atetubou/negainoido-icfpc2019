@@ -7,6 +7,11 @@ const estimateScore = (taskId: number, baseScore: number, score: number) => {
     return 1000 * Math.log2(task.x * task.y)  * baseScore / score;
 };
 
+const estimateImprove = (taskId: number, baseScore: number, score: number) => {
+    const task = problems[taskId - 1];
+    return 1000 * Math.log2(task.x * task.y)  * (baseScore / score - 1);
+};
+
 export const getSolutionStats = (solutions: LSolution[], baseScores: number[]) => {
     let totalCost = 0;
     let totalScore = 0;
@@ -112,7 +117,7 @@ export const optimizeSolutions3 = async (budget: number, baseSolutions: LSolutio
             if (improves.findIndex((s) => s.solution.id === solution.id) >= 0) return;
 
             if (baseScores[i] > 0) {
-                const score = (estimateScore(solution.task_id, baseScores[i], solution.score) - solution.cost)/solution.cost;
+                const score = (estimateImprove(solution.task_id, baseScores[i], solution.score) - solution.cost)/solution.cost;
                 if (score > 0) {
                     improves.push({ score, solution });
                 }
