@@ -100,6 +100,10 @@ bool AI::valid_pos(Position target) const {
 }
 
 bool AI::reachable(Position target, const int id) const {
+  return reachable_sub(get_pos(id), target);
+}
+
+bool AI::reachable_sub(Position src, Position target) const {
   int x = target.first;
   int y = target.second;
   if (!valid_pos(target))
@@ -108,9 +112,8 @@ bool AI::reachable(Position target, const int id) const {
   if (board[x][y] == '#')
     return false;
 
-  auto worker_pos = get_pos(id);
-  int wx = worker_pos.first;
-  int wy = worker_pos.second;
+  int wx = src.first;
+  int wy = src.second;
   for (int cx = std::min(x, wx); cx <= std::max(x, wx); cx++) {
     for (int cy = std::min(y, wy); cy <= std::max(y, wy); cy++) {
       if (board[cx][cy] != '#')
@@ -297,12 +300,12 @@ Position AI::get_neighbor(const Direction &dir, const int id) const {
                   workers[id].current_pos.second + dy[idx]);
 }
 
-std::vector<Position> AI::get_absolute_manipulator_positions(const int id) {
+std::vector<Position> AI::get_absolute_manipulator_positions(const int id) const {
 
   Position self = get_pos(id);
   std::vector<Position> ret;
 
-  for (Position&p : workers[id].manipulator_range) {
+  for (const Position&p : workers[id].manipulator_range) {
     Position mani = rotate(p, get_dir(id));
     mani.first += self.first;
     mani.second += self.second;

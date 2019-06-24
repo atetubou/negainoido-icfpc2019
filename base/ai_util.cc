@@ -30,7 +30,7 @@ std::vector<Position> get_absolute_pos(const std::vector<Position>& range,
   return ret;
 }
 
-std::vector<Command> AI::shortest_filling_commands(Position dst, const int id) const {
+std::vector<Command> AI::shortest_filling_commands(Position dst, const int id) {
   if (!valid_pos(dst))
     LOG(FATAL) << "invalid position: (" << dst.first << ", " << dst.second;
 
@@ -53,8 +53,8 @@ std::vector<Command> AI::shortest_filling_commands(Position dst, const int id) c
 
     // Check if dst is filled by manipulator
     for (auto &p : get_absolute_pos(workers[id].manipulator_range,
-                                                state, id)) {
-      if (p == dst) {
+                                    state, id)) {
+      if (p == dst && reachable_sub(state.first, p)) {
         done = true;
         final_state = state;
 
