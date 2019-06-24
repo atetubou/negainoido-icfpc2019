@@ -39,28 +39,31 @@ fn dump(ai: &AI, &win: &*mut i8, message: &String, &cursor: &Position) {
     // count
     wmove(win, 1, 0);
     attrset(COLOR_PAIR(1));
-    waddstr(win, &format!("count: #B = {}, #F = {}, #L = {}, #R = {}, #C = {}; com-len = {}",
+    waddstr(win, &format!("count: #B = {:?}, #F = {:?}, #L = {:?}, #C = {:?}; active: #{}",
                           ai.count_extension,
                           ai.count_fast,
                           ai.count_drill,
-                          0,
                           ai.count_clone,
-                          ai.executed_cmds.len(),
+                          ai.active_worker_id,
                           ));
     wmove(win, 2, 0);
-    waddstr(win, &format!("duration: F: {}, L: {}",
-                          ai.workers[0].duration_fast,
-                          ai.workers[0].duration_drill,
+    waddstr(win, &format!("time: {:?}; duration: F: {}, L: {}",
+                          ai.current_time,
+                          ai.workers[ai.active_worker_id].duration_fast,
+                          ai.workers[ai.active_worker_id].duration_drill,
                           ));
 
-    let mybody = ai.get_absolute_manipulator_positions(0);
+    let ourbody: Vec<Vec<_>> = (0..ai.count_active_workers).map({|id| ai.get_absolute_manipulator_positions(id)}).collect();
+    let is_our_body = |p: &Position| { ourbody.iter().any(|body| body.iter().any(|&q| *p == q)) };
+
+    let mybody = ai.get_absolute_manipulator_positions(ai.active_worker_id);
     let is_my_body = |p: &Position| { mybody.iter().any(|&q| *p == q) };
 
     let window_height_range = if ai.height <= WINDOW_HEIGHT {
         0..ai.height
     } else {
-        let left = if ai.workers[0].current_pos.0 as usize > WINDOW_HEIGHT / 2 {
-            ai.workers[0].current_pos.0 as usize - WINDOW_HEIGHT / 2
+        let left = if ai.workers[ai.active_worker_id].current_pos.0 as usize > WINDOW_HEIGHT / 2 {
+            ai.workers[ai.active_worker_id].current_pos.0 as usize - WINDOW_HEIGHT / 2
         } else {
             0
         };
@@ -77,6 +80,8 @@ fn dump(ai: &AI, &win: &*mut i8, message: &String, &cursor: &Position) {
                 5
             } else if ai.filled[i][j] && is_my_body(&Position(i as isize, j as isize)) {
                 3
+            } else if ai.filled[i][j] && is_our_body(&Position(i as isize, j as isize)) {
+                6
             } else if ai.filled[i][j] {
                 2
             } else if ai.board[i][j] == '#' {
@@ -85,8 +90,8 @@ fn dump(ai: &AI, &win: &*mut i8, message: &String, &cursor: &Position) {
                 1
             };
 
-            let character = if Position(i as isize, j as isize) == ai.workers[0].current_pos {
-                match ai.workers[0].current_dir {
+            let character = if Position(i as isize, j as isize) == ai.workers[ai.active_worker_id].current_pos {
+                match ai.workers[ai.active_worker_id].current_dir {
                     Direction::Left => '<',
                     Direction::Right => '>',
                     Direction::Up => '^',
@@ -145,10 +150,10 @@ fn main() {
 
     for item in args[2].chars() {
         match item {
-            'B' => { ai.count_extension += 1; }
-            'L' => { ai.count_drill += 1; }
-            'F' => { ai.count_fast += 1; }
-            'C' => { ai.count_clone += 1; }
+            'B' => { ai.count_extension[ai.active_worker_id] += 1; }
+            'L' => { ai.count_drill[ai.active_worker_id] += 1; }
+            'F' => { ai.count_fast[ai.active_worker_id] += 1; }
+            'C' => { ai.count_clone[ai.active_worker_id] += 1; }
             _ => {}
         }
     }
@@ -159,11 +164,13 @@ fn main() {
     init_pair(1, COLOR_BLACK, COLOR_WHITE);   // default
     init_pair(2, COLOR_BLACK, COLOR_YELLOW);  // occupied, filled
     init_pair(3, COLOR_BLUE, COLOR_RED);   // self
+    init_pair(6, COLOR_BLUE, 13);   // cloned other self
     init_pair(4, COLOR_BLACK, COLOR_BLACK);   // obs
     init_pair(5, COLOR_BLACK, COLOR_GREEN);   // cursor
 
     const CHAR_A: i32 = 'a' as i32;
     const CHAR_B: i32 = 'b' as i32;
+    const CHAR_C: i32 = 'c' as i32;
     const CHAR_D: i32 = 'd' as i32;
     const CHAR_E: i32 = 'e' as i32;
     const CHAR_F: i32 = 'f' as i32;
@@ -175,8 +182,10 @@ fn main() {
     const CHAR_V: i32 = 'v' as i32;
     const CHAR_W: i32 = 'w' as i32;
     const CHAR_X: i32 = 'x' as i32;
+    const CHAR_Z: i32 = 'z' as i32;
     const CHAR_LARGE_X: i32 = 88;
     const CHAR_LARGE_V: i32 = 86;
+    const CHAR_TAB: i32 = 9;
     const CHAR_RET: i32 = 10;
     const CHAR_UP: i32 = 65;
     const CHAR_DOWN: i32 = 66;
@@ -206,10 +215,7 @@ fn main() {
         match getch() {
             // worker move
             CHAR_A => {
-                if ai.count_extension > 0 {
-                    message = String::from("!!! Use B !!!");
-                    changed = false;
-                } else if ai.mv(0, Direction::Left) {
+                if ai.mv(ai.active_worker_id, Direction::Left) {
                     message = String::from("Left");
                 } else {
                     message = String::from("Cannot Left");
@@ -217,10 +223,7 @@ fn main() {
                 }
             },
             CHAR_D => {
-                if ai.count_extension > 0 {
-                    message = String::from("!!! Use B !!!");
-                    changed = false;
-                } else if ai.mv(0, Direction::Right) {
+                if ai.mv(ai.active_worker_id, Direction::Right) {
                     message = String::from("Right");
                 } else {
                     message = String::from("Cannot Right");
@@ -228,10 +231,7 @@ fn main() {
                 }
             },
             CHAR_S => {
-                if ai.count_extension > 0 {
-                    message = String::from("!!! Use B !!!");
-                    changed = false;
-                } else if ai.mv(0, Direction::Down) {
+                if ai.mv(ai.active_worker_id, Direction::Down) {
                     message = String::from("Down");
                 } else {
                     message = String::from("Cannot Down");
@@ -239,10 +239,7 @@ fn main() {
                 }
             },
             CHAR_W => {
-                if ai.count_extension > 0 {
-                    message = String::from("!!! Use B !!!");
-                    changed = false;
-                } else if ai.mv(0, Direction::Up) {
+                if ai.mv(ai.active_worker_id, Direction::Up) {
                     message = String::from("Up");
                 } else {
                     message = String::from("Cannot Up");
@@ -250,72 +247,73 @@ fn main() {
                 }
             },
             CHAR_E => {
-                if ai.count_extension > 0 {
-                    message = String::from("!!! Use B !!!");
-                    changed = false;
-                } else {
-                    ai.turn_cw(0);
-                    message = String::from("Turn CW");
-                }
+                ai.turn_cw(ai.active_worker_id);
+                message = String::from("Turn CW");
             },
             CHAR_Q => {
-                if ai.count_extension > 0 {
-                    message = String::from("!!! Use B !!!");
-                    changed = false;
-                } else {
-                    ai.turn_ccw(0);
-                    message = String::from("Turn CCW");
-                }
+                ai.turn_ccw(ai.active_worker_id);
+                message = String::from("Turn CCW");
+            },
+            CHAR_Z => {
+                ai.nop(ai.active_worker_id);
+                message = String::from("NOP");
             },
             // boosters
             CHAR_B => {
-                if ai.count_extension == 0 {
+                if ai.count_extension[ai.active_worker_id] == 0 {
                     message = String::from("You have no B");
                     changed = false;
                 } else {
                     mode = EditorMode::CursorExtension;
                     changed = false;
                     message = String::from("Using B: Choose a cell (move cursor and hit Enter)");
-                    cursor = ai.workers[0].current_pos;
+                    cursor = ai.workers[ai.active_worker_id].current_pos;
                 }
             },
             CHAR_L => {
-                if ai.use_drill(0) {
+                if ai.use_drill(ai.active_worker_id) {
                     message = format!("Using Drill (L)");
                 } else {
                     message = format!("Cannot Use Drill (L)");
                 }
             },
             CHAR_F => {
-                if ai.use_fast_wheel(0) {
+                if ai.use_fast_wheel(ai.active_worker_id) {
                     message = format!("Using FastWheel (F)");
                 } else {
                     message = format!("Cannot Use FastWheel (F)");
+                }
+            },
+            CHAR_C => {
+                if ai.use_clone(ai.active_worker_id) {
+                    message = format!("Using Clone (C): #workers={}", ai.workers.len());
+                } else {
+                    message = format!("Cannot Use Clone (C)");
                 }
             },
             // hyper methods
             CHAR_X => {
                 message = format!("Shortest Path Mode: Choose a cell");
                 mode = EditorMode::CursorShortestPath;
-                cursor = ai.workers[0].current_pos;
+                cursor = ai.workers[ai.active_worker_id].current_pos;
                 changed = false;
             },
             CHAR_LARGE_X => {
                 message = format!("Udon Shortest Path Mode: Choose a cell");
                 mode = EditorMode::CursorUdonShortestPath;
-                cursor = ai.workers[0].current_pos;
+                cursor = ai.workers[ai.active_worker_id].current_pos;
                 changed = false;
             },
             CHAR_V => {
                 message = format!("Rect Paint: Choose one of corner");
                 mode = EditorMode::CursorRectPaintFirst;
-                cursor = ai.workers[0].current_pos;
+                cursor = ai.workers[ai.active_worker_id].current_pos;
                 changed = false;
             },
             CHAR_LARGE_V => {
                 message = format!("Udon Rect Paint: Choose one of corner");
                 mode = EditorMode::CursorUdonRectPaintFirst;
-                cursor = ai.workers[0].current_pos;
+                cursor = ai.workers[ai.active_worker_id].current_pos;
                 changed = false;
             },
             // cursor move
@@ -344,8 +342,8 @@ fn main() {
                 if getmouse(&mut event) == OK {
                     let offset = if ai.height <= WINDOW_HEIGHT {
                         0
-                    } else if ai.workers[0].current_pos.0 as usize > WINDOW_HEIGHT / 2 {
-                        ai.workers[0].current_pos.0 - WINDOW_HEIGHT as isize / 2
+                    } else if ai.workers[ai.active_worker_id].current_pos.0 as usize > WINDOW_HEIGHT / 2 {
+                        ai.workers[ai.active_worker_id].current_pos.0 - WINDOW_HEIGHT as isize / 2
                     } else {
                         0
                     };
@@ -364,18 +362,18 @@ fn main() {
                             let rect_max = Position(max(p.0, clicked.0), max(p.1, clicked.1));
 
                             loop {
-                                if let Some((q, commands)) = udon_paint(&ai, 0, rect_min, rect_max) {
+                                if let Some((q, commands)) = udon_paint(&ai, ai.active_worker_id, rect_min, rect_max) {
                                     for cmd in commands {
                                         if ai.filled[q.0 as usize][q.1 as usize] { break }
                                         let success = match cmd {
                                             Command::Move(dir) => {
-                                                ai.mv(0, dir)
+                                                ai.mv(ai.active_worker_id, dir)
                                             },
                                             Command::Rotate(cw) => {
                                                 if cw {
-                                                    ai.turn_cw(0)
+                                                    ai.turn_cw(ai.active_worker_id)
                                                 } else {
-                                                    ai.turn_ccw(0)
+                                                    ai.turn_ccw(ai.active_worker_id)
                                                 }
                                             },
                                             _ => {
@@ -403,9 +401,9 @@ fn main() {
             CHAR_RET => {
                 match mode {
                     EditorMode::CursorExtension => {
-                        let Position(wx, wy) = ai.workers[0].current_pos;
+                        let Position(wx, wy) = ai.workers[ai.active_worker_id].current_pos;
                         let p = Position(cursor.0 - wx, cursor.1 - wy);
-                        if ai.use_extension(0, p) {
+                        if ai.use_extension(ai.active_worker_id, p) {
                             message = format!("Using Extension (B) at {:?}", p);
                         } else {
                             message = format!("Cannot Apply Extension (B) at {:?}", p);
@@ -415,17 +413,17 @@ fn main() {
                         mode = EditorMode::Normal;
                     },
                     EditorMode::CursorShortestPath => {
-                        if let Some(commands) = shortest_path(&ai, 0, cursor) {
+                        if let Some(commands) = shortest_path(&ai, ai.active_worker_id, cursor) {
                             for &cmd in commands.iter() {
                                 match cmd {
                                     Command::Move(d) => {
-                                        ai.mv(0, d);
+                                        ai.mv(ai.active_worker_id, d);
                                     },
                                     Command::Rotate(cw) => {
                                         if cw {
-                                            ai.turn_cw(0);
+                                            ai.turn_cw(ai.active_worker_id);
                                         } else {
-                                            ai.turn_ccw(0);
+                                            ai.turn_ccw(ai.active_worker_id);
                                         }
                                     },
                                     _ => {}
@@ -441,17 +439,17 @@ fn main() {
                         mode = EditorMode::Normal;
                     },
                     EditorMode::CursorUdonShortestPath => {
-                        if let Some(commands) = udon_shortest_path(&ai, 0, cursor) {
+                        if let Some(commands) = udon_shortest_path(&ai, ai.active_worker_id, cursor) {
                             for &cmd in commands.iter() {
                                 match cmd {
                                     Command::Move(d) => {
-                                        ai.mv(0, d);
+                                        ai.mv(ai.active_worker_id, d);
                                     },
                                     Command::Rotate(cw) => {
                                         if cw {
-                                            ai.turn_cw(0);
+                                            ai.turn_cw(ai.active_worker_id);
                                         } else {
-                                            ai.turn_ccw(0);
+                                            ai.turn_ccw(ai.active_worker_id);
                                         }
                                     },
                                     _ => {}
@@ -479,19 +477,19 @@ fn main() {
                         let max_y = max(p.1, cursor.1);
 
                         loop {
-                            let Position(wx, wy) = ai.workers[0].current_pos;
-                            if let Some((q, commands)) = paint(&ai, 0, wx, wy, min_x, min_y, max_x, max_y) {
+                            let Position(wx, wy) = ai.workers[ai.active_worker_id].current_pos;
+                            if let Some((q, commands)) = paint(&ai, ai.active_worker_id, wx, wy, min_x, min_y, max_x, max_y) {
                                 for cmd in commands {
                                     if ai.filled[q.0 as usize][q.1 as usize] { break }
                                     let success = match cmd {
                                         Command::Move(dir) => {
-                                            ai.mv(0, dir)
+                                            ai.mv(ai.active_worker_id, dir)
                                         },
                                         Command::Rotate(cw) => {
                                             if cw {
-                                                ai.turn_cw(0)
+                                                ai.turn_cw(ai.active_worker_id)
                                             } else {
-                                                ai.turn_ccw(0)
+                                                ai.turn_ccw(ai.active_worker_id)
                                             }
                                         },
                                         _ => {
@@ -521,18 +519,18 @@ fn main() {
                         let rect_max = Position(max(p.0, cursor.0), max(p.1, cursor.1));
 
                         loop {
-                            if let Some((q, commands)) = udon_paint(&ai, 0, rect_min, rect_max) {
+                            if let Some((q, commands)) = udon_paint(&ai, ai.active_worker_id, rect_min, rect_max) {
                                 for cmd in commands {
                                     if ai.filled[q.0 as usize][q.1 as usize] { break }
                                     let success = match cmd {
                                         Command::Move(dir) => {
-                                            ai.mv(0, dir)
+                                            ai.mv(ai.active_worker_id, dir)
                                         },
                                         Command::Rotate(cw) => {
                                             if cw {
-                                                ai.turn_cw(0)
+                                                ai.turn_cw(ai.active_worker_id)
                                             } else {
-                                                ai.turn_ccw(0)
+                                                ai.turn_ccw(ai.active_worker_id)
                                             }
                                         },
                                         _ => {
@@ -571,6 +569,11 @@ fn main() {
                 message = format!("Save output: {}.handout", args[1]);
                 let mut file = File::create(format!("{}.hand.out", args[1])).unwrap();
                 let _ = file.write_all(ai.print_commands().as_bytes());
+            },
+            CHAR_TAB => {
+                ai.active_worker_id = (ai.active_worker_id + 1) % ai.count_active_workers;
+                message = format!("Active Worker is #{}", ai.active_worker_id);
+                changed = false;
             },
             CHAR_RESET => {
                 message = format!("New Game");
