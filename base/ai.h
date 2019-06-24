@@ -112,7 +112,8 @@ class AI {
 public:
 
   AI();
-  AI(const std::string filename);
+  // accepts a string representing buyfile's content
+  AI(const std::string buystring);
 
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
@@ -138,7 +139,7 @@ public:
   // Gets the current direction
   Direction get_dir(const int id = 0) const;
   // Gets the number of filled cells
-  int get_filled_count();
+  int get_filled_count() const;
 
   // Gets the number of available boosters
   int get_count_fast();
@@ -204,13 +205,17 @@ public:
   bool nop(const int id = 0);
 
   // Checks if get_filled_count() == Height * Width
-  bool is_finished();
+  bool is_finished() const;
+
+  // Returns command sequence in official format
+  std::string commands2str() const;
+
   // Outputs executed commands to stdout
-  void print_commands();
+  void print_commands() const;
 
 
   // Prints AI's state for debugging.
-  void dump_state();
+  void dump_state() const;
 
 
   /*

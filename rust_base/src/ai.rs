@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 use std::cmp::{min, max};
-use std::collections::HashSet;
+use std::collections::{HashSet, HashMap};
 
 use crate::geo::{Line, Point, intersect_ss, intersect_sp};
 
@@ -25,6 +25,7 @@ pub enum Command {
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub struct Worker {
+    pub current_time: usize,
     pub current_dir: Direction,
     pub current_pos: Position,
     pub manipulator_range: Vec<Position>,
@@ -74,8 +75,9 @@ impl Direction {
 }
 
 impl Worker {
-    fn new(p: Position) -> Self {
+    fn new(p: Position, current_time: usize) -> Self {
         Worker {
+            current_time,
             current_dir: Direction::Right,
             current_pos: p,
             manipulator_range: vec![
@@ -100,6 +102,11 @@ pub struct AI {
     pub count_extension: usize,
     pub count_clone: usize,
     pub count_teleport: usize,
+    pub stocked_fast: HashMap<usize, usize>,
+    pub stocked_drill: HashMap<usize, usize>,
+    pub stocked_extension: HashMap<usize, usize>,
+    pub stocked_clone: HashMap<usize, usize>,
+    pub stocked_teleport: HashMap<usize, usize>,
     pub filled_count: usize,
     pub block_count: usize,
     pub workers: Vec<Worker>,
@@ -107,6 +114,11 @@ pub struct AI {
     pub executed_cmds: Vec<Vec<String>>,
     pub board: Vec<Vec<char>>,
     pub filled: Vec<Vec<bool>>,
+}
+
+fn increament_stock(map: &mut HashMap<usize,usize>, key: usize) {
+    let v = map.get(&key).unwrap_or(&0).clone();
+    map.insert(key, v+1);
 }
 
 impl AI {
@@ -134,9 +146,14 @@ impl AI {
             count_extension: 0,
             count_clone: 0,
             count_teleport: 0,
+            stocked_clone: HashMap::new(),
+            stocked_fast: HashMap::new(),
+            stocked_drill: HashMap::new(),
+            stocked_extension: HashMap::new(),
+            stocked_teleport: HashMap::new(),
             filled_count: 0,
             block_count: block_count,
-            workers: vec![Worker::new(w_pos)],
+            workers: vec![Worker::new(w_pos, 0)],
             executed_cmds: vec![vec![]],
             beacons: HashSet::new(),
             board: board,
@@ -177,19 +194,21 @@ impl AI {
         true
     }
 
+
     pub fn fill_cell(&mut self, idx: usize, p: &Position) -> bool {
         let Position(x, y) = *p;
         if !self.valid_pos(p) { return false; }
         if !self.reachable(idx, p) { return false; }
+        let t = self.workers[idx].current_time;
 
         // pick up when item is on body,
         if self.workers[idx].current_pos == *p {  // when on body
           match self.board[x as usize][y as usize] {
-              'B' => { self.count_extension += 1; },
-              'F' => { self.count_fast += 1; },
-              'L' => { self.count_drill += 1; },
-              'C' => { self.count_clone += 1; },
-              'R' => { self.count_teleport += 1; },
+              'B' => { increament_stock(&mut self.stocked_extension, t) },
+              'F' => { increament_stock(&mut self.stocked_fast, t) },
+              'L' => { increament_stock(&mut self.stocked_drill, t) },
+              'C' => { increament_stock(&mut self.stocked_clone, t) },
+              'R' => { increament_stock(&mut self.stocked_teleport, t) },
               _ => {}
           }
           self.board[x as usize][y as usize] = '.';
@@ -218,7 +237,7 @@ impl AI {
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
-        self.next_turn();
+        self.next_turn(idx);
         true
     }
 
@@ -233,7 +252,7 @@ impl AI {
         for &p in self.get_absolute_manipulator_positions(idx).iter() {
             self.fill_cell(idx, &p);
         }
-        self.next_turn();
+        self.next_turn(idx);
         true
     }
 
@@ -279,16 +298,20 @@ impl AI {
         ret
     }
 
-    fn next_turn(&mut self) {
-        self.current_time += 1;
-        for i in 0..self.workers.len() {
-            if self.workers[i].duration_drill > 0 {
-                self.workers[i].duration_drill -= 1;
-            }
-            if self.workers[i].duration_fast > 0 {
-                self.workers[i].duration_fast -= 1;
-            }
+    fn next_turn(&mut self, idx: usize) {
+        self.workers[idx].current_time += 1;
+        self.workers[idx].duration_drill -= 1;
+        self.workers[idx].duration_fast -= 1;
+        let new_time = self.workers.iter().min_by_key(|w| w.current_time).unwrap().current_time;
+        for t in self.current_time..new_time {
+            self.count_extension += self.stocked_extension.get(&t).unwrap_or(&0);
+            self.count_drill += self.stocked_drill.get(&t).unwrap_or(&0);
+            self.count_fast += self.stocked_fast.get(&t).unwrap_or(&0);
+            self.count_clone += self.stocked_clone.get(&t).unwrap_or(&0);
+            self.count_teleport += self.stocked_teleport.get(&t).unwrap_or(&0);
         }
+
+        self.current_time = new_time;
     }
 
     fn try_move(&self, idx: usize, dir: Direction) -> bool {
@@ -335,7 +358,7 @@ impl AI {
             Direction::Left => String::from("A"),
             Direction::Right => String::from("D"),
         });
-        self.next_turn();
+        self.next_turn(idx);
         true
     }
 
@@ -354,6 +377,7 @@ impl AI {
         self.workers[idx].duration_fast = 50;
         self.count_fast -= 1;
         self.executed_cmds[idx].push(String::from("F"));
+        self.next_turn(idx);
         true
     }
 
@@ -364,6 +388,7 @@ impl AI {
         self.workers[idx].duration_drill = 30;
         self.count_drill -= 1;
         self.executed_cmds[idx].push(String::from("L"));
+        self.next_turn(idx);
         true
     }
 
@@ -379,10 +404,11 @@ impl AI {
 
         self.count_clone -= 1;
 
-        self.workers.push(Worker::new(Position(wx, wy)));
+        self.workers.push(Worker::new(Position(wx, wy), self.workers[idx].current_time + 1));
 
         self.executed_cmds.push(vec![]);
         self.executed_cmds[idx].push(String::from("C"));
+        self.next_turn(idx);
         true
     }
 
@@ -401,7 +427,7 @@ impl AI {
         self.beacons.insert(Position(wx,wy));
 
         self.executed_cmds[idx].push(String::from("R"));
-
+        self.next_turn(idx);
         true
     }
 
@@ -414,11 +440,13 @@ impl AI {
         self.workers[idx].current_pos.1 = dst.1;
 
         self.executed_cmds[idx].push(format!("T({},{})",dst.0, dst.1));
+        self.next_turn(idx);
         true
     }
 
     pub fn nop(&mut self, idx: usize) -> bool {
         self.executed_cmds[idx].push(String::from("Z"));
+        self.next_turn(idx);
         true
     }
 

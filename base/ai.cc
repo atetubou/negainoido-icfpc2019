@@ -190,14 +190,31 @@ AI::AI() {
   initialize();
 }
 
-AI::AI(const std::string filename) {
-  std::ifstream in(filename.c_str());
-  LOG_IF(FATAL, !in) <<
-    "failed to open " << filename;
-
-  std::cin.rdbuf(in.rdbuf());
-
+AI::AI(const std::string buystring) {
   initialize();
+
+  for (auto c : buystring) {
+    switch(c) {
+    case 'B':
+      count_extension++;
+      break;
+    case 'F':
+      count_fast++;
+      break;
+    case 'L':
+      count_drill++;
+      break;
+    case 'C':
+      count_clone++;
+      break;
+    case 'R':
+      count_teleport++;
+      break;
+    default:
+      LOG(FATAL) << "Unknown character '" << c << "' in buy string";
+      break;
+    }
+  }
 }
 
 void AI::pickup_booster(const int id) {
@@ -257,7 +274,7 @@ Position AI::get_pos(const int id) const { return workers[id].current_pos; }
 
 Direction AI::get_dir(const int id) const { return workers[id].current_dir; }
 
-int AI::get_filled_count() { return filled_count; }
+int AI::get_filled_count() const { return filled_count; }
 
 int AI::get_count_fast() { return count_fast; }
 int AI::get_count_drill() { return count_drill; }
@@ -629,12 +646,12 @@ bool AI::do_command(Command cmd, const int id) {
   }
 }
 
-bool AI::is_finished() {
+bool AI::is_finished() const {
   return get_filled_count() + block_count == height * width;
 }
 
-void print_command(struct Command cmd, int height) {
-  std::string s = "";
+std::string cmd2str(struct Command cmd, int height) {
+  std::string s;
 
   switch (cmd.type) {
   case CmdType::Move:
@@ -677,7 +694,7 @@ void print_command(struct Command cmd, int height) {
     s = "R";
     break;
   case CmdType::JumpToBeacon:
-    s = "T(" + std::to_string(cmd.y) + "," + std::to_string(height - cmd.x) + ")";
+    s = "T(" + std::to_string(cmd.y) + "," + std::to_string(height - cmd.x - 1) + ")";
     break;
   case CmdType::Nop:
     s = "Z";
@@ -688,22 +705,28 @@ void print_command(struct Command cmd, int height) {
 
   LOG_IF(FATAL, s.size() == 0) << "BUG: empty command: " << static_cast<int>(cmd.type);
 
-  std::cout << s;
+  return s;
 }
 
-void AI::print_commands() {
+std::string AI::commands2str() const {
+  std::string s;
   for(int i = 0; i < (int) executed_cmds.size(); ++i) {
     if (i != 0)
-      std::cout << "#";
+      s += "#";
 
     for (auto cmd: executed_cmds[i]) {
-      print_command(cmd, height);
+      s += cmd2str(cmd, height);
     }
   }
-  std::cout << std::endl;
+
+  return s;
 }
 
-void AI::dump_state() {
+void AI::print_commands() const {
+  std::cout << commands2str() << std::endl;
+}
+
+void AI::dump_state() const {
   std::cerr << "time: " << current_time << ", filled_count: " << filled_count << std::endl;
 
   std::set<Position> ws;

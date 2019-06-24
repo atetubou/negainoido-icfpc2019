@@ -33,17 +33,7 @@ do
         continue
     fi
     $solver < problems/prob-$task.in > problems/prob-$task.out
-    result=0
     echo "prob-${task}.in"
-    # score=$(${validator} --in problems/prob-${task}.in --sol problems/prob-$task.out) || result=$?
-    if [ ! "$result" = "0" ]; then
-	echo "#######################################################"
-	echo "#######################################################"
-        echo " ERROR: Invalid result for prob-${task}.in!!!!!!!!!!!"
-	echo "#######################################################"
-	echo "#######################################################"
-        exit
-    fi
     solver_name=$1-@$(git rev-list -n1 HEAD)
     curl -k https://negainoido.dip.jp/score/solution -F score=$score -F file=@problems/prob-$task.out -F solver="${solver_name}" -F task=$task
     ## if you want to use buy file, please replace "buy" with your buy file name.
