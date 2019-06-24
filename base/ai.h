@@ -102,6 +102,7 @@ class AI {
   bool move_body(const Direction &dir, const int id);
 
 
+  void get_board_from_stdin();
   void initialize();
 
   bool init_turn(const int id);
@@ -116,6 +117,8 @@ public:
   AI();
   // accepts a string representing buyfile's content
   AI(const std::string buystring);
+
+  AI(const std::vector<std::string> &init_board, const std::vector<std::vector<bool>> &init_filled);
 
   std::vector<std::string> board;
   std::vector<std::vector<bool>> filled;
